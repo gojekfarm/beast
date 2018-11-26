@@ -2,12 +2,15 @@ package com.gojek.beast.sink.bq;
 
 import com.gojek.beast.sink.Sink;
 import com.gojek.beast.sink.Status;
-import com.google.cloud.bigquery.*;
+import com.google.cloud.bigquery.BigQuery;
+import com.google.cloud.bigquery.InsertAllRequest;
+import com.google.cloud.bigquery.InsertAllResponse;
+import com.google.cloud.bigquery.TableId;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 public class BqSink implements Sink<Record> {
-    private BigQuery bigquery = BigQueryOptions.getDefaultInstance().getService();
+    private BigQuery bigquery;
     private TableId tableId;
 
     @Override

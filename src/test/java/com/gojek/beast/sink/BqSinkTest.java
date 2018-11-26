@@ -26,16 +26,16 @@ import static org.mockito.Mockito.when;
 public class BqSinkTest {
 
     @Mock
-    BigQuery bigquery;
-    Sink<Record> sink;
+    private BigQuery bigquery;
+    private Sink<Record> sink;
     private TableId tableId;
-    InsertAllRequest.Builder builder;
+    private InsertAllRequest.Builder builder;
     @Mock
-    InsertAllResponse successfulResponse, failureResponse;
+    private InsertAllResponse successfulResponse, failureResponse;
 
     @Before
     public void setUp() {
-        tableId = TableId.of("test-dataset" ,"test-table");
+        tableId = TableId.of("test-dataset", "test-table");
         builder = InsertAllRequest.newBuilder(tableId);
         sink = new BqSink(bigquery, tableId);
         when(successfulResponse.hasErrors()).thenReturn(false);
@@ -44,7 +44,7 @@ public class BqSinkTest {
     }
 
     @Test
-    public void ShouldPushMessageToBigQuerySuccessfully() {
+    public void shouldPushMessageToBigQuerySuccessfully() {
         Map<String, Object> user1 = createUser("alice");
         InsertAllRequest request = builder.addRow(user1).build();
         Iterable<Record> records = Arrays.asList(new Record(user1));
@@ -56,7 +56,7 @@ public class BqSinkTest {
     }
 
     @Test
-    public void ShouldPushMultipleMessagesToBigQuerySuccessfully() {
+    public void shouldPushMultipleMessagesToBigQuerySuccessfully() {
         Map<String, Object> user1 = createUser("alice");
         Map<String, Object> user2 = createUser("bob");
         Map<String, Object> user3 = createUser("mary");
@@ -71,7 +71,7 @@ public class BqSinkTest {
 
 
     @Test
-    public void ShouldErrorWhenBigQueryInsertFails() {
+    public void shouldErrorWhenBigQueryInsertFails() {
         Map<String, Object> user1 = createUser("alice");
         InsertAllRequest request = builder.addRow(user1).build();
         Iterable<Record> records = Arrays.asList(new Record(user1));
@@ -80,11 +80,11 @@ public class BqSinkTest {
         Status status = sink.push(records);
 
         verify(bigquery).insertAll(request);
-        assertFalse("Should return false", status.isSuccess() );
+        assertFalse("Should return false", status.isSuccess());
     }
 
     private Map<String, Object> createUser(String alice) {
-        HashMap<String , Object> user = new HashMap<>();
+        HashMap<String, Object> user = new HashMap<>();
         user.put("name", alice);
         user.put("age", 24);
         return user;

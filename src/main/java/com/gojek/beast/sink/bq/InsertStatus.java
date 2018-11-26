@@ -7,5 +7,5 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class InsertStatus implements Status {
-    boolean success;
+    private boolean success;
 }
