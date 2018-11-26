@@ -16,7 +16,7 @@ public class BqSink implements Sink<Record> {
         messages.forEach(m -> builder.addRow(m.getColumns()));
         InsertAllRequest rows = builder.build();
         InsertAllResponse response = bigquery.insertAll(rows);
-        return new InsertStatus(true);
+        return new InsertStatus(!response.hasErrors());
     }
 
     @Override
