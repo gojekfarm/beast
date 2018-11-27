@@ -24,6 +24,5 @@ public class BqSink implements Sink<Record> {
 
     @Override
     public void close() {
-
     }
 }

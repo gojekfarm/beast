@@ -55,3 +55,6 @@ Temporary Items
 **/build/
 
 *.swp
+
+generated/
+checkstyle/
