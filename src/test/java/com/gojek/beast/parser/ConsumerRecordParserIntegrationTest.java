@@ -2,6 +2,7 @@ package com.gojek.beast.parser;
 
 import com.gojek.beast.TestMessage;
 import com.gojek.beast.config.ColumnMapping;
+import com.gojek.beast.models.ParseException;
 import com.gojek.beast.sink.bq.Record;
 import com.gojek.beast.util.KafkaConsumerUtil;
 import com.gojek.de.stencil.StencilClientFactory;
@@ -20,7 +21,6 @@ import static org.junit.Assert.assertEquals;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ConsumerRecordParserIntegrationTest {
-
     private ConsumerRecordParser recordParser;
     private MessageTransformer transformer;
 
@@ -29,7 +29,7 @@ public class ConsumerRecordParserIntegrationTest {
     private KafkaConsumerUtil util;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         parser = new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName());
         ColumnMapping columnMapping = new ColumnMapping();
         columnMapping.put(1, "bq_order_number");
@@ -41,7 +41,7 @@ public class ConsumerRecordParserIntegrationTest {
     }
 
     @Test
-    public void shouldGetRecordForBQFromConsumerRecords() {
+    public void shouldGetRecordForBQFromConsumerRecords() throws ParseException {
         ConsumerRecord<byte[], byte[]> record1 = util.createConsumerRecord("order-1", "order-url-1", "order-details-1");
         ConsumerRecord<byte[], byte[]> record2 = util.createConsumerRecord("order-2", "order-url-2", "order-details-2");
 
@@ -62,5 +62,4 @@ public class ConsumerRecordParserIntegrationTest {
         assertEquals(record1ExpectedColumns, records.get(0).getColumns());
         assertEquals(record2ExpectedColumns, records.get(1).getColumns());
     }
-
 }

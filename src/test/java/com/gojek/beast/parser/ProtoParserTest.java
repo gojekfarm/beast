@@ -22,11 +22,10 @@ import static org.junit.Assert.assertEquals;
 @RunWith(MockitoJUnitRunner.class)
 public class ProtoParserTest {
 
-    private ProtoParser testMessageParser;
-    private StencilClient stencilClient;
-
     @Rule
     public ExpectedException exception = ExpectedException.none();
+    private ProtoParser testMessageParser;
+    private StencilClient stencilClient;
 
     @Before
     public void setup() {
@@ -35,7 +34,7 @@ public class ProtoParserTest {
     }
 
     @Test
-    public void shouldParseTestMessage() {
+    public void shouldParseTestMessage() throws ParseException {
         TestMessage testMessage = TestMessage.newBuilder().setOrderNumber("order").build();
         DynamicMessage dynamicMessage = testMessageParser.parse(testMessage.toByteArray());
 
@@ -46,7 +45,7 @@ public class ProtoParserTest {
     }
 
     @Test
-    public void shouldNotParseRandomLogMessage() {
+    public void shouldNotParseRandomLogMessage() throws ParseException {
         TestNestedMessage protoMessage = TestNestedMessage.newBuilder().build();
         DynamicMessage message = testMessageParser.parse(protoMessage.toByteArray());
 
@@ -55,7 +54,7 @@ public class ProtoParserTest {
     }
 
     @Test(expected = ConfigurationException.class)
-    public void shouldFailWhenNotAbleToFindTheProtoClass() {
+    public void shouldFailWhenNotAbleToFindTheProtoClass() throws ParseException {
         ProtoParser protoParser = new ProtoParser(stencilClient, "invalid_class_name");
 
         protoParser.parse("".getBytes());
@@ -64,7 +63,7 @@ public class ProtoParserTest {
     }
 
     @Test(expected = ParseException.class)
-    public void shouldFailForInvalidProtoMessage() {
+    public void shouldFailForInvalidProtoMessage() throws ParseException {
         ProtoParser protoParser = new ProtoParser(stencilClient, TestMessage.class.getName());
         protoParser.parse("invalid".getBytes());
     }

@@ -3,9 +3,9 @@ package com.gojek.beast.parser;
 import com.gojek.beast.TestMessage;
 import com.gojek.beast.config.ColumnMapping;
 import com.gojek.beast.models.ConfigurationException;
+import com.gojek.beast.models.ParseException;
 import com.gojek.de.stencil.StencilClientFactory;
 import com.google.protobuf.DynamicMessage;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Timestamp;
 import org.junit.Before;
 import org.junit.Test;
@@ -21,13 +21,11 @@ import static org.junit.Assert.assertNull;
 @RunWith(MockitoJUnitRunner.class)
 public class MessageTransformerTest {
 
-    private MessageTransformer transformer;
     private Timestamp createdAt;
     private DynamicMessage dynamicMessage;
 
     @Before
-    public void setUp() throws InvalidProtocolBufferException {
-
+    public void setUp() throws ParseException {
         ProtoParser protoParser = new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName());
         Instant time = Instant.now();
         createdAt = Timestamp.newBuilder().setSeconds(time.getEpochSecond()).setNanos(time.getNano()).build();

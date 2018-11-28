@@ -1,5 +1,6 @@
 package com.gojek.beast.parser;
 
+import com.gojek.beast.models.ParseException;
 import com.gojek.beast.sink.bq.Record;
 import lombok.AllArgsConstructor;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -13,7 +14,7 @@ public class ConsumerRecordParser {
     private final MessageTransformer transformer;
     private final Parser parser;
 
-    public List<Record> getRecords(final Iterable<ConsumerRecord<byte[], byte[]>> messages) {
+    public List<Record> getRecords(final Iterable<ConsumerRecord<byte[], byte[]>> messages) throws ParseException {
         ArrayList<Record> records = new ArrayList<>();
         for (ConsumerRecord<byte[], byte[]> message : messages) {
             byte[] value = message.value();

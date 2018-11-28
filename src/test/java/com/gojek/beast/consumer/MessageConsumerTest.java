@@ -1,5 +1,6 @@
 package com.gojek.beast.consumer;
 
+import com.gojek.beast.models.ParseException;
 import com.gojek.beast.parser.ConsumerRecordParser;
 import com.gojek.beast.sink.Sink;
 import com.gojek.beast.sink.Status;
@@ -16,7 +17,9 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.List;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.when;
 
@@ -44,7 +47,7 @@ public class MessageConsumerTest {
     }
 
     @Test
-    public void shouldConsumeMessagesAndPushToSink() {
+    public void shouldConsumeMessagesAndPushToSink() throws ParseException {
         when(recordParser.getRecords(messages)).thenReturn(records);
         when(sink.push(records)).thenReturn(success);
         InOrder callOrder = inOrder(recordParser, sink);
@@ -54,5 +57,13 @@ public class MessageConsumerTest {
         callOrder.verify(recordParser).getRecords(messages);
         callOrder.verify(sink).push(records);
         assertTrue(status.isSuccess());
+    }
+
+    @Test
+    public void shouldReturnFailureStatusWhenParsingFails() throws ParseException {
+        when(recordParser.getRecords(any())).thenThrow(new ParseException("test reason", null));
+        Status status = consumer.consume();
+
+        assertFalse(status.isSuccess());
     }
 }
