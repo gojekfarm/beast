@@ -7,7 +7,7 @@ import com.google.protobuf.Descriptors;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
 
-public class ProtoParser {
+public class ProtoParser implements Parser {
     private Descriptors.Descriptor descriptor;
     private String protoClassName;
 
@@ -18,10 +18,16 @@ public class ProtoParser {
         }
     }
 
-    public DynamicMessage parse(byte[] bytes) throws InvalidProtocolBufferException {
+    public DynamicMessage parse(byte[] bytes) throws ParseException {
+        DynamicMessage message;
         if (descriptor == null) {
             throw new ConfigurationException(String.format("No Descriptors found for %s", protoClassName));
         }
-        return DynamicMessage.parseFrom(descriptor, bytes);
+        try {
+            message = DynamicMessage.parseFrom(descriptor, bytes);
+        } catch (InvalidProtocolBufferException e) {
+            throw new ParseException("DynamicMessage parsing failed", e);
+        }
+        return message;
     }
 }
