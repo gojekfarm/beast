@@ -1,0 +1,66 @@
+package com.gojek.beast.parser;
+
+import com.gojek.beast.TestMessage;
+import com.gojek.beast.config.ColumnMapping;
+import com.gojek.beast.sink.bq.Record;
+import com.gojek.beast.util.KafkaConsumerUtil;
+import com.gojek.de.stencil.StencilClientFactory;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.runners.MockitoJUnitRunner;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
+
+@RunWith(MockitoJUnitRunner.class)
+public class ConsumerRecordParserIntegrationTest {
+
+    private ConsumerRecordParser recordParser;
+    private MessageTransformer transformer;
+
+    private Parser parser;
+
+    private KafkaConsumerUtil util;
+
+    @Before
+    public void setUp() throws Exception {
+        parser = new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName());
+        ColumnMapping columnMapping = new ColumnMapping();
+        columnMapping.put(1, "bq_order_number");
+        columnMapping.put(2, "bq_order_url");
+        columnMapping.put(3, "bq_order_details");
+        transformer = new MessageTransformer(columnMapping);
+        recordParser = new ConsumerRecordParser(transformer, parser);
+        util = new KafkaConsumerUtil();
+    }
+
+    @Test
+    public void shouldGetRecordForBQFromConsumerRecords() {
+        ConsumerRecord<byte[], byte[]> record1 = util.createConsumerRecord("order-1", "order-url-1", "order-details-1");
+        ConsumerRecord<byte[], byte[]> record2 = util.createConsumerRecord("order-2", "order-url-2", "order-details-2");
+
+        Map<Object, Object> record1ExpectedColumns = new HashMap<>();
+        record1ExpectedColumns.put("bq_order_number", "order-1");
+        record1ExpectedColumns.put("bq_order_url", "order-url-1");
+        record1ExpectedColumns.put("bq_order_details", "order-details-1");
+
+        Map<Object, Object> record2ExpectedColumns = new HashMap<>();
+        record2ExpectedColumns.put("bq_order_number", "order-2");
+        record2ExpectedColumns.put("bq_order_url", "order-url-2");
+        record2ExpectedColumns.put("bq_order_details", "order-details-2");
+        List<ConsumerRecord<byte[], byte[]>> messages = Arrays.asList(record1, record2);
+
+        List<Record> records = recordParser.getRecords(messages);
+
+        assertEquals(messages.size(), records.size());
+        assertEquals(record1ExpectedColumns, records.get(0).getColumns());
+        assertEquals(record2ExpectedColumns, records.get(1).getColumns());
+    }
+
+}

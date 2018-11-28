@@ -4,7 +4,7 @@ Kafka to BigQuery Sink
 
 
 ### Task List:
- * [] convert dynamic message -> Map<String,Object> -> Record
+ * [x] convert dynamic message -> Map<String,Object> -> Record
  * [] get List<Dynamic msg> from ConsumerRecords<K,V> (using stencil)
  * [] consumer to consume messages 
 
@@ -14,3 +14,5 @@ Kafka to BigQuery Sink
 * remove artifactory creds
 * validation on configuration eg: duplicates in `proto_field_mappings`
 * retry on fail
+* Implement DLQ
+

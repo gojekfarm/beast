@@ -3,6 +3,7 @@ package com.gojek.beast.parser;
 import com.gojek.beast.TestMessage;
 import com.gojek.beast.TestNestedMessage;
 import com.gojek.beast.models.ConfigurationException;
+import com.gojek.beast.models.ParseException;
 import com.gojek.de.stencil.StencilClient;
 import com.gojek.de.stencil.StencilClientFactory;
 import com.google.protobuf.Descriptors;

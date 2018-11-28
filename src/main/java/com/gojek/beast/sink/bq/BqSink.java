@@ -14,9 +14,9 @@ public class BqSink implements Sink<Record> {
     private final TableId tableId;
 
     @Override
-    public Status push(Iterable<Record> messages) {
+    public Status push(Iterable<Record> records) {
         InsertAllRequest.Builder builder = InsertAllRequest.newBuilder(tableId);
-        messages.forEach(m -> builder.addRow(m.getColumns()));
+        records.forEach(m -> builder.addRow(m.getColumns()));
         InsertAllRequest rows = builder.build();
         InsertAllResponse response = bigquery.insertAll(rows);
         return new InsertStatus(!response.hasErrors());

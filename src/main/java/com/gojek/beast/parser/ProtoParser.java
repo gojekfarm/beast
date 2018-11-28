@@ -1,6 +1,7 @@
 package com.gojek.beast.parser;
 
 import com.gojek.beast.models.ConfigurationException;
+import com.gojek.beast.models.ParseException;
 import com.gojek.de.stencil.StencilClient;
 import com.google.common.base.Strings;
 import com.google.protobuf.Descriptors;
