@@ -1,4 +1,4 @@
-package com.gojek.beast;
+package com.gojek.beast.config;
 
 import org.aeonbits.owner.Config;
 
@@ -10,5 +10,6 @@ public interface AppConfig extends Config {
     String getDataset();
 
     @Key("BQ_PROTO_COLUMN_MAPPING")
-    String getProtoColumnMapping();
+    @ConverterClass(ProtoIndexToFieldMapConverter.class)
+    ColumnMapping getProtoColumnMapping();
 }

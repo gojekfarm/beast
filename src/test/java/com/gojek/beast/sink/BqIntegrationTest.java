@@ -6,6 +6,7 @@ import com.google.api.client.http.LowLevelHttpResponse;
 import com.google.api.client.testing.http.MockHttpTransport;
 import com.google.api.client.testing.http.MockLowLevelHttpRequest;
 import com.google.api.client.testing.http.MockLowLevelHttpResponse;
+import com.google.api.client.util.DateTime;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.bigquery.BigQuery;
@@ -19,7 +20,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
+
+import static org.junit.Assert.assertTrue;
 
 @Ignore
 public class BqIntegrationTest {
@@ -64,9 +68,10 @@ public class BqIntegrationTest {
         columns.put("name", "alice");
         columns.put("aga", 25);
         columns.put("location", 25123);
+        columns.put("created_at", new DateTime(new Date()));
 
         Status push = bqSink.push(Arrays.asList(new Record(columns)));
 
-        System.out.println(push);
+        assertTrue(push.isSuccess());
     }
 }

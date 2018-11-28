@@ -10,8 +10,8 @@ import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 public class BqSink implements Sink<Record> {
-    private BigQuery bigquery;
-    private TableId tableId;
+    private final BigQuery bigquery;
+    private final TableId tableId;
 
     @Override
     public Status push(Iterable<Record> messages) {

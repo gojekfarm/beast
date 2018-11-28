@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package com.gojek.beast;
 
+import "google/protobuf/timestamp.proto";
+
 option java_multiple_files = true;
 option java_package = "com.gojek.beast";
 option java_outer_classname = "TestMessageProto";
@@ -15,6 +17,7 @@ message TestMessage {
     string order_number = 1;
     string order_url = 2;
     string order_details = 3;
+    google.protobuf.Timestamp created_at = 4;
 }
 
 message TestNestedMessage {
