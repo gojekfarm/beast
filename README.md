@@ -20,6 +20,7 @@ Kafka to BigQuery Sink
 * Use jib to create docker image
 * Find package like factorybot, and make factories
 * Refactor KafkaConsumerUtil
+* Show code coverage in CLI on test run
 
 ### Reading List
 * Custom Mappers
