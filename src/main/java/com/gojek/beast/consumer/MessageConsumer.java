@@ -1,7 +1,7 @@
 package com.gojek.beast.consumer;
 
+import com.gojek.beast.converter.Converter;
 import com.gojek.beast.models.ParseException;
-import com.gojek.beast.parser.ConsumerRecordParser;
 import com.gojek.beast.sink.Sink;
 import com.gojek.beast.sink.Status;
 import com.gojek.beast.sink.bq.FailureStatus;
@@ -17,14 +17,14 @@ public class MessageConsumer {
 
     private final KafkaConsumer<byte[], byte[]> kafkaConsumer;
     private final Sink<Record> sink;
-    private final ConsumerRecordParser recordParser;
+    private final Converter recordConverter;
     private final long timeout;
 
     public Status consume() {
         ConsumerRecords<byte[], byte[]> messages = kafkaConsumer.poll(timeout);
         List<Record> records;
         try {
-            records = recordParser.getRecords(messages);
+            records = recordConverter.convert(messages);
         } catch (ParseException e) {
             return new FailureStatus();
         }

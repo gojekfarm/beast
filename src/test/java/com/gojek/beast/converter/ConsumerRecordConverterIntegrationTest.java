@@ -1,8 +1,10 @@
-package com.gojek.beast.parser;
+package com.gojek.beast.converter;
 
 import com.gojek.beast.TestMessage;
 import com.gojek.beast.config.ColumnMapping;
 import com.gojek.beast.models.ParseException;
+import com.gojek.beast.parser.Parser;
+import com.gojek.beast.parser.ProtoParser;
 import com.gojek.beast.sink.bq.Record;
 import com.gojek.beast.util.KafkaConsumerUtil;
 import com.gojek.de.stencil.StencilClientFactory;
@@ -20,9 +22,9 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(MockitoJUnitRunner.class)
-public class ConsumerRecordParserIntegrationTest {
-    private ConsumerRecordParser recordParser;
-    private MessageTransformer transformer;
+public class ConsumerRecordConverterIntegrationTest {
+    private ConsumerRecordConverter recordConverter;
+    private RowMapper rowMapper;
 
     private Parser parser;
 
@@ -35,8 +37,8 @@ public class ConsumerRecordParserIntegrationTest {
         columnMapping.put(1, "bq_order_number");
         columnMapping.put(2, "bq_order_url");
         columnMapping.put(3, "bq_order_details");
-        transformer = new MessageTransformer(columnMapping);
-        recordParser = new ConsumerRecordParser(transformer, parser);
+        rowMapper = new RowMapper(columnMapping);
+        recordConverter = new ConsumerRecordConverter(rowMapper, parser);
         util = new KafkaConsumerUtil();
     }
 
@@ -56,7 +58,7 @@ public class ConsumerRecordParserIntegrationTest {
         record2ExpectedColumns.put("bq_order_details", "order-details-2");
         List<ConsumerRecord<byte[], byte[]>> messages = Arrays.asList(record1, record2);
 
-        List<Record> records = recordParser.getRecords(messages);
+        List<Record> records = recordConverter.convert(messages);
 
         assertEquals(messages.size(), records.size());
         assertEquals(record1ExpectedColumns, records.get(0).getColumns());

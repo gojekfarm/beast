@@ -1,7 +1,7 @@
 package com.gojek.beast.consumer;
 
+import com.gojek.beast.converter.ConsumerRecordConverter;
 import com.gojek.beast.models.ParseException;
-import com.gojek.beast.parser.ConsumerRecordParser;
 import com.gojek.beast.sink.Sink;
 import com.gojek.beast.sink.Status;
 import com.gojek.beast.sink.bq.Record;
@@ -33,7 +33,7 @@ public class MessageConsumerTest {
     @Mock
     private Sink<Record> sink;
     @Mock
-    private ConsumerRecordParser recordParser;
+    private ConsumerRecordConverter converter;
     @Mock
     private List<Record> records;
 
@@ -42,26 +42,26 @@ public class MessageConsumerTest {
 
     @Before
     public void setUp() {
-        consumer = new MessageConsumer(kafkaConsumer, sink, recordParser, timeout);
+        consumer = new MessageConsumer(kafkaConsumer, sink, converter, timeout);
         when(kafkaConsumer.poll(timeout)).thenReturn(messages);
     }
 
     @Test
     public void shouldConsumeMessagesAndPushToSink() throws ParseException {
-        when(recordParser.getRecords(messages)).thenReturn(records);
+        when(converter.convert(messages)).thenReturn(records);
         when(sink.push(records)).thenReturn(success);
-        InOrder callOrder = inOrder(recordParser, sink);
+        InOrder callOrder = inOrder(converter, sink);
 
         Status status = consumer.consume();
 
-        callOrder.verify(recordParser).getRecords(messages);
+        callOrder.verify(converter).convert(messages);
         callOrder.verify(sink).push(records);
         assertTrue(status.isSuccess());
     }
 
     @Test
     public void shouldReturnFailureStatusWhenParsingFails() throws ParseException {
-        when(recordParser.getRecords(any())).thenThrow(new ParseException("test reason", null));
+        when(converter.convert(any())).thenThrow(new ParseException("test reason", null));
         Status status = consumer.consume();
 
         assertFalse(status.isSuccess());

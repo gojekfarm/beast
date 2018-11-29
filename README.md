@@ -5,8 +5,8 @@ Kafka to BigQuery Sink
 
 ### Task List:
  * [x] convert dynamic message -> Map<String,Object> -> Record
- * [] get List<Dynamic msg> from ConsumerRecords<K,V> (using stencil)
- * [] consumer to consume messages 
+ * [x] get List<Dynamic msg> from ConsumerRecords<K,V> (using stencil)
+ * [x] consumer to consume messages 
 
 
 ### Laundary List

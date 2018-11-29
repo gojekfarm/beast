@@ -1,9 +1,10 @@
-package com.gojek.beast.parser;
+package com.gojek.beast.converter;
 
 import com.gojek.beast.TestMessage;
 import com.gojek.beast.config.ColumnMapping;
 import com.gojek.beast.models.ConfigurationException;
 import com.gojek.beast.models.ParseException;
+import com.gojek.beast.parser.ProtoParser;
 import com.gojek.de.stencil.StencilClientFactory;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.Timestamp;
@@ -19,7 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 @RunWith(MockitoJUnitRunner.class)
-public class MessageTransformerTest {
+public class RowMapperTest {
 
     private Timestamp createdAt;
     private DynamicMessage dynamicMessage;
@@ -42,7 +43,7 @@ public class MessageTransformerTest {
         fieldMappings.put("1", "order_number_field");
         fieldMappings.put("4", "created_at");
 
-        Map<String, Object> fields = new MessageTransformer(fieldMappings).getFields(dynamicMessage);
+        Map<String, Object> fields = new RowMapper(fieldMappings).map(dynamicMessage);
 
         assertEquals("order-1", fields.get("order_number_field"));
         assertEquals(createdAt, fields.get("created_at"));
@@ -54,7 +55,7 @@ public class MessageTransformerTest {
         ColumnMapping fieldMappings = new ColumnMapping();
         fieldMappings.put("10", "some_column_in_bq");
 
-        Map<String, Object> fields = new MessageTransformer(fieldMappings).getFields(dynamicMessage);
+        Map<String, Object> fields = new RowMapper(fieldMappings).map(dynamicMessage);
 
         assertNull(fields.get("some_column_in_bq"));
     }
@@ -64,6 +65,6 @@ public class MessageTransformerTest {
         ColumnMapping fieldMappings = new ColumnMapping();
         fieldMappings.put("10", "some_column_in_bq");
 
-        new MessageTransformer(null).getFields(dynamicMessage);
+        new RowMapper(null).map(dynamicMessage);
     }
 }
