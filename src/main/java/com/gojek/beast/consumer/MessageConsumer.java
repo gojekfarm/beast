@@ -3,8 +3,8 @@ package com.gojek.beast.consumer;
 import com.gojek.beast.converter.Converter;
 import com.gojek.beast.models.ParseException;
 import com.gojek.beast.sink.Sink;
-import com.gojek.beast.sink.Status;
-import com.gojek.beast.sink.bq.FailureStatus;
+import com.gojek.beast.models.Status;
+import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.sink.bq.Record;
 import lombok.AllArgsConstructor;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -26,7 +26,7 @@ public class MessageConsumer {
         try {
             records = recordConverter.convert(messages);
         } catch (ParseException e) {
-            return new FailureStatus();
+            return new FailureStatus(e);
         }
         return sink.push(records);
     }

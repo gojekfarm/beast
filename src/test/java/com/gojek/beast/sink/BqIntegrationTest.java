@@ -1,5 +1,6 @@
 package com.gojek.beast.sink;
 
+import com.gojek.beast.models.Status;
 import com.gojek.beast.sink.bq.BqSink;
 import com.gojek.beast.sink.bq.Record;
 import com.google.api.client.http.LowLevelHttpResponse;

@@ -1,11 +1,10 @@
 package com.gojek.beast.sink;
 
+import com.gojek.beast.models.Status;
+import com.gojek.beast.sink.bq.BqInsertErrors;
 import com.gojek.beast.sink.bq.BqSink;
 import com.gojek.beast.sink.bq.Record;
-import com.google.cloud.bigquery.BigQuery;
-import com.google.cloud.bigquery.InsertAllRequest;
-import com.google.cloud.bigquery.InsertAllResponse;
-import com.google.cloud.bigquery.TableId;
+import com.google.cloud.bigquery.*;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -14,10 +13,10 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -32,6 +31,7 @@ public class BqSinkTest {
     private InsertAllRequest.Builder builder;
     @Mock
     private InsertAllResponse successfulResponse, failureResponse;
+    private Map<Long, List<BigQueryError>> insertErrors;
 
     @Before
     public void setUp() {
@@ -41,6 +41,10 @@ public class BqSinkTest {
         when(successfulResponse.hasErrors()).thenReturn(false);
         when(bigquery.insertAll(any())).thenReturn(successfulResponse);
         when(failureResponse.hasErrors()).thenReturn(true);
+        insertErrors = new HashMap<>();
+        List<BigQueryError> columnError = Arrays.asList(new BigQueryError("failed since type mismatched", "column location", "message"));
+        insertErrors.put(0L, columnError);
+        when(failureResponse.getInsertErrors()).thenReturn(insertErrors);
     }
 
     @Test
@@ -81,6 +85,8 @@ public class BqSinkTest {
 
         verify(bigquery).insertAll(request);
         assertFalse("Should return false", status.isSuccess());
+        assertTrue(status.getException().isPresent());
+        assertEquals(insertErrors, ((BqInsertErrors) status.getException().get()).getErrors());
     }
 
     private Map<String, Object> createUser(String alice) {
