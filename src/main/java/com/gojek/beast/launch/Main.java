@@ -63,7 +63,6 @@ public class Main {
 
         Sink<Record> bqSink = new BqSink(bq, TableId.of(appConfig.getDataset(), appConfig.getTable()));
 
-
         List<Worker> bqWorkers = spinBqWorkers(appConfig, queue, bqSink);
         addShutDownHooks(bqWorkers);
         spinConsumers(messageConsumer);
