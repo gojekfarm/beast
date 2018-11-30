@@ -11,7 +11,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 import static org.mockito.Mockito.*;
 
@@ -27,7 +26,7 @@ public class BqQueueWorkerTest {
     @Before
     public void setUp() {
         pollTimeout = 200;
-        workerConfig = new WorkerConfig(pollTimeout, TimeUnit.MILLISECONDS);
+        workerConfig = new WorkerConfig(pollTimeout);
     }
 
     @Test

@@ -11,9 +11,11 @@ Kafka to BigQuery Sink
 ### Laundary List
 * Add `errors` to the `Status` object, in case there is partial success for a batch of messages.
 * remove artifactory creds
+* When specifying kafka topic, use regex, rather tha singleton
 * validation on configuration eg: duplicates in `proto_field_mappings`
 * retry on fail
 * Implement DLQ
+* Add logging configuration from env vars
 
 ### Enhancements
 * Use java 10
@@ -21,6 +23,8 @@ Kafka to BigQuery Sink
 * Find package like factorybot, and make factories
 * Refactor KafkaConsumerUtil
 * Show code coverage in CLI on test run
+* Update all libraries to latest version
+* Add Draft for development
 
 ### Reading List
 * Custom Mappers

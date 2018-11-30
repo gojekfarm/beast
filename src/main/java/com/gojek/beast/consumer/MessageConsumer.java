@@ -1,10 +1,11 @@
 package com.gojek.beast.consumer;
 
 import com.gojek.beast.converter.Converter;
-import com.gojek.beast.models.ParseException;
-import com.gojek.beast.sink.Sink;
-import com.gojek.beast.models.Status;
 import com.gojek.beast.models.FailureStatus;
+import com.gojek.beast.models.ParseException;
+import com.gojek.beast.models.Status;
+import com.gojek.beast.models.SuccessStatus;
+import com.gojek.beast.sink.Sink;
 import com.gojek.beast.sink.bq.Record;
 import lombok.AllArgsConstructor;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -18,10 +19,13 @@ public class MessageConsumer {
     private final KafkaConsumer<byte[], byte[]> kafkaConsumer;
     private final Sink<Record> sink;
     private final Converter recordConverter;
-    private final long timeout;
+    private final long timeoutMillis;
 
     public Status consume() {
-        ConsumerRecords<byte[], byte[]> messages = kafkaConsumer.poll(timeout);
+        ConsumerRecords<byte[], byte[]> messages = kafkaConsumer.poll(timeoutMillis);
+        if (messages.isEmpty()) {
+            return new SuccessStatus();
+        }
         List<Record> records;
         try {
             records = recordConverter.convert(messages);

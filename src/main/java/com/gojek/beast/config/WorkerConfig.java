@@ -9,5 +9,5 @@ import java.util.concurrent.TimeUnit;
 @Data
 public class WorkerConfig {
     private final long timeout;
-    private final TimeUnit timeoutUnit;
+    private final TimeUnit timeoutUnit = TimeUnit.MILLISECONDS;
 }

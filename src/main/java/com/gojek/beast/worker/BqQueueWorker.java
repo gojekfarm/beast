@@ -1,6 +1,7 @@
 package com.gojek.beast.worker;
 
 import com.gojek.beast.config.WorkerConfig;
+import com.gojek.beast.models.Status;
 import com.gojek.beast.sink.Sink;
 import com.gojek.beast.sink.bq.Record;
 
@@ -25,7 +26,7 @@ public class BqQueueWorker implements Worker {
             try {
                 Iterable<Record> poll = queue.poll(config.getTimeout(), config.getTimeoutUnit());
                 if (poll != null) {
-                    sink.push(poll);
+                    Status push = sink.push(poll);
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
