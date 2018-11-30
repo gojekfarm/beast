@@ -1,4 +1,4 @@
-package com.gojek.beast;
+package com.gojek.beast.launch;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;

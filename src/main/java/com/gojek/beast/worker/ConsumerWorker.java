@@ -1,7 +1,6 @@
 package com.gojek.beast.worker;
 
 import com.gojek.beast.consumer.MessageConsumer;
-import com.gojek.beast.models.Status;
 
 public class ConsumerWorker implements Worker {
     private final MessageConsumer messageConsumer;
@@ -14,12 +13,12 @@ public class ConsumerWorker implements Worker {
     @Override
     public void run() {
         do {
-            Status consume = messageConsumer.consume();
+            messageConsumer.consume();
         } while (!stop);
     }
 
     @Override
     public void stop() {
-        this.stop = true;
+        stop = true;
     }
 }
