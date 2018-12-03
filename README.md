@@ -22,8 +22,9 @@ Run `cp env/sample.properties env/local.properties` and update the values
 * Inject BQ creation timestamp in the table
 
 ### Enhancements
-* Use java 10
+* BqSinkWorker - bqsink.push() could be made as async with commit in callback
 * Use jib to create docker image
+* Use java 11
 * Find package like factorybot, and make factories
 * Refactor KafkaConsumerUtil
 * Update all libraries to latest version

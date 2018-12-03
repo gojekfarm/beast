@@ -15,4 +15,8 @@ public class Records implements Iterable<Record> {
     public Records(List<Record> records) {
         this.records = records;
     }
+
+    public OffsetInfo getMaxOffsetInfo() {
+        return offsetInfo;
+    }
 }
