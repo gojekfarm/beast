@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<ruleset name="de-ruleset">
+    <description>
+        Just for complexity
+    </description>
+
+    <rule ref="rulesets/java/codesize.xml/CyclomaticComplexity">
+        <properties>
+            <property name="reportLevel" value="5"/>
+        </properties>
+    </rule>
+
+    <rule ref="rulesets/java/unnecessary.xml">
+
+        <!-- In many places in Apache Commons Math, there are complex boolean expressions.
+             We do use extra parentheses there as most people do not recall operator precedence,
+             this means even if the parentheses are useless for the compiler, we don't consider
+             them useless for the developer. This is the reason why we disable this rule. -->
+        <exclude name="UselessParentheses"/>
+
+        <!-- At several places in the optimization package, we set up public "optimize" methods
+             that simply call their base class optimize method. This is intentional and allows
+             to update the javadoc and make sure the additional parameters implemented at the
+             lower class level are properly documented. These new parameters are really taken
+             into accound despite we merely call super.optimize because the top level optimze
+             methods call a protected parseOptimizationData method implemented in the specialized
+             class. This is the reason why we disable this rule. -->
+        <exclude name="UselessOverridingMethod"/>
+
+    </rule>
+
+</ruleset>

@@ -2,14 +2,12 @@
 
 Kafka to BigQuery Sink
 
+### Setup:
+Run `cp env/sample.properties env/local.properties` and update the values
 
 ### Task List:
- * [x] convert dynamic message -> Map<String,Object> -> Record
- * [x] get List<Dynamic msg> from ConsumerRecords<K,V> (using stencil)
- * [x] consumer to consume messages
- * [x] queue to pass messages 
- * [x] Logging
  * [] Emit stats
+ * [] Committer
  
 ### Laundary List
 * Add `errors` to the `Status` object, in case there is partial success for a batch of messages.
@@ -19,6 +17,8 @@ Kafka to BigQuery Sink
 * retry on fail
 * Implement DeadLetterQueue
 * Add logging configuration from env vars
+* Refactor `BQSink.push()`
+* Clean up `build.gradle` and upgrade it
 
 ### Enhancements
 * Use java 10
