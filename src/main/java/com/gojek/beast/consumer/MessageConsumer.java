@@ -3,10 +3,11 @@ package com.gojek.beast.consumer;
 import com.gojek.beast.converter.Converter;
 import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.models.ParseException;
+import com.gojek.beast.models.Record;
+import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
 import com.gojek.beast.models.SuccessStatus;
 import com.gojek.beast.sink.Sink;
-import com.gojek.beast.sink.bq.Record;
 import lombok.AllArgsConstructor;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -20,7 +21,7 @@ public class MessageConsumer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageConsumer.class.getName());
     private final KafkaConsumer<byte[], byte[]> kafkaConsumer;
-    private final Sink<Record> sink;
+    private final Sink sink;
     private final Converter recordConverter;
     private final long timeoutMillis;
 
@@ -38,6 +39,6 @@ public class MessageConsumer {
             LOGGER.error("Error while converting messages: {}", failure.toString());
             return failure;
         }
-        return sink.push(records);
+        return sink.push(new Records(records));
     }
 }

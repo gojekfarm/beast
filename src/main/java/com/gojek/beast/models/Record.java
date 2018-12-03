@@ -1,4 +1,4 @@
-package com.gojek.beast.sink.bq;
+package com.gojek.beast.models;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

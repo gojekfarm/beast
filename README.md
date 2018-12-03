@@ -19,13 +19,13 @@ Run `cp env/sample.properties env/local.properties` and update the values
 * Add logging configuration from env vars
 * Refactor `BQSink.push()`
 * Clean up `build.gradle` and upgrade it
+* Inject BQ creation timestamp in the table
 
 ### Enhancements
 * Use java 10
 * Use jib to create docker image
 * Find package like factorybot, and make factories
 * Refactor KafkaConsumerUtil
-* Show code coverage in CLI on test run
 * Update all libraries to latest version
 * Add Draft for development
 

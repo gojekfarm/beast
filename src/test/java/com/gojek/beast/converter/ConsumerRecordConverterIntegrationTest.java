@@ -5,7 +5,7 @@ import com.gojek.beast.config.ColumnMapping;
 import com.gojek.beast.models.ParseException;
 import com.gojek.beast.parser.Parser;
 import com.gojek.beast.parser.ProtoParser;
-import com.gojek.beast.sink.bq.Record;
+import com.gojek.beast.models.Record;
 import com.gojek.beast.util.KafkaConsumerUtil;
 import com.gojek.de.stencil.StencilClientFactory;
 import org.apache.kafka.clients.consumer.ConsumerRecord;

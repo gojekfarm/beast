@@ -1,8 +1,9 @@
 package com.gojek.beast.sink;
 
+import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
 import com.gojek.beast.sink.bq.BqSink;
-import com.gojek.beast.sink.bq.Record;
+import com.gojek.beast.models.Record;
 import com.google.api.client.http.LowLevelHttpResponse;
 import com.google.api.client.testing.http.MockHttpTransport;
 import com.google.api.client.testing.http.MockLowLevelHttpRequest;
@@ -71,7 +72,7 @@ public class BqIntegrationTest {
         columns.put("location", 25123);
         columns.put("created_at", new DateTime(new Date()));
 
-        Status push = bqSink.push(Arrays.asList(new Record(columns)));
+        Status push = bqSink.push(new Records(Arrays.asList(new Record(columns))));
 
         assertTrue(push.isSuccess());
     }

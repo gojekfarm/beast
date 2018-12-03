@@ -1,9 +1,10 @@
 package com.gojek.beast.sink;
 
+import com.gojek.beast.models.Record;
+import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
 import com.gojek.beast.sink.bq.BqInsertErrors;
 import com.gojek.beast.sink.bq.BqSink;
-import com.gojek.beast.sink.bq.Record;
 import com.google.cloud.bigquery.*;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,7 +27,7 @@ public class BqSinkTest {
 
     @Mock
     private BigQuery bigquery;
-    private Sink<Record> sink;
+    private Sink sink;
     private TableId tableId;
     private InsertAllRequest.Builder builder;
     @Mock
@@ -51,7 +52,7 @@ public class BqSinkTest {
     public void shouldPushMessageToBigQuerySuccessfully() {
         Map<String, Object> user1 = createUser("alice");
         InsertAllRequest request = builder.addRow(user1).build();
-        Iterable<Record> records = Arrays.asList(new Record(user1));
+        Records records = new Records(Arrays.asList(new Record(user1)));
 
         Status status = sink.push(records);
 
@@ -65,7 +66,7 @@ public class BqSinkTest {
         Map<String, Object> user2 = createUser("bob");
         Map<String, Object> user3 = createUser("mary");
         InsertAllRequest request = builder.addRow(user1).addRow(user2).addRow(user3).build();
-        Iterable<Record> records = Arrays.asList(new Record(user1), new Record(user2), new Record(user3));
+        Records records = new Records(Arrays.asList(new Record(user1), new Record(user2), new Record(user3)));
 
         Status status = sink.push(records);
 
@@ -78,7 +79,7 @@ public class BqSinkTest {
     public void shouldErrorWhenBigQueryInsertFails() {
         Map<String, Object> user1 = createUser("alice");
         InsertAllRequest request = builder.addRow(user1).build();
-        Iterable<Record> records = Arrays.asList(new Record(user1));
+        Records records = new Records(Arrays.asList(new Record(user1)));
         when(bigquery.insertAll(request)).thenReturn(failureResponse);
 
         Status status = sink.push(records);

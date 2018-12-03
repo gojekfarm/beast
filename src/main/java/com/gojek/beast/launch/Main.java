@@ -10,11 +10,11 @@ import com.gojek.beast.config.WorkerConfig;
 import com.gojek.beast.consumer.MessageConsumer;
 import com.gojek.beast.converter.ConsumerRecordConverter;
 import com.gojek.beast.converter.RowMapper;
+import com.gojek.beast.models.Records;
 import com.gojek.beast.parser.ProtoParser;
 import com.gojek.beast.sink.QueueSink;
 import com.gojek.beast.sink.Sink;
 import com.gojek.beast.sink.bq.BqSink;
-import com.gojek.beast.sink.bq.Record;
 import com.gojek.beast.worker.BqQueueWorker;
 import com.gojek.beast.worker.ConsumerWorker;
 import com.gojek.beast.worker.Worker;
@@ -55,13 +55,13 @@ public class Main {
 
         BigQuery bq = getBigQueryInstance(appConfig);
 
-        BlockingQueue<Iterable<Record>> queue = new LinkedBlockingQueue<>(appConfig.getQueueCapacity());
+        BlockingQueue<Records> queue = new LinkedBlockingQueue<>(appConfig.getQueueCapacity());
         QueueSink sink = new QueueSink(queue);
         ProtoParser protoParser = new ProtoParser(StencilClientFactory.getClient(appConfig.getStencilUrl(), new HashMap<>()), appConfig.getProtoSchema());
         ConsumerRecordConverter parser = new ConsumerRecordConverter(new RowMapper(columnMapping), protoParser);
         MessageConsumer messageConsumer = new MessageConsumer(kafkaConsumer, sink, parser, appConfig.getConsumerPollTimeoutMs());
 
-        Sink<Record> bqSink = new BqSink(bq, TableId.of(appConfig.getDataset(), appConfig.getTable()));
+        Sink bqSink = new BqSink(bq, TableId.of(appConfig.getDataset(), appConfig.getTable()));
 
         List<Worker> bqWorkers = spinBqWorkers(appConfig, queue, bqSink);
         addShutDownHooks(bqWorkers);
@@ -100,7 +100,7 @@ public class Main {
         return Arrays.asList(worker);
     }
 
-    private static List<Worker> spinBqWorkers(AppConfig appConfig, BlockingQueue<Iterable<Record>> queue, Sink<Record> bqSink) {
+    private static List<Worker> spinBqWorkers(AppConfig appConfig, BlockingQueue<Records> queue, Sink bqSink) {
         Integer bqWorkerPoolSize = appConfig.getBqWorkerPoolSize();
         List<Worker> threads = new ArrayList<>(bqWorkerPoolSize);
         for (int i = 0; i < bqWorkerPoolSize; i++) {

@@ -1,8 +1,8 @@
 package com.gojek.beast.converter;
 
 import com.gojek.beast.models.ParseException;
+import com.gojek.beast.models.Record;
 import com.gojek.beast.parser.Parser;
-import com.gojek.beast.sink.bq.Record;
 import lombok.AllArgsConstructor;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 

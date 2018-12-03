@@ -1,13 +1,13 @@
 package com.gojek.beast.sink;
 
+import com.gojek.beast.models.Record;
+import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
-import com.gojek.beast.sink.bq.Record;
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -18,13 +18,13 @@ import static org.mockito.Mockito.mock;
 
 public class QueueSinkTest {
 
-    private Sink<Record> queueSink;
+    private Sink queueSink;
 
     @Test
     public void shouldPushMessageToQueue() throws InterruptedException {
-        BlockingQueue<Iterable<Record>> queue = new LinkedBlockingQueue<>();
+        BlockingQueue<Records> queue = new LinkedBlockingQueue<>();
         queueSink = new QueueSink(queue);
-        List<Record> messages = Collections.singletonList(new Record(new HashMap<>()));
+        Records messages = new Records(Collections.singletonList(new Record(new HashMap<>())));
 
         Status status = queueSink.push(messages);
 
@@ -35,9 +35,9 @@ public class QueueSinkTest {
 
     @Test
     public void shouldPushMultipleMessagesToQueue() throws InterruptedException {
-        BlockingQueue<Iterable<Record>> queue = new LinkedBlockingQueue<>();
+        BlockingQueue<Records> queue = new LinkedBlockingQueue<>();
         queueSink = new QueueSink(queue);
-        List<Record> messages = Arrays.asList(new Record(new HashMap<>()), new Record(new HashMap<>()));
+        Records messages = new Records(Arrays.asList(new Record(new HashMap<>()), new Record(new HashMap<>())));
 
         Status status = queueSink.push(messages);
 
@@ -48,8 +48,8 @@ public class QueueSinkTest {
 
     @Test
     public void shouldReturnFailureStatusOnException() throws InterruptedException {
-        BlockingQueue<Iterable<Record>> queue = mock(BlockingQueue.class);
-        List<Record> messages = Arrays.asList(new Record(new HashMap<>()), new Record(new HashMap<>()));
+        BlockingQueue<Records> queue = mock(BlockingQueue.class);
+        Records messages = new Records(Arrays.asList(new Record(new HashMap<>()), new Record(new HashMap<>())));
         queueSink = new QueueSink(queue);
         doThrow(new InterruptedException()).when(queue).put(messages);
 
