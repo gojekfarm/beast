@@ -25,6 +25,12 @@ public class KafkaConsumerUtil {
         return this;
     }
 
+    public KafkaConsumerUtil withTopic(String value) {
+        topic = value;
+        return this;
+    }
+
+
     public ConsumerRecord<byte[], byte[]> createConsumerRecord(String orderNumber, String orderUrl, String orderDetails) {
         TestKey key = TestKey.newBuilder()
                 .setOrderNumber(orderNumber)

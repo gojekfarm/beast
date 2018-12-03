@@ -1,5 +1,6 @@
 package com.gojek.beast.sink;
 
+import com.gojek.beast.models.OffsetInfo;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
 import com.gojek.beast.sink.bq.BqSink;
@@ -72,7 +73,7 @@ public class BqIntegrationTest {
         columns.put("location", 25123);
         columns.put("created_at", new DateTime(new Date()));
 
-        Status push = bqSink.push(new Records(Arrays.asList(new Record(columns))));
+        Status push = bqSink.push(new Records(Arrays.asList(new Record(new OffsetInfo("default-topic", 0, 0), columns))));
 
         assertTrue(push.isSuccess());
     }

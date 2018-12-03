@@ -1,5 +1,6 @@
 package com.gojek.beast.converter;
 
+import com.gojek.beast.models.OffsetInfo;
 import com.gojek.beast.models.ParseException;
 import com.gojek.beast.models.Record;
 import com.gojek.beast.parser.Parser;
@@ -20,7 +21,8 @@ public class ConsumerRecordConverter implements Converter {
         for (ConsumerRecord<byte[], byte[]> message : messages) {
             byte[] value = message.value();
             Map<String, Object> columns = rowMapper.map(parser.parse(value));
-            records.add(new Record(columns));
+            OffsetInfo offsetInfo = new OffsetInfo(message.topic(), message.partition(), message.offset());
+            records.add(new Record(offsetInfo, columns));
         }
         return records;
     }

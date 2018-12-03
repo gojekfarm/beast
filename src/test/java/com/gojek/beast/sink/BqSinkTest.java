@@ -1,11 +1,16 @@
 package com.gojek.beast.sink;
 
+import com.gojek.beast.models.OffsetInfo;
 import com.gojek.beast.models.Record;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
 import com.gojek.beast.sink.bq.BqInsertErrors;
 import com.gojek.beast.sink.bq.BqSink;
-import com.google.cloud.bigquery.*;
+import com.google.cloud.bigquery.BigQuery;
+import com.google.cloud.bigquery.BigQueryError;
+import com.google.cloud.bigquery.InsertAllRequest;
+import com.google.cloud.bigquery.InsertAllResponse;
+import com.google.cloud.bigquery.TableId;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -17,7 +22,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -25,6 +32,7 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class BqSinkTest {
 
+    private final OffsetInfo offsetInfo = new OffsetInfo("default-topic", 0, 0);
     @Mock
     private BigQuery bigquery;
     private Sink sink;
@@ -52,7 +60,7 @@ public class BqSinkTest {
     public void shouldPushMessageToBigQuerySuccessfully() {
         Map<String, Object> user1 = createUser("alice");
         InsertAllRequest request = builder.addRow(user1).build();
-        Records records = new Records(Arrays.asList(new Record(user1)));
+        Records records = new Records(Arrays.asList(new Record(offsetInfo, user1)));
 
         Status status = sink.push(records);
 
@@ -66,7 +74,7 @@ public class BqSinkTest {
         Map<String, Object> user2 = createUser("bob");
         Map<String, Object> user3 = createUser("mary");
         InsertAllRequest request = builder.addRow(user1).addRow(user2).addRow(user3).build();
-        Records records = new Records(Arrays.asList(new Record(user1), new Record(user2), new Record(user3)));
+        Records records = new Records(Arrays.asList(new Record(offsetInfo, user1), new Record(offsetInfo, user2), new Record(offsetInfo, user3)));
 
         Status status = sink.push(records);
 
@@ -79,7 +87,7 @@ public class BqSinkTest {
     public void shouldErrorWhenBigQueryInsertFails() {
         Map<String, Object> user1 = createUser("alice");
         InsertAllRequest request = builder.addRow(user1).build();
-        Records records = new Records(Arrays.asList(new Record(user1)));
+        Records records = new Records(Arrays.asList(new Record(offsetInfo, user1)));
         when(bigquery.insertAll(request)).thenReturn(failureResponse);
 
         Status status = sink.push(records);
