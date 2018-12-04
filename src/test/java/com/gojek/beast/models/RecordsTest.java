@@ -24,10 +24,10 @@ public class RecordsTest {
                 new Record(new OffsetInfo(topic, partition, 101), null)
         );
 
-        Map<TopicPartition, OffsetAndMetadata> actualMaxOffsetInfo = new Records(records).getPartitionsMaxOffset();
+        Map<TopicPartition, OffsetAndMetadata> actualMaxOffsetInfo = new Records(records).getPartitionsCommitOffset();
 
         assertEquals(1, actualMaxOffsetInfo.size());
-        assertEquals(maxOffset, actualMaxOffsetInfo.get(new TopicPartition(topic, partition)).offset());
+        assertEquals(maxOffset + 1, actualMaxOffsetInfo.get(new TopicPartition(topic, partition)).offset());
     }
 
     @Test
@@ -46,20 +46,20 @@ public class RecordsTest {
                 new Record(new OffsetInfo(topic, partition1, 102), null)
         );
 
-        Map<TopicPartition, OffsetAndMetadata> actualMaxOffsetInfo = new Records(records).getPartitionsMaxOffset();
+        Map<TopicPartition, OffsetAndMetadata> actualMaxOffsetInfo = new Records(records).getPartitionsCommitOffset();
 
         assertEquals(2, actualMaxOffsetInfo.size());
-        assertEquals(partition0MaxOffset, actualMaxOffsetInfo.get(new TopicPartition(topic, partition0)).offset());
-        assertEquals(partition1MaxOffset, actualMaxOffsetInfo.get(new TopicPartition(topic, partition1)).offset());
+        assertEquals(partition0MaxOffset + 1, actualMaxOffsetInfo.get(new TopicPartition(topic, partition0)).offset());
+        assertEquals(partition1MaxOffset + 1, actualMaxOffsetInfo.get(new TopicPartition(topic, partition1)).offset());
     }
 
     @Test
     public void shouldCacheTheMaxOffsetInfo() {
         Records records = new Records(Arrays.asList(new Record(new OffsetInfo("topic", 0, 100), null)));
 
-        Map<TopicPartition, OffsetAndMetadata> actualMaxOffsetInfo = records.getPartitionsMaxOffset();
+        Map<TopicPartition, OffsetAndMetadata> actualMaxOffsetInfo = records.getPartitionsCommitOffset();
 
-        assertSame(actualMaxOffsetInfo, records.getPartitionsMaxOffset());
-        assertSame(actualMaxOffsetInfo, records.getPartitionsMaxOffset());
+        assertSame(actualMaxOffsetInfo, records.getPartitionsCommitOffset());
+        assertSame(actualMaxOffsetInfo, records.getPartitionsCommitOffset());
     }
 }

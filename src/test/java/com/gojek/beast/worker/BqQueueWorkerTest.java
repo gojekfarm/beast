@@ -44,7 +44,7 @@ public class BqQueueWorkerTest {
         pollTimeout = 200;
         workerConfig = new WorkerConfig(pollTimeout);
         when(successfulSink.push(any())).thenReturn(new SuccessStatus());
-        when(messages.getPartitionsMaxOffset()).thenReturn(offsetInfos);
+        when(messages.getPartitionsCommitOffset()).thenReturn(offsetInfos);
     }
 
     @Test
