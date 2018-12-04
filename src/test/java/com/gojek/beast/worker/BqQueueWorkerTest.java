@@ -3,16 +3,18 @@ package com.gojek.beast.worker;
 import com.gojek.beast.commiter.Committer;
 import com.gojek.beast.config.WorkerConfig;
 import com.gojek.beast.models.FailureStatus;
-import com.gojek.beast.models.OffsetInfo;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.SuccessStatus;
 import com.gojek.beast.sink.Sink;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.common.TopicPartition;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -24,7 +26,6 @@ import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class BqQueueWorkerTest {
-    private final OffsetInfo offsetInfo = new OffsetInfo("successful-topic", 0, 0);
     @Mock
     private Sink successfulSink;
     @Mock
@@ -35,13 +36,15 @@ public class BqQueueWorkerTest {
     private Committer committer;
     @Mock
     private Sink failureSink;
+    @Mock
+    private Map<TopicPartition, OffsetAndMetadata> offsetInfos;
 
     @Before
     public void setUp() {
         pollTimeout = 200;
         workerConfig = new WorkerConfig(pollTimeout);
         when(successfulSink.push(any())).thenReturn(new SuccessStatus());
-        when(messages.getMaxOffsetInfo()).thenReturn(offsetInfo);
+        when(messages.getPartitionsMaxOffset()).thenReturn(offsetInfos);
     }
 
     @Test
@@ -87,7 +90,7 @@ public class BqQueueWorkerTest {
         closeWorker(worker, 1000);
         workerThread.join();
         verify(successfulSink).push(messages);
-        verify(committer).acknowledge(offsetInfo);
+        verify(committer).acknowledge(offsetInfos);
     }
 
 

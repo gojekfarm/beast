@@ -8,6 +8,12 @@ Run `cp env/sample.properties env/local.properties` and update the values
 ### Task List:
  * [] Emit stats
  * [] Committer
+    * [] get MaxOffset for batch for each partition in Record
+    * [] Have a global set, to which BQ worker threads will push acknowledgements
+    * [] A thread to commit offsets by using both - CommitQueue & Global set
+    * [] Have a `SinkPusher` which will push messages to QueueSink & CommitSink
+    
+ 
  
 ### Laundary List
 * Add `errors` to the `Status` object, in case there is partial success for a batch of messages.
