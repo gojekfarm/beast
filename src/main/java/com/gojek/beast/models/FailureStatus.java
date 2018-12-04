@@ -2,7 +2,6 @@ package com.gojek.beast.models;
 
 import java.util.Optional;
 
-
 public class FailureStatus implements Status {
     private Exception cause;
     private String message;

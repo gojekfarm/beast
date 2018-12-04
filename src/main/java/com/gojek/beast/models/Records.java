@@ -21,7 +21,7 @@ public class Records implements Iterable<Record> {
     }
 
     public Map<TopicPartition, OffsetAndMetadata> getPartitionsCommitOffset() {
-        // kafka commit requires offset + 1 (next offset) 
+        // kafka commit requires offset + 1 (next offset)
         if (!partitionsCommitOffset.isEmpty()) {
             return partitionsCommitOffset;
         }
