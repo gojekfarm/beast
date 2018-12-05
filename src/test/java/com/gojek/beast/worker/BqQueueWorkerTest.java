@@ -6,6 +6,7 @@ import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.SuccessStatus;
 import com.gojek.beast.sink.Sink;
+import com.gojek.beast.util.WorkerUtil;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.Before;
@@ -26,6 +27,7 @@ import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class BqQueueWorkerTest {
+
     @Mock
     private Sink successfulSink;
     @Mock
@@ -56,7 +58,7 @@ public class BqQueueWorkerTest {
         Thread thread = new Thread(worker);
         thread.start();
 
-        closeWorker(worker, 100);
+        WorkerUtil.closeWorker(worker, 100);
         thread.join();
         verify(successfulSink).push(messages);
     }
@@ -72,7 +74,7 @@ public class BqQueueWorkerTest {
         Thread workerThread = new Thread(worker);
         workerThread.start();
 
-        closeWorker(worker, 100);
+        WorkerUtil.closeWorker(worker, 100);
         workerThread.join();
         verify(successfulSink).push(messages);
         verify(successfulSink).push(messages2);
@@ -87,12 +89,11 @@ public class BqQueueWorkerTest {
         Thread workerThread = new Thread(worker);
         workerThread.start();
 
-        closeWorker(worker, 1000);
+        WorkerUtil.closeWorker(worker, 1000);
         workerThread.join();
         verify(successfulSink).push(messages);
         verify(committer).acknowledge(offsetInfos);
     }
-
 
     @Test
     public void shouldNotAckAfterFailurePush() throws InterruptedException {
@@ -105,12 +106,11 @@ public class BqQueueWorkerTest {
         Thread workerThread = new Thread(worker);
         workerThread.start();
 
-        closeWorker(worker, 100);
+        WorkerUtil.closeWorker(worker, 100);
         workerThread.join();
         verify(failureSink).push(messages);
         verify(committer, never()).acknowledge(any());
     }
-
 
     @Test
     public void shouldNotPushToSinkIfNoMessage() throws InterruptedException {
@@ -120,19 +120,9 @@ public class BqQueueWorkerTest {
 
         workerThread.start();
 
-        closeWorker(worker, 200);
+        WorkerUtil.closeWorker(worker, 200);
         workerThread.join();
         verify(successfulSink, never()).push(any());
     }
 
-    private void closeWorker(BqQueueWorker worker, int sleepMillis) {
-        new Thread(() -> {
-            try {
-                Thread.sleep(sleepMillis);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            worker.stop();
-        }).start();
-    }
 }
