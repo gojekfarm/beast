@@ -9,12 +9,16 @@ import lombok.Setter;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
 public class OffsetCommitter implements Sink, Committer, Worker {
+    private static final Logger LOGGER = LoggerFactory.getLogger(OffsetCommitter.class.getName());
+
     private static final int DEFAULT_SLEEP_MS = 100;
     private Queue<Records> commitQueue;
     private Set<Map<TopicPartition, OffsetAndMetadata>> partitionOffsetAck;
@@ -51,8 +55,11 @@ public class OffsetCommitter implements Sink, Committer, Worker {
             Records commitOffset = commitQueue.peek();
             if (commitOffset != null && partitionOffsetAck.contains(commitOffset.getPartitionsCommitOffset())) {
                 Map<TopicPartition, OffsetAndMetadata> partitionsCommitOffset = commitQueue.remove().getPartitionsCommitOffset();
-                consumer.commitSync(partitionsCommitOffset);
+                synchronized (consumer) {
+                    consumer.commitSync(partitionsCommitOffset);
+                }
                 partitionOffsetAck.remove(partitionsCommitOffset);
+                LOGGER.info("commit partition {} size {}", partitionsCommitOffset.toString(), partitionsCommitOffset.size());
             } else {
                 try {
                     Thread.sleep(defaultSleepMs);

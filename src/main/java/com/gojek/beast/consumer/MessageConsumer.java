@@ -26,7 +26,10 @@ public class MessageConsumer {
     private final long timeoutMillis;
 
     public Status consume() {
-        ConsumerRecords<byte[], byte[]> messages = kafkaConsumer.poll(timeoutMillis);
+        ConsumerRecords<byte[], byte[]> messages;
+        synchronized (kafkaConsumer) {
+            messages = kafkaConsumer.poll(timeoutMillis);
+        }
         LOGGER.info("Pulled {} messages", messages.count());
         if (messages.isEmpty()) {
             return new SuccessStatus();

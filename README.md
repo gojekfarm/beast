@@ -7,12 +7,10 @@ Run `cp env/sample.properties env/local.properties` and update the values
 
 ### Task List:
  * [] Emit stats
- * [] Committer
-    * [x] get MaxOffset for batch for each partition in Record
-    * [x] Have a global set, to which BQ worker threads will push acknowledgements
-    * [] A thread to commit offsets by using both - CommitQueue & Global set
-    * [] Have a `SinkPusher` which will push messages to QueueSink & CommitSink
-    
+ * [] Offset Committer consumer commit currently needs to be wrapped in synchronized
+ * [] Test for synchronised threads for kafka consumer
+ * [] Interface for kafka consumer (wrap threads in synchronised block) 
+
 ### Laundary List
 * [x] Add `errors` to the `Status` object, in case there is partial success for a batch of messages.
 * [] remove artifactory creds
