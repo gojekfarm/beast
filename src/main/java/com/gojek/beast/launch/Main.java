@@ -1,8 +1,5 @@
 package com.gojek.beast.launch;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.LoggerContext;
 import com.gojek.beast.commiter.Committer;
 import com.gojek.beast.commiter.OffsetCommitter;
 import com.gojek.beast.config.AppConfig;
@@ -27,12 +24,12 @@ import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.BigQueryOptions;
 import com.google.cloud.bigquery.TableId;
+import lombok.extern.slf4j.Slf4j;
 import org.aeonbits.owner.ConfigFactory;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.consumer.internals.NoOpConsumerRebalanceListener;
 import org.apache.kafka.common.TopicPartition;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -49,11 +46,9 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.regex.Pattern;
 
-
+@Slf4j
 public class Main {
     public static void main(String[] args) {
-        setLogLevel();
-
         AppConfig appConfig = ConfigFactory.create(AppConfig.class, System.getenv());
         Map<String, Object> consumerConfig = new KafkaConfig(appConfig.getKafkaConfigPrefix()).get();
         ColumnMapping columnMapping = appConfig.getProtoColumnMapping();
@@ -64,9 +59,9 @@ public class Main {
         //BigQuery
         Sink bqSink = buildBqSink(appConfig);
 
-        BlockingQueue<Records> readQueue = new LinkedBlockingQueue<>(appConfig.getQueueCapacity());
+        BlockingQueue<Records> readQueue = new LinkedBlockingQueue<>(appConfig.getReadQueueCapacity());
 
-        BlockingQueue<Records> committerQueue = new LinkedBlockingQueue<>(10 * appConfig.getQueueCapacity());
+        BlockingQueue<Records> committerQueue = new LinkedBlockingQueue<>(appConfig.getCommitQueueCapacity());
         QueueSink queueSink = new QueueSink(readQueue);
         Set<Map<TopicPartition, OffsetAndMetadata>> partitionsAck = Collections.synchronizedSet(new CopyOnWriteArraySet<Map<TopicPartition, OffsetAndMetadata>>());
         OffsetCommitter committer = new OffsetCommitter(committerQueue, partitionsAck, kafkaConsumer);
@@ -91,12 +86,6 @@ public class Main {
     private static Sink buildBqSink(AppConfig appConfig) {
         BigQuery bq = getBigQueryInstance(appConfig);
         return new BqSink(bq, TableId.of(appConfig.getDataset(), appConfig.getTable()));
-    }
-
-    private static void setLogLevel() {
-        LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-        Logger rootLogger = loggerContext.getLogger("org.apache.kafka.clients");
-        rootLogger.setLevel(Level.INFO);
     }
 
     private static BigQuery getBigQueryInstance(AppConfig appConfig) {
@@ -137,4 +126,3 @@ public class Main {
         return threads;
     }
 }
-

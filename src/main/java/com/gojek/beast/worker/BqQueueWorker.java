@@ -4,9 +4,11 @@ import com.gojek.beast.commiter.Committer;
 import com.gojek.beast.config.WorkerConfig;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.sink.Sink;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.BlockingQueue;
 
+@Slf4j
 public class BqQueueWorker implements Worker {
     // Should have separate instance of sink for this worker
     private final Sink sink;
@@ -31,7 +33,7 @@ public class BqQueueWorker implements Worker {
                     committer.acknowledge(poll.getPartitionsCommitOffset());
                 }
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                log.error("Failed to poll records from read queue: ", e);
             }
         } while (!stop);
     }

@@ -14,9 +14,13 @@ public interface AppConfig extends Config {
     @Key("STENCIL_URL")
     String getStencilUrl();
 
-    @Key("QUEUE_CAPACITY")
+    @Key("READ_QUEUE_CAPACITY")
     @DefaultValue("20")
-    Integer getQueueCapacity();
+    Integer getReadQueueCapacity();
+
+    @Key("COMMIT_QUEUE_CAPACITY")
+    @DefaultValue("200")
+    Integer getCommitQueueCapacity();
 
     @Key("BQ_WORKER_POLL_TIMEOUT_MS")
     @DefaultValue("50")

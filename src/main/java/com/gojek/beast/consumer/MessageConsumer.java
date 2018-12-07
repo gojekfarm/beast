@@ -9,17 +9,16 @@ import com.gojek.beast.models.Status;
 import com.gojek.beast.models.SuccessStatus;
 import com.gojek.beast.sink.Sink;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
+@Slf4j
 @AllArgsConstructor
 public class MessageConsumer {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MessageConsumer.class.getName());
     private final KafkaConsumer<byte[], byte[]> kafkaConsumer;
     private final Sink sink;
     private final Converter recordConverter;
@@ -30,7 +29,7 @@ public class MessageConsumer {
         synchronized (kafkaConsumer) {
             messages = kafkaConsumer.poll(timeoutMillis);
         }
-        LOGGER.info("Pulled {} messages", messages.count());
+        log.info("Pulled {} messages", messages.count());
         if (messages.isEmpty()) {
             return new SuccessStatus();
         }
@@ -39,7 +38,7 @@ public class MessageConsumer {
             records = recordConverter.convert(messages);
         } catch (ParseException e) {
             Status failure = new FailureStatus(e);
-            LOGGER.error("Error while converting messages: {}", failure.toString());
+            log.error("Error while converting messages: {}", failure.toString());
             return failure;
         }
         return sink.push(new Records(records));

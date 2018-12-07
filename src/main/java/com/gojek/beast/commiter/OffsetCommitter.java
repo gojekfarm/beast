@@ -6,19 +6,17 @@ import com.gojek.beast.models.SuccessStatus;
 import com.gojek.beast.sink.Sink;
 import com.gojek.beast.worker.Worker;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
+@Slf4j
 public class OffsetCommitter implements Sink, Committer, Worker {
-    private static final Logger LOGGER = LoggerFactory.getLogger(OffsetCommitter.class.getName());
-
     private static final int DEFAULT_SLEEP_MS = 100;
     private Queue<Records> commitQueue;
     private Set<Map<TopicPartition, OffsetAndMetadata>> partitionOffsetAck;
@@ -59,7 +57,7 @@ public class OffsetCommitter implements Sink, Committer, Worker {
                     consumer.commitSync(partitionsCommitOffset);
                 }
                 partitionOffsetAck.remove(partitionsCommitOffset);
-                LOGGER.info("commit partition {} size {}", partitionsCommitOffset.toString(), partitionsCommitOffset.size());
+                log.info("commit partition {} size {}", partitionsCommitOffset.toString(), partitionsCommitOffset.size());
             } else {
                 try {
                     Thread.sleep(defaultSleepMs);

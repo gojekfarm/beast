@@ -9,10 +9,10 @@ Run `cp env/sample.properties env/local.properties` and update the values
  * [] Emit stats
  * [] Offset Committer consumer commit currently needs to be wrapped in synchronized
  * [] Test for synchronised threads for kafka consumer
- * [] Interface for kafka consumer (wrap threads in synchronised block) 
+ * [] Interface for kafka consumer (wrap threads in synchronised block)
+ * [] Add topic, partition, offset and bq_creation_timestamp to the created BQ table for auditing
 
-### Laundary List
-* [x] Add `errors` to the `Status` object, in case there is partial success for a batch of messages.
+### Laundry List
 * [] remove artifactory creds
 * [] When specifying kafka topic, use regex, rather tha singleton
 * [] validation on configuration eg: duplicates in `proto_field_mappings`
