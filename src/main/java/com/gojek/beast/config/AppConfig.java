@@ -57,4 +57,8 @@ public interface AppConfig extends Config {
 
     @Key("STATSD_PREFIX")
     String getStatsdPrefix();
+
+    @DefaultValue("false")
+    @Key("STATSD_ENABLED")
+    Boolean isStatsdEnabled();
 }

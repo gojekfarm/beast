@@ -1,6 +1,7 @@
 package com.gojek.beast.stats;
 
 import com.gojek.beast.config.AppConfig;
+import com.timgroup.statsd.NoOpStatsDClient;
 import com.timgroup.statsd.NonBlockingStatsDClient;
 import com.timgroup.statsd.StatsDClient;
 import org.aeonbits.owner.ConfigFactory;
@@ -19,7 +20,9 @@ public final class Stats {
 
     private Stats() {
         this.appConfig = ConfigFactory.create(AppConfig.class, System.getenv());
-        this.statsDClient = new NonBlockingStatsDClient(appConfig.getStatsdPrefix(), appConfig.getStatsdHost(), appConfig.getStatsdPort());
+        this.statsDClient = appConfig.isStatsdEnabled()
+                ? new NonBlockingStatsDClient(appConfig.getStatsdPrefix(), appConfig.getStatsdHost(), appConfig.getStatsdPort())
+                : new NoOpStatsDClient();
     }
 
     public static Stats client() {
