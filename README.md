@@ -6,7 +6,7 @@ Kafka to BigQuery Sink
 Run `cp env/sample.properties env/local.properties` and update the values
 
 ### Task List:
- * [] Emit stats
+ * [] Setup pipeline for deployment
  * [] Offset Committer consumer commit currently needs to be wrapped in synchronized
  * [] Test for synchronised threads for kafka consumer
  * [] Interface for kafka consumer (wrap threads in synchronised block)
@@ -31,6 +31,7 @@ Run `cp env/sample.properties env/local.properties` and update the values
 * [] Refactor KafkaConsumerUtil
 * [] Update all libraries to latest version
 * [] Add Draft for development
+* [] Add option to disable sending stats
 
 ### Reading List
 * [] Custom Mappers

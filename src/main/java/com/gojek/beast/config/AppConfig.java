@@ -49,4 +49,12 @@ public interface AppConfig extends Config {
     @Key("KAFKA_TOPIC")
     String getKafkaTopic();
 
+    @Key("STATSD_HOST")
+    String getStatsdHost();
+
+    @Key("STATSD_PORT")
+    Integer getStatsdPort();
+
+    @Key("STATSD_PREFIX")
+    String getStatsdPrefix();
 }

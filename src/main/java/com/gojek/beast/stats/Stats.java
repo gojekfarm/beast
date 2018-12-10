@@ -1,0 +1,62 @@
+package com.gojek.beast.stats;
+
+import com.gojek.beast.config.AppConfig;
+import com.timgroup.statsd.NonBlockingStatsDClient;
+import com.timgroup.statsd.StatsDClient;
+import org.aeonbits.owner.ConfigFactory;
+import org.apache.commons.lang3.StringUtils;
+
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
+import java.util.stream.Collectors;
+
+public final class Stats {
+    private static final Stats STATS_CLIENT = new Stats();
+
+    private StatsDClient statsDClient;
+    private AppConfig appConfig;
+
+    private Stats() {
+        this.appConfig = ConfigFactory.create(AppConfig.class, System.getenv());
+        this.statsDClient = new NonBlockingStatsDClient(appConfig.getStatsdPrefix(), appConfig.getStatsdHost(), appConfig.getStatsdPort());
+    }
+
+    public static Stats client() {
+        return STATS_CLIENT;
+    }
+
+    public void count(String metric, long delta) {
+        this.statsDClient.count(metric + getDefaultTags(), delta);
+    }
+
+    public void increment(String metric) {
+        this.statsDClient.increment(metric + getDefaultTags());
+    }
+
+    public void gauge(String metric, long delta) {
+        this.statsDClient.gauge(metric + getDefaultTags(), delta);
+    }
+
+    private String getDefaultTags() {
+        HashMap<String, String> desiredTags = new HashMap<>();
+        desiredTags.put("KUBE_NODE_NAME", "node");
+        desiredTags.put("KUBE_POD_NAME", "pod");
+        desiredTags.put("KAFKA_CONSUMER_GROUP_ID", "consumer");
+
+        List<String> tags = desiredTags.entrySet().stream().map((entry) -> {
+            String envVar = System.getenv(entry.getKey());
+            if (envVar != null) {
+                return String.format("%s=%s", entry.getValue(), envVar);
+            }
+            return "";
+        }).filter(s -> !s.isEmpty()).collect(Collectors.toList());
+        return "," + StringUtils.join(tags, ",");
+    }
+
+    public void timeIt(String metric, Instant start) {
+        Instant end = Instant.now();
+        long latencyMillis = end.toEpochMilli() - start.toEpochMilli();
+        statsDClient.recordExecutionTime(metric + getDefaultTags(), latencyMillis);
+    }
+}

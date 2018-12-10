@@ -1,6 +1,7 @@
 package com.gojek.beast.worker;
 
 import com.gojek.beast.consumer.MessageConsumer;
+import com.gojek.beast.models.SuccessStatus;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -9,6 +10,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ConsumerWorkerTest {
@@ -19,7 +21,7 @@ public class ConsumerWorkerTest {
     @Test
     public void shouldConsumeMessagesWhenNotStopped() throws InterruptedException {
         Worker worker = new ConsumerWorker(consumer);
-
+        when(consumer.consume()).thenReturn(new SuccessStatus());
         new Thread(worker).start();
 
         Thread.sleep(50L);
