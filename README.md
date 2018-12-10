@@ -11,6 +11,7 @@ Run `cp env/sample.properties env/local.properties` and update the values
  * [] Test for synchronised threads for kafka consumer
  * [] Interface for kafka consumer (wrap threads in synchronised block)
  * [] Add topic, partition, offset and bq_creation_timestamp to the created BQ table for auditing
+ * [] copy jacaco and checkstyle reports to test artifacts
 
 ### Laundry List
 * [] remove artifactory creds
