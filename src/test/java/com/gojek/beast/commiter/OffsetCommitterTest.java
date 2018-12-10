@@ -6,8 +6,8 @@ import com.gojek.beast.util.WorkerUtil;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InOrder;
@@ -34,18 +34,15 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class OffsetCommitterTest {
 
-    private OffsetCommitter offsetCommitter;
-
     @Mock
     private Records records;
     @Mock
     private Map<TopicPartition, OffsetAndMetadata> commitPartitionsOffset;
     @Mock
     private KafkaConsumer kafkaConsumer;
-
     private Queue<Records> commitQ;
     private Set<Map<TopicPartition, OffsetAndMetadata>> acknowledgements;
-
+    private OffsetCommitter offsetCommitter = new OffsetCommitter(commitQ, acknowledgements, kafkaConsumer);
 
     @Before
     public void setUp() {
@@ -53,6 +50,13 @@ public class OffsetCommitterTest {
         CopyOnWriteArraySet<Map<TopicPartition, OffsetAndMetadata>> ackSet = new CopyOnWriteArraySet<>();
         acknowledgements = Collections.synchronizedSet(ackSet);
         offsetCommitter = new OffsetCommitter(commitQ, acknowledgements, kafkaConsumer);
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        commitQ.clear();
+        acknowledgements.clear();
+        offsetCommitter.stop();
     }
 
     @Test
@@ -79,18 +83,20 @@ public class OffsetCommitterTest {
     @Test
     public void shouldCommitFirstOffsetWhenAcknowledged() {
         when(records.getPartitionsCommitOffset()).thenReturn(commitPartitionsOffset);
-        offsetCommitter.push(records);
-        offsetCommitter.acknowledge(commitPartitionsOffset);
+        CopyOnWriteArraySet<Map<TopicPartition, OffsetAndMetadata>> ackSet = new CopyOnWriteArraySet<>();
+        Set<Map<TopicPartition, OffsetAndMetadata>> acks = Collections.synchronizedSet(ackSet);
+        OffsetCommitter committer = new OffsetCommitter(new LinkedBlockingQueue<>(), acks, kafkaConsumer);
+        committer.push(records);
+        committer.acknowledge(commitPartitionsOffset);
 
-        new Thread(offsetCommitter).start();
+        new Thread(committer).start();
 
-        WorkerUtil.closeWorker(offsetCommitter, 1000);
+        WorkerUtil.closeWorker(committer, 500);
         verify(kafkaConsumer).commitSync(commitPartitionsOffset);
         assertTrue(commitQ.isEmpty());
-        assertTrue(acknowledgements.isEmpty());
+        assertTrue(acks.isEmpty());
     }
 
-    @Ignore
     @Test
     public void shouldCommitOffsetsInSequenceWhenAcknowledgedRandom() {
         Map<TopicPartition, OffsetAndMetadata> record1CommitOffset = mock(Map.class);
@@ -102,17 +108,17 @@ public class OffsetCommitterTest {
         when(records1.getPartitionsCommitOffset()).thenReturn(record1CommitOffset);
         when(records2.getPartitionsCommitOffset()).thenReturn(record2CommitOffset);
         when(records3.getPartitionsCommitOffset()).thenReturn(record3CommitOffset);
+        OffsetCommitter committer = new OffsetCommitter(new LinkedBlockingQueue<>(), acknowledgements, kafkaConsumer);
 
-        Arrays.asList(records1, records2, records3).forEach(rs -> offsetCommitter.push(rs));
+        Arrays.asList(records1, records2, records3).forEach(rs -> committer.push(rs));
+        committer.acknowledge(record3CommitOffset);
+        committer.acknowledge(record1CommitOffset);
+        committer.acknowledge(record2CommitOffset);
 
-        offsetCommitter.acknowledge(record3CommitOffset);
-        offsetCommitter.acknowledge(record1CommitOffset);
-        offsetCommitter.acknowledge(record2CommitOffset);
-
-        new Thread(offsetCommitter).start();
+        new Thread(committer).start();
 
         InOrder inOrder = inOrder(kafkaConsumer);
-        WorkerUtil.closeWorker(offsetCommitter, 1000);
+        WorkerUtil.closeWorker(committer, 1000);
 
         inOrder.verify(kafkaConsumer).commitSync(record1CommitOffset);
         inOrder.verify(kafkaConsumer).commitSync(record2CommitOffset);

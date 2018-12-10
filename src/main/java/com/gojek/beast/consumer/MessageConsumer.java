@@ -39,6 +39,12 @@ public class MessageConsumer {
             return new SuccessStatus();
         }
         log.info("Pulled {} messages", messages.count());
+        Status status = pushToSink(messages);
+        statsClient.timeIt("consumer.consumption.time", startTime);
+        return status;
+    }
+
+    private Status pushToSink(ConsumerRecords<byte[], byte[]> messages) {
         List<Record> records;
         try {
             records = recordConverter.convert(messages);
@@ -48,7 +54,6 @@ public class MessageConsumer {
             return failure;
         }
 
-        statsClient.timeIt("consumer.consumption.time", startTime);
         return sink.push(new Records(records));
     }
 }
