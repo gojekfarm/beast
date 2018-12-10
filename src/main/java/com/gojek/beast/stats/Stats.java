@@ -17,12 +17,14 @@ public final class Stats {
 
     private StatsDClient statsDClient;
     private AppConfig appConfig;
+    private String defaultTags;
 
     private Stats() {
         this.appConfig = ConfigFactory.create(AppConfig.class, System.getenv());
         this.statsDClient = appConfig.isStatsdEnabled()
                 ? new NonBlockingStatsDClient(appConfig.getStatsdPrefix(), appConfig.getStatsdHost(), appConfig.getStatsdPort())
                 : new NoOpStatsDClient();
+        defaultTags = getDefaultTags();
     }
 
     public static Stats client() {
@@ -30,7 +32,7 @@ public final class Stats {
     }
 
     public void count(String metric, long delta) {
-        this.statsDClient.count(metric + getDefaultTags(), delta);
+        this.statsDClient.count(metric + defaultTags, delta);
     }
 
     public void increment(String metric) {
@@ -38,7 +40,7 @@ public final class Stats {
     }
 
     public void gauge(String metric, long delta) {
-        this.statsDClient.gauge(metric + getDefaultTags(), delta);
+        this.statsDClient.gauge(metric + defaultTags, delta);
     }
 
     private String getDefaultTags() {
@@ -60,6 +62,6 @@ public final class Stats {
     public void timeIt(String metric, Instant start) {
         Instant end = Instant.now();
         long latencyMillis = end.toEpochMilli() - start.toEpochMilli();
-        statsDClient.recordExecutionTime(metric + getDefaultTags(), latencyMillis);
+        statsDClient.recordExecutionTime(metric + defaultTags, latencyMillis);
     }
 }

@@ -13,6 +13,7 @@ Run `cp env/sample.properties env/local.properties` and update the values
  * [] Add topic, partition, offset and bq_creation_timestamp to the created BQ table for auditing
  * [] Copy jacaco and checkstyle reports to test artifacts
  * [] Add tests for stats.java
+ * [] Reduce the test pipeline time
 
 ### Laundry List
 * [] remove artifactory creds
