@@ -14,6 +14,7 @@ Run `cp env/sample.properties env/local.properties` and update the values
  * [] Copy jacaco and checkstyle reports to test artifacts
  * [] Add tests for stats.java
  * [] Reduce the test pipeline time
+ * [] Change the existing test & build stages, to use `compress` command from systems script 
 
 ### Laundry List
 * [] remove artifactory creds
