@@ -6,26 +6,20 @@ Kafka to BigQuery Sink
 Run `cp env/sample.properties env/local.properties` and update the values
 
 ### Task List:
- * [] Setup pipeline for deployment
- * [] Offset Committer consumer commit currently needs to be wrapped in synchronized
- * [] Test for synchronised threads for kafka consumer
- * [] Interface for kafka consumer (wrap threads in synchronised block)
  * [] Add topic, partition, offset and bq_creation_timestamp to the created BQ table for auditing
- * [] Copy jacaco and checkstyle reports to test artifacts
- * [] Add tests for stats.java
- * [] Reduce the test pipeline time
- * [] Change the existing test & build stages, to use `compress` command from systems script 
 
 ### Laundry List
 * [] remove artifactory creds
-* [] When specifying kafka topic, use regex, rather tha singleton
 * [] validation on configuration eg: duplicates in `proto_field_mappings`
 * [] retry on fail
 * [] Implement DeadLetterQueue
-* [] Add logging configuration from env vars
-* [] Refactor `BQSink.push()`
 * [] Clean up `build.gradle` and upgrade it
-* [] Inject BQ creation timestamp in the table
+* [] Copy jacaco and checkstyle reports to test artifacts
+* [] Add tests for stats.java
+* [] Reduce the test pipeline time
+* [] Change the existing test & build stages, to use `compress` command from systems script 
+* [] Test for synchronised threads for kafka consumer
+* [] Interface for kafka consumer (wrap threads in synchronised block)
 
 ### Enhancements
 * [] BqSinkWorker - bqsink.push() could be made as async with commit in callback

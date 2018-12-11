@@ -1,5 +1,6 @@
 package com.gojek.beast.commiter;
 
+import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
 import com.gojek.beast.models.SuccessStatus;
@@ -14,14 +15,14 @@ import org.apache.kafka.common.TopicPartition;
 
 import java.time.Instant;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 
 @Slf4j
 public class OffsetCommitter implements Sink, Committer, Worker {
     private static final int DEFAULT_SLEEP_MS = 100;
     private final Stats statsClient = Stats.client();
-    private Queue<Records> commitQueue;
+    private BlockingQueue<Records> commitQueue;
     private Set<Map<TopicPartition, OffsetAndMetadata>> partitionOffsetAck;
     private KafkaConsumer<byte[], byte[]> consumer;
     @Setter
@@ -29,7 +30,7 @@ public class OffsetCommitter implements Sink, Committer, Worker {
 
     private volatile boolean stop;
 
-    public OffsetCommitter(Queue<Records> commitQueue, Set<Map<TopicPartition, OffsetAndMetadata>> partitionOffsetAck, KafkaConsumer<byte[], byte[]> consumer) {
+    public OffsetCommitter(BlockingQueue<Records> commitQueue, Set<Map<TopicPartition, OffsetAndMetadata>> partitionOffsetAck, KafkaConsumer<byte[], byte[]> consumer) {
         this.commitQueue = commitQueue;
         this.partitionOffsetAck = partitionOffsetAck;
         this.consumer = consumer;
@@ -37,8 +38,13 @@ public class OffsetCommitter implements Sink, Committer, Worker {
     }
 
     public Status push(Records records) {
-        commitQueue.add(records);
-        statsClient.gauge("queue.elements,name=commiter", commitQueue.size());
+        try {
+            commitQueue.put(records);
+            statsClient.gauge("queue.elements,name=commiter", commitQueue.size());
+        } catch (InterruptedException e) {
+            log.error("push to commit queue failed: {}", e.getMessage());
+            return new FailureStatus(e);
+        }
         return new SuccessStatus();
     }
 

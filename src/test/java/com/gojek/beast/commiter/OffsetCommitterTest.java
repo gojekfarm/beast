@@ -18,9 +18,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -40,7 +40,7 @@ public class OffsetCommitterTest {
     private Map<TopicPartition, OffsetAndMetadata> commitPartitionsOffset;
     @Mock
     private KafkaConsumer kafkaConsumer;
-    private Queue<Records> commitQ;
+    private BlockingQueue<Records> commitQ;
     private Set<Map<TopicPartition, OffsetAndMetadata>> acknowledgements;
     private OffsetCommitter offsetCommitter = new OffsetCommitter(commitQ, acknowledgements, kafkaConsumer);
 
@@ -95,6 +95,23 @@ public class OffsetCommitterTest {
         verify(kafkaConsumer).commitSync(commitPartitionsOffset);
         assertTrue(commitQ.isEmpty());
         assertTrue(acks.isEmpty());
+    }
+
+    @Test
+    public void shouldBlockPushingWhenQueueIsFull() throws InterruptedException {
+        CopyOnWriteArraySet<Map<TopicPartition, OffsetAndMetadata>> ackSet = new CopyOnWriteArraySet<>();
+        Set<Map<TopicPartition, OffsetAndMetadata>> acks = Collections.synchronizedSet(ackSet);
+        LinkedBlockingQueue<Records> commitQueue = new LinkedBlockingQueue<>(1);
+        OffsetCommitter committer = new OffsetCommitter(commitQueue, acks, kafkaConsumer);
+        committer.push(records);
+
+        Thread blockingThread = new Thread(() -> committer.push(records));
+        blockingThread.start();
+
+        Thread.sleep(200);
+        WorkerUtil.closeWorker(committer, 100);
+        assertEquals(1, commitQueue.size());
+        commitQueue.clear();
     }
 
     @Test
