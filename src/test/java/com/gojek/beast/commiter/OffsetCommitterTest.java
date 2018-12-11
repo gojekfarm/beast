@@ -8,6 +8,7 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InOrder;
@@ -114,6 +115,7 @@ public class OffsetCommitterTest {
         commitQueue.clear();
     }
 
+    @Ignore
     @Test
     public void shouldCommitOffsetsInSequenceWhenAcknowledgedRandom() {
         Map<TopicPartition, OffsetAndMetadata> record1CommitOffset = mock(Map.class);
