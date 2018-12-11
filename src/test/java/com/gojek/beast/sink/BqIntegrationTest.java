@@ -27,7 +27,6 @@ import com.google.cloud.bigquery.InsertAllResponse;
 import com.google.cloud.bigquery.TableId;
 import com.google.protobuf.Timestamp;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -64,14 +63,9 @@ public class BqIntegrationTest {
     @Mock
     private BigQuery bigQueryMock;
 
-    @Before
-    public void setUp() throws Exception {
-        bigQuery = authenticatedBQ();
-    }
-
     public BigQuery authenticatedBQ() {
         GoogleCredentials credentials = null;
-        File credentialsPath = new File("credentials.json  # Replace, using a regex");
+        File credentialsPath = new File(System.getenv("SOME_CREDENTIALS_FILE"));
         try (FileInputStream serviceAccountStream = new FileInputStream(credentialsPath)) {
             credentials = ServiceAccountCredentials.fromStream(serviceAccountStream);
         } catch (IOException e) {

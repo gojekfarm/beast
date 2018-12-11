@@ -6,8 +6,17 @@ Kafka to BigQuery Sink
 Run `cp env/sample.properties env/local.properties` and update the values
 
 ### Task List:
-* [] Add topic, partition, offset and bq_creation_timestamp to the created BQ table for auditing
-* [] Fix tests - `shouldPushMessagesToBq`, `shouldCommitOffsetsInSequenceWhenAcknowledgedRandom` for CI
+* Add topic, partition, offset and bq_creation_timestamp to the created BQ table for auditing
+* Fix tests - `shouldPushMessagesToBq`, `shouldCommitOffsetsInSequenceWhenAcknowledgedRandom` for CI
+* Dealing with enums & timestamps
+* Resiliency
+* No data loss
+* Kill process, when something goes wrong
+* Add timestamps in logs
+* Monitoring - kafka lag, pod level etc
+* Add total consumer threads & worker threads in metrics
+* Until not in production use `latest` tag for docker images
+* Helm chart for ease of deployment
 
 ### Laundry List
 * [] remove artifactory creds
