@@ -18,6 +18,7 @@ message TestMessage {
     string order_url = 2;
     string order_details = 3;
     google.protobuf.Timestamp created_at = 4;
+    com.gojek.beast.Status status = 5;
 }
 
 message TestNestedMessage {
@@ -35,4 +36,9 @@ message TestNestedRepeatedMessage {
 message TestMapMessage {
     string order_number = 1;
     map<string, string> current_state = 2;
+}
+
+enum Status {
+    COMPLETED = 0;
+    CANCELLED = 1;
 }

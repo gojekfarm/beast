@@ -9,7 +9,7 @@ import java.util.Properties;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
-public class ProtoIndexToFieldMapConverterTest {
+public class ProtoIndexToProtoFieldMapConverterTest {
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();

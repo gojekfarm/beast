@@ -6,6 +6,7 @@ import com.gojek.beast.models.ConfigurationException;
 import com.gojek.beast.models.ParseException;
 import com.gojek.beast.parser.ProtoParser;
 import com.gojek.de.stencil.StencilClientFactory;
+import com.google.api.client.util.DateTime;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.Timestamp;
 import org.junit.Before;
@@ -24,17 +25,20 @@ public class RowMapperTest {
 
     private Timestamp createdAt;
     private DynamicMessage dynamicMessage;
+    private Instant now;
+    private long nowMillis;
 
     @Before
     public void setUp() throws ParseException {
         ProtoParser protoParser = new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName());
-        Instant time = Instant.now();
-        createdAt = Timestamp.newBuilder().setSeconds(time.getEpochSecond()).setNanos(time.getNano()).build();
+        now = Instant.now();
+        createdAt = Timestamp.newBuilder().setSeconds(now.getEpochSecond()).setNanos(now.getNano()).build();
         TestMessage testMessage = TestMessage.newBuilder()
                 .setOrderNumber("order-1")
                 .setCreatedAt(createdAt)
                 .build();
         dynamicMessage = protoParser.parse(testMessage.toByteArray());
+        nowMillis = Instant.ofEpochSecond(now.getEpochSecond(), now.getNano()).toEpochMilli();
     }
 
     @Test
@@ -46,7 +50,7 @@ public class RowMapperTest {
         Map<String, Object> fields = new RowMapper(fieldMappings).map(dynamicMessage);
 
         assertEquals("order-1", fields.get("order_number_field"));
-        assertEquals(createdAt, fields.get("created_at"));
+        assertEquals(new DateTime(nowMillis), fields.get("created_at"));
         assertEquals(fieldMappings.size(), fields.size());
     }
 
