@@ -13,12 +13,13 @@ import com.google.protobuf.Timestamp;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.time.Instant;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 @RunWith(MockitoJUnitRunner.class)
 public class RowMapperTest {
@@ -35,6 +36,8 @@ public class RowMapperTest {
         createdAt = Timestamp.newBuilder().setSeconds(now.getEpochSecond()).setNanos(now.getNano()).build();
         TestMessage testMessage = TestMessage.newBuilder()
                 .setOrderNumber("order-1")
+                .setOrderUrl("order-url")
+                .setOrderDetails("order-details")
                 .setCreatedAt(createdAt)
                 .setStatus(Status.COMPLETED)
                 .build();
@@ -46,23 +49,28 @@ public class RowMapperTest {
     public void shouldReturnFieldsInColumnMapping() {
         ColumnMapping fieldMappings = new ColumnMapping();
         fieldMappings.put("1", "order_number_field");
+        fieldMappings.put("2", "order_url_field");
+        fieldMappings.put("3", "order_details_field");
         fieldMappings.put("4", "created_at");
         fieldMappings.put("5", "order_status");
 
         Map<String, Object> fields = new RowMapper(fieldMappings).map(dynamicMessage);
 
         assertEquals("order-1", fields.get("order_number_field"));
+        assertEquals("order-url", fields.get("order_url_field"));
+        assertEquals("order-details", fields.get("order_details_field"));
         assertEquals(new DateTime(nowMillis), fields.get("created_at"));
         assertEquals("COMPLETED", fields.get("order_status"));
         assertEquals(fieldMappings.size(), fields.size());
     }
 
-    @Test(expected = ConfigurationException.class)
+    @Test()
     public void shouldReturnNullWhenIndexNotPresent() {
         ColumnMapping fieldMappings = new ColumnMapping();
         fieldMappings.put("10", "some_column_in_bq");
 
-        new RowMapper(fieldMappings).map(dynamicMessage);
+        Map<String, Object> fields = new RowMapper(fieldMappings).map(dynamicMessage);
+        assertNull(fields.get("some_column_in_bq"));
     }
 
     @Test(expected = ConfigurationException.class)

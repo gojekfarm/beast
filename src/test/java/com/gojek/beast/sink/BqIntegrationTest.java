@@ -89,7 +89,6 @@ public class BqIntegrationTest {
                 .build();
     }
 
-
     @Ignore
     @Test
     public void shouldPushMessagesToBqActual() {
@@ -122,16 +121,26 @@ public class BqIntegrationTest {
         mapping.put(2, "order_url");
         mapping.put(3, "order_details");
         mapping.put(4, "created_at");
+        mapping.put(5, "order_status");
+        mapping.put(6, "discounted_value");
+        mapping.put(7, "success");
+        mapping.put(8, "order_price");
 
         converter = new ConsumerRecordConverter(new RowMapper(mapping), new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName()));
-
         Timestamp createdAt = Timestamp.newBuilder().setSeconds(second).setNanos(nano).build();
         TestKey key = TestKey.newBuilder().setOrderNumber(orderNumber).setOrderUrl(orderUrl).build();
+        com.gojek.beast.Status completed = com.gojek.beast.Status.COMPLETED;
+        long discount = 1234;
+        float price = 1234.5678f;
         TestMessage message = TestMessage.newBuilder()
                 .setOrderNumber(orderNumber)
                 .setOrderUrl(orderUrl)
                 .setOrderDetails(orderDetails)
                 .setCreatedAt(createdAt)
+                .setStatus(completed)
+                .setDiscount(discount)
+                .setPrice(price)
+                .setSuccess(true)
                 .build();
         List<ConsumerRecord<byte[], byte[]>> messages = Arrays.asList(new ConsumerRecord<>("topic", 1, 1, key.toByteArray(), message.toByteArray()));
         when(successfulResponse.hasErrors()).thenReturn(false);
@@ -143,10 +152,14 @@ public class BqIntegrationTest {
         List<InsertAllRequest.RowToInsert> bqRows = insertRequestCaptor.getValue().getRows();
         assertEquals(1, bqRows.size());
         Map<String, Object> contents = bqRows.get(0).getContent();
-        assertEquals("should have 4 columns in record", 4, contents.size());
+        assertEquals("should have same number of columns as mappings", mapping.size(), contents.size());
         assertEquals(orderUrl, contents.get("order_url"));
         assertEquals(orderNumber, contents.get("order_number"));
         assertEquals(orderDetails, contents.get("order_details"));
         assertEquals(new DateTime(Instant.ofEpochSecond(second, nano).toEpochMilli()), contents.get("created_at"));
+        assertEquals(completed.toString(), contents.get("order_status"));
+        assertEquals(discount, contents.get("discounted_value"));
+        assertEquals(price, contents.get("order_price"));
+        assertTrue(Boolean.valueOf(contents.get("success").toString()));
     }
 }

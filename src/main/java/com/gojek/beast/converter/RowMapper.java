@@ -25,16 +25,14 @@ public class RowMapper {
         if (mapping == null) {
             throw new ConfigurationException("BQ_PROTO_COLUMN_MAPPING is not configured");
         }
-        List<Descriptors.FieldDescriptor> messageDescriptors = message.getDescriptorForType().getFields();
+        Descriptors.Descriptor descriptorForType = message.getDescriptorForType();
 
         Map<String, Object> row = new HashMap<>(mapping.size());
         mapping.forEach((key, value) -> {
             String columnName = value.toString();
-            Integer protoIndex = Integer.valueOf(key.toString()) - 1;
-            if (messageDescriptors.size() <= protoIndex) {
-                throw new ConfigurationException("Invalid ProtoColumn Mapping Index: " + protoIndex);
-            }
-            Descriptors.FieldDescriptor fieldDesc = messageDescriptors.get(protoIndex);
+            Integer protoIndex = Integer.valueOf(key.toString());
+
+            Descriptors.FieldDescriptor fieldDesc = descriptorForType.findFieldByNumber(protoIndex);
             if (fieldDesc != null) {
                 Object field = message.getField(fieldDesc);
                 Object fieldValue = getField(fieldDesc, field).getValue();

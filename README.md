@@ -8,10 +8,11 @@ Run `cp env/sample.properties env/local.properties` and update the values
 ### Task List:
 * Add topic, partition, offset and bq_creation_timestamp to the created BQ table for auditing
 * Fix tests - `shouldPushMessagesToBq`, `shouldCommitOffsetsInSequenceWhenAcknowledgedRandom` for CI
-* Dealing with enums & timestamps
 * Resiliency
 * No data loss
 * Kill process, when something goes wrong
+* Retry mechanism
+* DLQ
 * Add timestamps in logs
 * Monitoring - kafka lag, pod level etc
 * Add total consumer threads & worker threads in metrics
