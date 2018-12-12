@@ -1,5 +1,6 @@
 package com.gojek.beast.converter;
 
+import com.gojek.beast.Status;
 import com.gojek.beast.TestMessage;
 import com.gojek.beast.config.ColumnMapping;
 import com.gojek.beast.models.ConfigurationException;
@@ -18,7 +19,6 @@ import java.time.Instant;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 @RunWith(MockitoJUnitRunner.class)
 public class RowMapperTest {
@@ -36,6 +36,7 @@ public class RowMapperTest {
         TestMessage testMessage = TestMessage.newBuilder()
                 .setOrderNumber("order-1")
                 .setCreatedAt(createdAt)
+                .setStatus(Status.COMPLETED)
                 .build();
         dynamicMessage = protoParser.parse(testMessage.toByteArray());
         nowMillis = Instant.ofEpochSecond(now.getEpochSecond(), now.getNano()).toEpochMilli();
@@ -46,22 +47,22 @@ public class RowMapperTest {
         ColumnMapping fieldMappings = new ColumnMapping();
         fieldMappings.put("1", "order_number_field");
         fieldMappings.put("4", "created_at");
+        fieldMappings.put("5", "order_status");
 
         Map<String, Object> fields = new RowMapper(fieldMappings).map(dynamicMessage);
 
         assertEquals("order-1", fields.get("order_number_field"));
         assertEquals(new DateTime(nowMillis), fields.get("created_at"));
+        assertEquals("COMPLETED", fields.get("order_status"));
         assertEquals(fieldMappings.size(), fields.size());
     }
 
-    @Test
+    @Test(expected = ConfigurationException.class)
     public void shouldReturnNullWhenIndexNotPresent() {
         ColumnMapping fieldMappings = new ColumnMapping();
         fieldMappings.put("10", "some_column_in_bq");
 
-        Map<String, Object> fields = new RowMapper(fieldMappings).map(dynamicMessage);
-
-        assertNull(fields.get("some_column_in_bq"));
+        new RowMapper(fieldMappings).map(dynamicMessage);
     }
 
     @Test(expected = ConfigurationException.class)
