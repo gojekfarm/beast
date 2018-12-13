@@ -43,6 +43,7 @@ Run `cp env/sample.properties env/local.properties` and update the values
 * [] Add option to disable sending stats
 
 ### Reading List
+* [] Kafka Consumer Offset overflow?
 * [] Custom Mappers
 * [] Functions & Future
 * [] Queue Implementations and performance

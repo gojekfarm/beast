@@ -1,5 +1,6 @@
 package com.gojek.beast.launch;
 
+import com.gojek.beast.Clock;
 import com.gojek.beast.commiter.Committer;
 import com.gojek.beast.commiter.OffsetCommitter;
 import com.gojek.beast.config.AppConfig;
@@ -69,7 +70,7 @@ public class Main {
 
 
         ProtoParser protoParser = new ProtoParser(StencilClientFactory.getClient(appConfig.getStencilUrl(), new HashMap<>()), appConfig.getProtoSchema());
-        ConsumerRecordConverter parser = new ConsumerRecordConverter(new RowMapper(columnMapping), protoParser);
+        ConsumerRecordConverter parser = new ConsumerRecordConverter(new RowMapper(columnMapping), protoParser, new Clock());
         MessageConsumer messageConsumer = new MessageConsumer(kafkaConsumer, multiSink, parser, appConfig.getConsumerPollTimeoutMs());
 
 

@@ -4,6 +4,7 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.Test;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -19,9 +20,9 @@ public class RecordsTest {
         int maxOffset = 102;
         int partition = 0;
         List<Record> records = Arrays.asList(
-                new Record(new OffsetInfo(topic, partition, 100), null),
-                new Record(new OffsetInfo(topic, partition, maxOffset), null),
-                new Record(new OffsetInfo(topic, partition, 101), null)
+                new Record(new OffsetInfo(topic, partition, 100, Instant.now().toEpochMilli()), null),
+                new Record(new OffsetInfo(topic, partition, maxOffset, Instant.now().toEpochMilli()), null),
+                new Record(new OffsetInfo(topic, partition, 101, Instant.now().toEpochMilli()), null)
         );
 
         Map<TopicPartition, OffsetAndMetadata> actualMaxOffsetInfo = new Records(records).getPartitionsCommitOffset();
@@ -38,12 +39,12 @@ public class RecordsTest {
         int partition0 = 0;
         int partition1 = 1;
         List<Record> records = Arrays.asList(
-                new Record(new OffsetInfo(topic, partition0, 100), null),
-                new Record(new OffsetInfo(topic, partition0, partition0MaxOffset), null),
-                new Record(new OffsetInfo(topic, partition0, 101), null),
-                new Record(new OffsetInfo(topic, partition1, partition1MaxOffset), null),
-                new Record(new OffsetInfo(topic, partition1, 101), null),
-                new Record(new OffsetInfo(topic, partition1, 102), null)
+                new Record(new OffsetInfo(topic, partition0, 100, Instant.now().toEpochMilli()), null),
+                new Record(new OffsetInfo(topic, partition0, partition0MaxOffset, Instant.now().toEpochMilli()), null),
+                new Record(new OffsetInfo(topic, partition0, 101, Instant.now().toEpochMilli()), null),
+                new Record(new OffsetInfo(topic, partition1, partition1MaxOffset, Instant.now().toEpochMilli()), null),
+                new Record(new OffsetInfo(topic, partition1, 101, Instant.now().toEpochMilli()), null),
+                new Record(new OffsetInfo(topic, partition1, 102, Instant.now().toEpochMilli()), null)
         );
 
         Map<TopicPartition, OffsetAndMetadata> actualMaxOffsetInfo = new Records(records).getPartitionsCommitOffset();
@@ -55,7 +56,7 @@ public class RecordsTest {
 
     @Test
     public void shouldCacheTheMaxOffsetInfo() {
-        Records records = new Records(Arrays.asList(new Record(new OffsetInfo("topic", 0, 100), null)));
+        Records records = new Records(Arrays.asList(new Record(new OffsetInfo("topic", 0, 100, Instant.now().toEpochMilli()), null)));
 
         Map<TopicPartition, OffsetAndMetadata> actualMaxOffsetInfo = records.getPartitionsCommitOffset();
 

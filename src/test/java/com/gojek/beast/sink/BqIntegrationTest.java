@@ -1,5 +1,6 @@
 package com.gojek.beast.sink;
 
+import com.gojek.beast.Clock;
 import com.gojek.beast.TestKey;
 import com.gojek.beast.TestMessage;
 import com.gojek.beast.config.ColumnMapping;
@@ -27,6 +28,8 @@ import com.google.cloud.bigquery.InsertAllResponse;
 import com.google.cloud.bigquery.TableId;
 import com.google.protobuf.Timestamp;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.record.TimestampType;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -62,6 +65,15 @@ public class BqIntegrationTest {
     private InsertAllResponse successfulResponse;
     @Mock
     private BigQuery bigQueryMock;
+    private long nowMillis;
+    @Mock
+    private Clock clock;
+
+    @Before
+    public void setUp() throws Exception {
+        nowMillis = Instant.now().toEpochMilli();
+        when(clock.currentEpochMillis()).thenReturn(nowMillis);
+    }
 
     public BigQuery authenticatedBQ() {
         GoogleCredentials credentials = null;
@@ -101,7 +113,7 @@ public class BqIntegrationTest {
         columns.put("location", 25123);
         columns.put("created_at", new DateTime(new Date()));
 
-        Status push = bqSink.push(new Records(Arrays.asList(new Record(new OffsetInfo("default-topic", 0, 0), columns))));
+        Status push = bqSink.push(new Records(Arrays.asList(new Record(new OffsetInfo("default-topic", 0, 0, Instant.now().toEpochMilli()), columns))));
 
         assertTrue(push.isSuccess());
     }
@@ -126,7 +138,7 @@ public class BqIntegrationTest {
         mapping.put(7, "success");
         mapping.put(8, "order_price");
 
-        converter = new ConsumerRecordConverter(new RowMapper(mapping), new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName()));
+        converter = new ConsumerRecordConverter(new RowMapper(mapping), new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName()), clock);
         Timestamp createdAt = Timestamp.newBuilder().setSeconds(second).setNanos(nano).build();
         TestKey key = TestKey.newBuilder().setOrderNumber(orderNumber).setOrderUrl(orderUrl).build();
         com.gojek.beast.Status completed = com.gojek.beast.Status.COMPLETED;
@@ -142,7 +154,13 @@ public class BqIntegrationTest {
                 .setPrice(price)
                 .setSuccess(true)
                 .build();
-        List<ConsumerRecord<byte[], byte[]>> messages = Arrays.asList(new ConsumerRecord<>("topic", 1, 1, key.toByteArray(), message.toByteArray()));
+        String topic = "topic";
+        int partition = 1, offset = 1;
+        long recordTimestamp = Instant.now().toEpochMilli();
+        ConsumerRecord<byte[], byte[]> consumerRecord = new ConsumerRecord<>(topic, partition, offset, recordTimestamp, TimestampType.CREATE_TIME,
+                0, 0, 1, key.toByteArray(), message.toByteArray());
+
+        List<ConsumerRecord<byte[], byte[]>> messages = Arrays.asList(consumerRecord);
         when(successfulResponse.hasErrors()).thenReturn(false);
         when(bigQueryMock.insertAll(insertRequestCaptor.capture())).thenReturn(successfulResponse);
 
@@ -152,7 +170,7 @@ public class BqIntegrationTest {
         List<InsertAllRequest.RowToInsert> bqRows = insertRequestCaptor.getValue().getRows();
         assertEquals(1, bqRows.size());
         Map<String, Object> contents = bqRows.get(0).getContent();
-        assertEquals("should have same number of columns as mappings", mapping.size(), contents.size());
+        assertEquals("should have same number of columns as mappings, with metadata columns", mapping.size() + 5, contents.size());
         assertEquals(orderUrl, contents.get("order_url"));
         assertEquals(orderNumber, contents.get("order_number"));
         assertEquals(orderDetails, contents.get("order_details"));
@@ -161,5 +179,15 @@ public class BqIntegrationTest {
         assertEquals(discount, contents.get("discounted_value"));
         assertEquals(price, contents.get("order_price"));
         assertTrue(Boolean.valueOf(contents.get("success").toString()));
+        containsMetadata(contents, new OffsetInfo(topic, partition, offset, recordTimestamp));
     }
+
+    private void containsMetadata(Map<String, Object> columns, OffsetInfo offsetInfo) {
+        assertEquals("partition metadata mismatch", columns.get("message_partition"), offsetInfo.getPartition());
+        assertEquals("offset metadata mismatch", columns.get("message_offset"), offsetInfo.getOffset());
+        assertEquals("topic metadata mismatch", columns.get("message_topic"), offsetInfo.getTopic());
+        assertEquals("message timestamp metadata mismatch", columns.get("message_timestamp"), new DateTime(offsetInfo.getTimestamp()));
+        assertEquals("load time metadata mismatch", columns.get("load_time"), new DateTime(nowMillis));
+    }
+
 }

@@ -6,6 +6,7 @@ import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
 import org.junit.Test;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -21,7 +22,7 @@ import static org.mockito.Mockito.mock;
 
 public class QueueSinkTest {
 
-    private final OffsetInfo offsetInfo = new OffsetInfo("default-topic", 0, 0);
+    private final OffsetInfo offsetInfo = new OffsetInfo("default-topic", 0, 0, Instant.now().toEpochMilli());
     private Sink queueSink;
 
     @Test

@@ -17,6 +17,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -32,7 +33,7 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class BqSinkTest {
 
-    private final OffsetInfo offsetInfo = new OffsetInfo("default-topic", 0, 0);
+    private final OffsetInfo offsetInfo = new OffsetInfo("default-topic", 0, 0, Instant.now().toEpochMilli());
     @Mock
     private BigQuery bigquery;
     private Sink sink;
@@ -98,9 +99,9 @@ public class BqSinkTest {
         assertEquals(insertErrors, ((BqInsertErrors) status.getException().get()).getErrors());
     }
 
-    private Map<String, Object> createUser(String alice) {
+    private Map<String, Object> createUser(String name) {
         HashMap<String, Object> user = new HashMap<>();
-        user.put("name", alice);
+        user.put("name", name);
         user.put("age", 24);
         return user;
     }
