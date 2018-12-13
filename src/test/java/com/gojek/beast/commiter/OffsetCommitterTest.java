@@ -27,8 +27,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -84,17 +87,23 @@ public class OffsetCommitterTest {
     @Test
     public void shouldCommitFirstOffsetWhenAcknowledged() {
         when(records.getPartitionsCommitOffset()).thenReturn(commitPartitionsOffset);
-        CopyOnWriteArraySet<Map<TopicPartition, OffsetAndMetadata>> ackSet = new CopyOnWriteArraySet<>();
+        CopyOnWriteArraySet<Map<TopicPartition, OffsetAndMetadata>> ackSet = spy(new CopyOnWriteArraySet<>());
         Set<Map<TopicPartition, OffsetAndMetadata>> acks = Collections.synchronizedSet(ackSet);
-        OffsetCommitter committer = new OffsetCommitter(new LinkedBlockingQueue<>(), acks, kafkaConsumer);
+        BlockingQueue<Records> commitQueue = spy(new LinkedBlockingQueue<Records>());
+        OffsetCommitter committer = new OffsetCommitter(commitQueue, acks, kafkaConsumer);
+        committer.setDefaultSleepMs(10);
         committer.push(records);
         committer.acknowledge(commitPartitionsOffset);
 
         new Thread(committer).start();
 
         WorkerUtil.closeWorker(committer, 500);
-        verify(kafkaConsumer).commitSync(commitPartitionsOffset);
-        assertTrue(commitQ.isEmpty());
+        verify(commitQueue, atLeast(1)).peek();
+
+        InOrder callOrder = inOrder(kafkaConsumer, records);
+        callOrder.verify(records, atLeast(1)).getPartitionsCommitOffset();
+        callOrder.verify(kafkaConsumer, times(1)).commitSync(commitPartitionsOffset);
+        assertTrue(commitQueue.isEmpty());
         assertTrue(acks.isEmpty());
     }
 
