@@ -6,7 +6,6 @@ Kafka to BigQuery Sink
 Run `cp env/sample.properties env/local.properties` and update the values
 
 ### Task List:
-* Add topic, partition, offset and bq_creation_timestamp to the created BQ table for auditing
 * Fix tests - `shouldPushMessagesToBq`, `shouldCommitOffsetsInSequenceWhenAcknowledgedRandom` for CI
 * Resiliency
 * No data loss

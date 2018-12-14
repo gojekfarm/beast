@@ -3,6 +3,7 @@ package com.gojek.beast.launch;
 import com.gojek.beast.Clock;
 import com.gojek.beast.commiter.Committer;
 import com.gojek.beast.commiter.OffsetCommitter;
+import com.gojek.beast.commiter.OffsetState;
 import com.gojek.beast.config.AppConfig;
 import com.gojek.beast.config.ColumnMapping;
 import com.gojek.beast.config.KafkaConfig;
@@ -65,7 +66,7 @@ public class Main {
         BlockingQueue<Records> committerQueue = new LinkedBlockingQueue<>(appConfig.getCommitQueueCapacity());
         QueueSink queueSink = new QueueSink(readQueue);
         Set<Map<TopicPartition, OffsetAndMetadata>> partitionsAck = Collections.synchronizedSet(new CopyOnWriteArraySet<Map<TopicPartition, OffsetAndMetadata>>());
-        OffsetCommitter committer = new OffsetCommitter(committerQueue, partitionsAck, kafkaConsumer);
+        OffsetCommitter committer = new OffsetCommitter(committerQueue, partitionsAck, kafkaConsumer, new OffsetState(appConfig.getOffsetAckTimeoutMs()));
         MultiSink multiSink = new MultiSink(Arrays.asList(queueSink, committer));
 
 

@@ -61,4 +61,11 @@ public interface AppConfig extends Config {
     @DefaultValue("false")
     @Key("STATSD_ENABLED")
     Boolean isStatsdEnabled();
+
+
+    @DefaultValue("15000")
+    @Key("OFFSET_ACK_TIMEOUT")
+    long getOffsetAckTimeoutMs();
+
+
 }

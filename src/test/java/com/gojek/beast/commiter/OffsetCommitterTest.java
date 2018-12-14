@@ -2,7 +2,6 @@ package com.gojek.beast.commiter;
 
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
-import com.gojek.beast.util.WorkerUtil;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -25,9 +24,12 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import static com.gojek.beast.util.WorkerUtil.closeWorker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -46,14 +48,21 @@ public class OffsetCommitterTest {
     private KafkaConsumer kafkaConsumer;
     private BlockingQueue<Records> commitQ;
     private Set<Map<TopicPartition, OffsetAndMetadata>> acknowledgements;
-    private OffsetCommitter offsetCommitter = new OffsetCommitter(commitQ, acknowledgements, kafkaConsumer);
+    private int acknowledgeTimeoutMs;
+    private OffsetCommitter offsetCommitter;
+    @Mock
+    private Set<Map<TopicPartition, OffsetAndMetadata>> acknowledgeSetMock;
+    @Mock
+    private OffsetState offsetState;
 
     @Before
     public void setUp() {
         commitQ = new LinkedBlockingQueue<>();
         CopyOnWriteArraySet<Map<TopicPartition, OffsetAndMetadata>> ackSet = new CopyOnWriteArraySet<>();
         acknowledgements = Collections.synchronizedSet(ackSet);
-        offsetCommitter = new OffsetCommitter(commitQ, acknowledgements, kafkaConsumer);
+        when(offsetState.shouldCloseConsumer(any())).thenReturn(false);
+        offsetCommitter = new OffsetCommitter(commitQ, acknowledgements, kafkaConsumer, offsetState);
+        acknowledgeTimeoutMs = 15000;
     }
 
     @After
@@ -90,14 +99,14 @@ public class OffsetCommitterTest {
         CopyOnWriteArraySet<Map<TopicPartition, OffsetAndMetadata>> ackSet = spy(new CopyOnWriteArraySet<>());
         Set<Map<TopicPartition, OffsetAndMetadata>> acks = Collections.synchronizedSet(ackSet);
         BlockingQueue<Records> commitQueue = spy(new LinkedBlockingQueue<Records>());
-        OffsetCommitter committer = new OffsetCommitter(commitQueue, acks, kafkaConsumer);
+        OffsetCommitter committer = new OffsetCommitter(commitQueue, acks, kafkaConsumer, new OffsetState(acknowledgeTimeoutMs));
         committer.setDefaultSleepMs(10);
         committer.push(records);
         committer.acknowledge(commitPartitionsOffset);
 
         new Thread(committer).start();
 
-        WorkerUtil.closeWorker(committer, 500);
+        closeWorker(committer, 500);
         verify(commitQueue, atLeast(1)).peek();
 
         InOrder callOrder = inOrder(kafkaConsumer, records);
@@ -112,14 +121,14 @@ public class OffsetCommitterTest {
         CopyOnWriteArraySet<Map<TopicPartition, OffsetAndMetadata>> ackSet = new CopyOnWriteArraySet<>();
         Set<Map<TopicPartition, OffsetAndMetadata>> acks = Collections.synchronizedSet(ackSet);
         LinkedBlockingQueue<Records> commitQueue = new LinkedBlockingQueue<>(1);
-        OffsetCommitter committer = new OffsetCommitter(commitQueue, acks, kafkaConsumer);
+        OffsetCommitter committer = new OffsetCommitter(commitQueue, acks, kafkaConsumer, new OffsetState(acknowledgeTimeoutMs));
         committer.push(records);
 
         Thread blockingThread = new Thread(() -> committer.push(records));
         blockingThread.start();
 
         Thread.sleep(200);
-        WorkerUtil.closeWorker(committer, 100);
+        closeWorker(committer, 100);
         assertEquals(1, commitQueue.size());
         commitQueue.clear();
     }
@@ -136,7 +145,7 @@ public class OffsetCommitterTest {
         when(records1.getPartitionsCommitOffset()).thenReturn(record1CommitOffset);
         when(records2.getPartitionsCommitOffset()).thenReturn(record2CommitOffset);
         when(records3.getPartitionsCommitOffset()).thenReturn(record3CommitOffset);
-        OffsetCommitter committer = new OffsetCommitter(new LinkedBlockingQueue<>(), acknowledgements, kafkaConsumer);
+        OffsetCommitter committer = new OffsetCommitter(new LinkedBlockingQueue<>(), acknowledgements, kafkaConsumer, new OffsetState(acknowledgeTimeoutMs));
 
         Arrays.asList(records1, records2, records3).forEach(rs -> committer.push(rs));
         committer.acknowledge(record3CommitOffset);
@@ -146,7 +155,7 @@ public class OffsetCommitterTest {
         new Thread(committer).start();
 
         InOrder inOrder = inOrder(kafkaConsumer);
-        WorkerUtil.closeWorker(committer, 1000);
+        closeWorker(committer, 1000);
 
         inOrder.verify(kafkaConsumer).commitSync(record1CommitOffset);
         inOrder.verify(kafkaConsumer).commitSync(record2CommitOffset);
@@ -180,12 +189,36 @@ public class OffsetCommitterTest {
         Acknowledger acknowledger3 = new Acknowledger(record3CommitOffset, offsetCommitter, new Random().nextInt(ackDelayRandomMs));
         List<Acknowledger> acknowledgers = Arrays.asList(acknowledger1, acknowledger2, acknowledger3);
         acknowledgers.forEach(Thread::start);
-        WorkerUtil.closeWorker(offsetCommitter, ackDelayRandomMs + 10);
+        closeWorker(offsetCommitter, ackDelayRandomMs + 10);
         commiterThread.join();
         InOrder inOrder = inOrder(kafkaConsumer);
         incomingRecords.forEach(rs -> inOrder.verify(kafkaConsumer).commitSync(rs.getPartitionsCommitOffset()));
         assertTrue(commitQ.isEmpty());
         assertTrue(acknowledgements.isEmpty());
+    }
+
+    @Test
+    public void shouldStopConsumerIfPartitionNotAcknowledgedWithinTimeout() throws InterruptedException {
+        LinkedBlockingQueue<Records> commitQueue = new LinkedBlockingQueue<>(2);
+        commitQueue.put(records);
+        when(records.getPartitionsCommitOffset()).thenReturn(commitPartitionsOffset);
+        when(acknowledgeSetMock.contains(commitPartitionsOffset)).thenReturn(false);
+        long ackTimeout = 100;
+        OffsetCommitter committer = new OffsetCommitter(commitQueue, acknowledgeSetMock, kafkaConsumer, new OffsetState(ackTimeout));
+        committer.setDefaultSleepMs(10);
+
+        Thread committerThread = new Thread(committer);
+        committerThread.start();
+
+        Thread closer = closeWorker(committer, ackTimeout * 10);
+
+        closer.join();
+        committerThread.join();
+
+        InOrder inOrder = inOrder(records, acknowledgeSetMock, kafkaConsumer);
+        inOrder.verify(records, atLeastOnce()).getPartitionsCommitOffset();
+        inOrder.verify(acknowledgeSetMock, atLeastOnce()).contains(commitPartitionsOffset);
+        inOrder.verify(kafkaConsumer).close();
     }
 }
 

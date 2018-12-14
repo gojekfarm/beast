@@ -28,13 +28,17 @@ public class OffsetCommitter implements Sink, Committer, Worker {
     @Setter
     private long defaultSleepMs;
 
+
+    private OffsetState offsetState;
+
     private volatile boolean stop;
 
-    public OffsetCommitter(BlockingQueue<Records> commitQueue, Set<Map<TopicPartition, OffsetAndMetadata>> partitionOffsetAck, KafkaConsumer<byte[], byte[]> consumer) {
+    public OffsetCommitter(BlockingQueue<Records> commitQueue, Set<Map<TopicPartition, OffsetAndMetadata>> partitionOffsetAck, KafkaConsumer<byte[], byte[]> consumer, OffsetState offsetState) {
         this.commitQueue = commitQueue;
         this.partitionOffsetAck = partitionOffsetAck;
         this.consumer = consumer;
         this.defaultSleepMs = DEFAULT_SLEEP_MS;
+        this.offsetState = offsetState;
     }
 
     public Status push(Records records) {
@@ -50,6 +54,7 @@ public class OffsetCommitter implements Sink, Committer, Worker {
 
     @Override
     public void close() {
+        consumer.close();
     }
 
     @Override
@@ -63,14 +68,19 @@ public class OffsetCommitter implements Sink, Committer, Worker {
         while (!stop) {
             Instant start = Instant.now();
             Records commitOffset = commitQueue.peek();
-            if (commitOffset != null && partitionOffsetAck.contains(commitOffset.getPartitionsCommitOffset())) {
+            Map<TopicPartition, OffsetAndMetadata> currentOffset = commitOffset.getPartitionsCommitOffset();
+            if (commitOffset != null && partitionOffsetAck.contains(currentOffset)) {
                 Map<TopicPartition, OffsetAndMetadata> partitionsCommitOffset = commitQueue.remove().getPartitionsCommitOffset();
+                offsetState.resetOffset(partitionsCommitOffset);
                 synchronized (consumer) {
                     consumer.commitSync(partitionsCommitOffset);
                 }
                 partitionOffsetAck.remove(partitionsCommitOffset);
                 log.info("commit partition {} size {}", partitionsCommitOffset.toString(), partitionsCommitOffset.size());
             } else {
+                if (offsetState.shouldCloseConsumer(currentOffset)) {
+                    close();
+                }
                 try {
                     Thread.sleep(defaultSleepMs);
                     statsClient.gauge("committer.queue.wait.ms", defaultSleepMs);
@@ -87,4 +97,6 @@ public class OffsetCommitter implements Sink, Committer, Worker {
     public void stop() {
         stop = true;
     }
+
 }
+
