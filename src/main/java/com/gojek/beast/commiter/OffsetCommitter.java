@@ -88,9 +88,9 @@ public class OffsetCommitter implements Sink, Committer, Worker {
                     e.printStackTrace();
                 }
             }
-
             statsClient.timeIt("committer.processing.time", start);
         }
+        consumer.close();
     }
 
     @Override

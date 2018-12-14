@@ -30,6 +30,8 @@ Run `cp env/sample.properties env/local.properties` and update the values
 * [] Change the existing test & build stages, to use `compress` command from systems script 
 * [] Test for synchronised threads for kafka consumer
 * [] Interface for kafka consumer (wrap threads in synchronised block)
+* [] Improve CI build time
+* [] Explore `awaitility` for tests
 
 ### Enhancements
 * [] BqSinkWorker - bqsink.push() could be made as async with commit in callback

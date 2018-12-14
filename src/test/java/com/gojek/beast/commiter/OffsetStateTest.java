@@ -36,12 +36,12 @@ public class OffsetStateTest {
 
     @Test
     public void shouldReturnTrueIfNoneAcknowledgedAndTimedOut() throws InterruptedException {
-        int ackTimeout = 100;
+        int ackTimeout = 70;
         Map<TopicPartition, OffsetAndMetadata> offset = new HashMap<>();
         offset.put(new TopicPartition("topic", 1), new OffsetAndMetadata(101));
         OffsetState state = new OffsetState(ackTimeout);
 
-        Thread.sleep(ackTimeout);
+        Thread.sleep(ackTimeout + 100);
 
         assertTrue(state.shouldCloseConsumer(offset));
     }
