@@ -59,3 +59,4 @@ Temporary Items
 generated/
 checkstyle/
 env/local.properties
+*.env

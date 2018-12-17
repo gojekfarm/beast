@@ -21,12 +21,9 @@ Run `cp env/sample.properties env/local.properties` and update the values
 ### Laundry List
 * [] remove artifactory creds
 * [] validation on configuration eg: duplicates in `proto_field_mappings`
-* [] retry on fail
-* [] Implement DeadLetterQueue
 * [] Clean up `build.gradle` and upgrade it
 * [] Copy jacaco and checkstyle reports to test artifacts
 * [] Add tests for stats.java
-* [] Reduce the test pipeline time
 * [] Change the existing test & build stages, to use `compress` command from systems script 
 * [] Test for synchronised threads for kafka consumer
 * [] Interface for kafka consumer (wrap threads in synchronised block)
