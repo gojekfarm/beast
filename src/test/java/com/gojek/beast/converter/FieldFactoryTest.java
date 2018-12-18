@@ -55,7 +55,7 @@ public class FieldFactoryTest {
     @Test
     public void shouldReturnNestedProtoField() {
         TestNestedMessage nestedMessage = TestNestedMessage.newBuilder()
-                .setNestedId("nested-id")
+                .setNestedId("shouldParseNestedMessageSuccessfully-id")
                 .setSingleMessage(message)
                 .build();
         Descriptors.FieldDescriptor nestedMessageDesc = nestedMessage.getDescriptorForType().findFieldByNumber(2);

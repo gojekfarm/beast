@@ -1,6 +1,7 @@
 package com.gojek.beast.converter.fields;
 
 import com.google.protobuf.Descriptors;
+import com.google.protobuf.DynamicMessage;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
@@ -9,8 +10,8 @@ public class NestedField implements ProtoField {
     private final Object fieldValue;
 
     @Override
-    public Object getValue() {
-        return fieldValue;
+    public DynamicMessage getValue() {
+        return (DynamicMessage) fieldValue;
     }
 
     @Override

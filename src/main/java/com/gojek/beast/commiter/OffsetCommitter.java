@@ -68,8 +68,11 @@ public class OffsetCommitter implements Sink, Committer, Worker {
         while (!stop) {
             Instant start = Instant.now();
             Records commitOffset = commitQueue.peek();
+            if (commitOffset == null) {
+                continue;
+            }
             Map<TopicPartition, OffsetAndMetadata> currentOffset = commitOffset.getPartitionsCommitOffset();
-            if (commitOffset != null && partitionOffsetAck.contains(currentOffset)) {
+            if (partitionOffsetAck.contains(currentOffset)) {
                 Map<TopicPartition, OffsetAndMetadata> partitionsCommitOffset = commitQueue.remove().getPartitionsCommitOffset();
                 offsetState.resetOffset(partitionsCommitOffset);
                 synchronized (consumer) {

@@ -22,7 +22,9 @@ public class ProtoIndexToFieldMapConverter implements org.aeonbits.owner.Convert
         }.getType();
         Map<String, Object> m = new Gson().fromJson(input, type);
         ColumnMapping properties = getProperties(m);
-        validate(properties);
+        if (Boolean.valueOf(System.getenv(Constants.Config.COLUMN_MAPPING_CHECK_DUPLICATES))) {
+            validate(properties);
+        }
         return properties;
     }
 
