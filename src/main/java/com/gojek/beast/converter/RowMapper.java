@@ -1,20 +1,14 @@
 package com.gojek.beast.converter;
 
 import com.gojek.beast.config.ColumnMapping;
-import com.gojek.beast.converter.fields.DefaultProtoField;
-import com.gojek.beast.converter.fields.EnumField;
 import com.gojek.beast.converter.fields.ProtoField;
-import com.gojek.beast.converter.fields.TimestampField;
 import com.gojek.beast.models.ConfigurationException;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.DynamicMessage;
 import lombok.AllArgsConstructor;
 
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @AllArgsConstructor
 public class RowMapper {
@@ -35,23 +29,11 @@ public class RowMapper {
             Descriptors.FieldDescriptor fieldDesc = descriptorForType.findFieldByNumber(protoIndex);
             if (fieldDesc != null) {
                 Object field = message.getField(fieldDesc);
-                Object fieldValue = getField(fieldDesc, field).getValue();
+                ProtoField protoField = FieldFactory.getField(fieldDesc, field);
+                Object fieldValue = protoField.getValue();
                 row.put(columnName, fieldValue);
             }
         });
         return row;
     }
-
-    private ProtoField getField(Descriptors.FieldDescriptor descriptor, Object fieldValue) {
-        List<ProtoField> protoFields = Arrays.asList(
-                new TimestampField(descriptor, fieldValue),
-                new EnumField(descriptor, fieldValue)
-        );
-        Optional<ProtoField> first = protoFields
-                .stream()
-                .filter(ProtoField::matches)
-                .findFirst();
-        return first.orElseGet(() -> new DefaultProtoField(descriptor, fieldValue));
-    }
-
 }

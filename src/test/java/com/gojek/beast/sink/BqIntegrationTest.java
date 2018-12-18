@@ -3,6 +3,7 @@ package com.gojek.beast.sink;
 import com.gojek.beast.Clock;
 import com.gojek.beast.TestKey;
 import com.gojek.beast.TestMessage;
+import com.gojek.beast.TestNestedMessage;
 import com.gojek.beast.config.ColumnMapping;
 import com.gojek.beast.converter.ConsumerRecordConverter;
 import com.gojek.beast.converter.Converter;
@@ -13,6 +14,7 @@ import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
 import com.gojek.beast.parser.ProtoParser;
 import com.gojek.beast.sink.bq.BqSink;
+import com.gojek.beast.sink.bq.InsertStatus;
 import com.gojek.de.stencil.StencilClientFactory;
 import com.google.api.client.http.LowLevelHttpResponse;
 import com.google.api.client.testing.http.MockHttpTransport;
@@ -99,6 +101,44 @@ public class BqIntegrationTest {
                             }
                         })
                 .build();
+    }
+
+    @Ignore
+    @Test
+    public void shouldPushNestedMessage() {
+        Instant now = Instant.now();
+        long second = now.getEpochSecond();
+        int nano = now.getNano();
+        Timestamp createdAt = Timestamp.newBuilder().setSeconds(second).setNanos(nano).build();
+        TestMessage testMessage = TestMessage.newBuilder()
+                .setOrderNumber("order-1")
+                .setOrderUrl("order-url")
+                .setOrderDetails("order-details")
+                .setCreatedAt(createdAt)
+                .setStatus(com.gojek.beast.Status.COMPLETED)
+                .build();
+        ProtoParser protoParser = new ProtoParser(StencilClientFactory.getClient(), TestNestedMessage.class.getName());
+        TestNestedMessage nestedMsg = TestNestedMessage.newBuilder()
+                .setSingleMessage(testMessage)
+                .setNestedId("nested-id")
+                .build();
+        TableId tableId = TableId.of("bqsinktest", "test_nested_messages");
+        BqSink bqSink = new BqSink(authenticatedBQ(), tableId);
+
+
+        OffsetInfo offsetInfo = new OffsetInfo("topic", 1, 1, Instant.now().toEpochMilli());
+        Map<String, Object> columns = new HashMap<>();
+        HashMap<String, Object> nested = new HashMap<>();
+        nested.put("order_number", nestedMsg.getSingleMessage().getOrderNumber());
+        nested.put("order_url", nestedMsg.getSingleMessage().getOrderUrl());
+
+        columns.put("id", nestedMsg.getNestedId());
+        columns.put("msg", nested);
+
+
+        InsertStatus push = bqSink.push(new Records(Arrays.asList(new Record(offsetInfo, columns))));
+
+        assertTrue(push.isSuccess());
     }
 
     @Ignore
