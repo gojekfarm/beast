@@ -51,7 +51,7 @@ public class RowMapper {
                     try {
                         columnName = ((ColumnMapping) value).get(Config.RECORD_NAME).toString();
                         fieldValue = getMappings((DynamicMessage) field, (ColumnMapping) value);
-                    } catch (RuntimeException e) {
+                    } catch (Exception e) {
                         log.error("Handling nested field failure", e);
                     }
                 }
