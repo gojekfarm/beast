@@ -10,6 +10,7 @@ Run `cp env/sample.properties env/local.properties` and update the values
 * Resiliency
 * No data loss
 * Kill process, when something goes wrong
+* Handle repeated, Duration, bytes, map 
 * Retry mechanism
 * DLQ
 * Add timestamps in logs

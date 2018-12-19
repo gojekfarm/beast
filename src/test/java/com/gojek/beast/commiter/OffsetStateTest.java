@@ -18,6 +18,7 @@ public class OffsetStateTest {
         Map<TopicPartition, OffsetAndMetadata> offset = new HashMap<>();
         offset.put(new TopicPartition("topic", 1), new OffsetAndMetadata(101));
         OffsetState state = new OffsetState(10000);
+        state.startTimer();
         state.resetOffset(offset);
 
         assertFalse(state.shouldCloseConsumer(offset));
@@ -29,6 +30,7 @@ public class OffsetStateTest {
         Map<TopicPartition, OffsetAndMetadata> offset = new HashMap<>();
         offset.put(new TopicPartition("topic", 1), new OffsetAndMetadata(101));
         OffsetState state = new OffsetState(ackTimeout);
+        state.startTimer();
         Thread.sleep(ackTimeout - 10);
 
         assertFalse(state.shouldCloseConsumer(offset));
@@ -40,6 +42,7 @@ public class OffsetStateTest {
         Map<TopicPartition, OffsetAndMetadata> offset = new HashMap<>();
         offset.put(new TopicPartition("topic", 1), new OffsetAndMetadata(101));
         OffsetState state = new OffsetState(ackTimeout);
+        state.startTimer();
 
         Thread.sleep(ackTimeout + 100);
 
@@ -53,6 +56,7 @@ public class OffsetStateTest {
         Map<TopicPartition, OffsetAndMetadata> currOffset = new HashMap<>();
         currOffset.put(new TopicPartition("topic", 1), new OffsetAndMetadata(101));
         OffsetState state = new OffsetState(ackTimeout);
+        state.startTimer();
         state.resetOffset(oldOffset);
         state.resetOffset(currOffset);
 
@@ -66,9 +70,21 @@ public class OffsetStateTest {
         Map<TopicPartition, OffsetAndMetadata> currOffset = new HashMap<>();
         currOffset.put(new TopicPartition("topic", 1), new OffsetAndMetadata(101));
         OffsetState state = new OffsetState(ackTimeout);
+        state.startTimer();
         state.resetOffset(currOffset);
 
         Thread.sleep(ackTimeout + 10);
         assertTrue(state.shouldCloseConsumer(currOffset));
+    }
+
+    @Test
+    public void shouldReturnFalseWhenTimerNotStarted() throws InterruptedException {
+        int ackTimeout = 10;
+        Map<TopicPartition, OffsetAndMetadata> currOffset = new HashMap<>();
+        currOffset.put(new TopicPartition("topic", 1), new OffsetAndMetadata(101));
+        OffsetState state = new OffsetState(ackTimeout);
+
+        Thread.sleep(ackTimeout + 10);
+        assertFalse(state.shouldCloseConsumer(currOffset));
     }
 }

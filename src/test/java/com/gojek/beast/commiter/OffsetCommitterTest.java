@@ -155,9 +155,10 @@ public class OffsetCommitterTest {
 
         new Thread(committer).start();
 
-        InOrder inOrder = inOrder(kafkaConsumer);
+        InOrder inOrder = inOrder(kafkaConsumer, offsetState);
         closeWorker(committer, 1000);
 
+        inOrder.verify(offsetState).startTimer();
         inOrder.verify(kafkaConsumer).commitSync(record1CommitOffset);
         inOrder.verify(kafkaConsumer).commitSync(record2CommitOffset);
         inOrder.verify(kafkaConsumer).commitSync(record3CommitOffset);
@@ -217,7 +218,8 @@ public class OffsetCommitterTest {
         closer.join();
         committerThread.join();
 
-        InOrder inOrder = inOrder(records, acknowledgeSetMock, kafkaConsumer);
+        InOrder inOrder = inOrder(offsetState, records, acknowledgeSetMock, kafkaConsumer);
+        inOrder.verify(offsetState).startTimer();
         inOrder.verify(records, atLeastOnce()).getPartitionsCommitOffset();
         inOrder.verify(acknowledgeSetMock, atLeastOnce()).contains(commitPartitionsOffset);
         inOrder.verify(kafkaConsumer).close();

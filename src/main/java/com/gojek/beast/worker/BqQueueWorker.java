@@ -46,6 +46,7 @@ public class BqQueueWorker implements Worker {
 
     @Override
     public void stop() {
+        log.info("Stopping BqWorker");
         stop = true;
         sink.close();
     }

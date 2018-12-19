@@ -46,6 +46,8 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 @Slf4j
@@ -75,14 +77,31 @@ public class Main {
         MessageConsumer messageConsumer = new MessageConsumer(kafkaConsumer, multiSink, parser, appConfig.getConsumerPollTimeoutMs());
 
 
-        new Thread(committer).start();
+
+        ConsumerWorker consumerWorker = new ConsumerWorker(messageConsumer);
+        Thread consumerThread = new Thread(consumerWorker, "consumer");
+        consumerThread.start();
+
 
         List<Worker> workers = spinBqWorkers(appConfig, readQueue, bqSink, committer);
         workers.add(committer);
+
+        Thread committerThread = new Thread(committer, "committer");
+        committerThread.start();
+
+        workers.add(consumerWorker);
+
         addShutDownHooks(workers);
 
-        // This is blocking one !!!
-        spinConsumers(messageConsumer);
+        try {
+            consumerThread.join();
+            committerThread.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            log.error("Consumer and committer join failed", e);
+        } finally {
+            workers.forEach(Worker::stop);
+        }
     }
 
     private static Sink buildBqSink(AppConfig appConfig) {
@@ -106,14 +125,9 @@ public class Main {
 
     private static void addShutDownHooks(List<Worker> workers) {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            Logger.getLogger("ShutDown").log(Level.INFO, "Shuttting down!!!");
             workers.forEach(Worker::stop);
         }));
-    }
-
-    private static List<Worker> spinConsumers(MessageConsumer messageConsumer) {
-        ConsumerWorker worker = new ConsumerWorker(messageConsumer);
-        worker.run();
-        return Arrays.asList(worker);
     }
 
     private static List<Worker> spinBqWorkers(AppConfig appConfig, BlockingQueue<Records> queue, Sink bqSink, Committer committer) {
@@ -121,7 +135,7 @@ public class Main {
         List<Worker> threads = new ArrayList<>(bqWorkerPoolSize);
         for (int i = 0; i < bqWorkerPoolSize; i++) {
             Worker bqQueueWorker = new BqQueueWorker(queue, bqSink, new WorkerConfig(appConfig.getBqWorkerPollTimeoutMs()), committer);
-            Thread bqWorkerThread = new Thread(bqQueueWorker);
+            Thread bqWorkerThread = new Thread(bqQueueWorker, "bq-worker-" + i);
             bqWorkerThread.start();
             threads.add(bqQueueWorker);
         }

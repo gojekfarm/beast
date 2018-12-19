@@ -39,6 +39,7 @@ message TestNestedRepeatedMessage {
 message TestMapMessage {
     string order_number = 1;
     map<string, string> current_state = 2;
+    bytes user_token = 3;
 }
 
 enum Status {

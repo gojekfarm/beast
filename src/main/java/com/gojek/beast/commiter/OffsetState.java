@@ -8,6 +8,7 @@ import java.util.Map;
 
 public class OffsetState {
     private final long acknowledgeTimeoutMs;
+    private boolean start;
     private Map<TopicPartition, OffsetAndMetadata> lastCommitOffset;
     private Instant lastCommittedTime;
 
@@ -17,6 +18,7 @@ public class OffsetState {
     }
 
     public boolean shouldCloseConsumer(Map<TopicPartition, OffsetAndMetadata> currentOffset) {
+        if (!start) return false;
         boolean sameOffset = lastCommitOffset == currentOffset || currentOffset.equals(lastCommitOffset);
         boolean ackTimedOut = (Instant.now().toEpochMilli() - lastCommittedTime.toEpochMilli()) > acknowledgeTimeoutMs;
         boolean neverAcknowledged = lastCommitOffset == null && ackTimedOut;
@@ -26,5 +28,9 @@ public class OffsetState {
     public void resetOffset(Map<TopicPartition, OffsetAndMetadata> acknowledgedOffset) {
         lastCommitOffset = acknowledgedOffset;
         lastCommittedTime = Instant.now();
+    }
+
+    public void startTimer() {
+        start = true;
     }
 }

@@ -54,6 +54,7 @@ public class OffsetCommitter implements Sink, Committer, Worker {
 
     @Override
     public void close() {
+        System.exit(1);
         consumer.close();
     }
 
@@ -65,6 +66,8 @@ public class OffsetCommitter implements Sink, Committer, Worker {
 
     @Override
     public void run() {
+        offsetState.startTimer();
+
         while (!stop) {
             Instant start = Instant.now();
             Records commitOffset = commitQueue.peek();
@@ -82,6 +85,7 @@ public class OffsetCommitter implements Sink, Committer, Worker {
                 log.info("commit partition {} size {}", partitionsCommitOffset.toString(), partitionsCommitOffset.size());
             } else {
                 if (offsetState.shouldCloseConsumer(currentOffset)) {
+                    log.error("Acknowledgement Timeout");
                     close();
                 }
                 try {

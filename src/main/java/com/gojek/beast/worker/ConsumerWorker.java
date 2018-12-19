@@ -28,6 +28,7 @@ public class ConsumerWorker implements Worker {
 
     @Override
     public void stop() {
+        log.info("Stopping consumer");
         stop = true;
     }
 }
