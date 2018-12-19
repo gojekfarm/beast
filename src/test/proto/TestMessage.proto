@@ -3,6 +3,7 @@ syntax = "proto3";
 package com.gojek.beast;
 
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
 
 option java_multiple_files = true;
 option java_package = "com.gojek.beast";
@@ -22,6 +23,9 @@ message TestMessage {
     int64 discount = 6;
     bool success = 7;
     float price = 8;
+    map<string, string> current_state = 9;
+    bytes user_token = 10;
+    google.protobuf.Duration trip_duration = 11;
 }
 
 message TestNestedMessage {
@@ -34,12 +38,6 @@ message TestNestedRepeatedMessage {
     repeated TestMessage repeated_message = 2;
     int32 number_field = 3;
     repeated int32 repeated_number_field = 4;
-}
-
-message TestMapMessage {
-    string order_number = 1;
-    map<string, string> current_state = 2;
-    bytes user_token = 3;
 }
 
 enum Status {

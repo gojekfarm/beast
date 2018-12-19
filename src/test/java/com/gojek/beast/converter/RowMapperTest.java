@@ -118,7 +118,7 @@ public class RowMapperTest {
     @Test()
     public void shouldReturnNullWhenIndexNotPresent() {
         ColumnMapping fieldMappings = new ColumnMapping();
-        fieldMappings.put("10", "some_column_in_bq");
+        fieldMappings.put("100", "some_column_in_bq");
 
         Map<String, Object> fields = new RowMapper(fieldMappings).map(dynamicMessage);
         assertNull(fields.get("some_column_in_bq"));
