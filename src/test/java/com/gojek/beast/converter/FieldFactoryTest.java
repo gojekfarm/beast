@@ -31,7 +31,7 @@ public class FieldFactoryTest {
                 .setOrderDetails("order-details")
                 .setCreatedAt(createdAt)
                 .setStatus(Status.COMPLETED)
-                .putCurrentState("payment","cash")
+                .putCurrentState("payment", "cash")
                 .setUserToken(ByteString.copyFrom("token".getBytes()))
                 .setTripDuration(Duration.newBuilder().setSeconds(1).setNanos(1000000000).build())
                 .build();

@@ -66,7 +66,6 @@ public interface AppConfig extends Config {
     @Key("OFFSET_ACK_TIMEOUT")
     long getOffsetAckTimeoutMs();
 
-
     @DefaultValue("true")
     @Key(Constants.Config.COLUMN_MAPPING_CHECK_DUPLICATES)
     Boolean isColumnMappingDuplicateValidationEnabled();

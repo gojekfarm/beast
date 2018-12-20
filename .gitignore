@@ -57,6 +57,5 @@ Temporary Items
 *.swp
 
 generated/
-checkstyle/
 env/local.properties
 *.env

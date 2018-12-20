@@ -20,7 +20,9 @@ public class OffsetState {
     }
 
     public boolean shouldCloseConsumer(Map<TopicPartition, OffsetAndMetadata> currentOffset) {
-        if (!start) return false;
+        if (!start) {
+            return false;
+        }
         boolean sameOffset = lastCommitOffset == currentOffset || currentOffset.equals(lastCommitOffset);
         boolean ackTimedOut = (Instant.now().toEpochMilli() - lastCommittedTime.toEpochMilli()) > acknowledgeTimeoutMs;
         boolean neverAcknowledged = lastCommitOffset == null && ackTimedOut;

@@ -1,6 +1,11 @@
 package com.gojek.beast.converter;
 
-import com.gojek.beast.converter.fields.*;
+import com.gojek.beast.converter.fields.ByteField;
+import com.gojek.beast.converter.fields.DefaultProtoField;
+import com.gojek.beast.converter.fields.EnumField;
+import com.gojek.beast.converter.fields.NestedField;
+import com.gojek.beast.converter.fields.ProtoField;
+import com.gojek.beast.converter.fields.TimestampField;
 import com.google.protobuf.Descriptors;
 import lombok.AllArgsConstructor;
 

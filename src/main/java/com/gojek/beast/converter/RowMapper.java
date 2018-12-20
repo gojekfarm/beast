@@ -27,14 +27,14 @@ public class RowMapper {
         return getMappings(message, mapping);
     }
 
-    private Map<String, Object> getMappings(DynamicMessage message, ColumnMapping mapping) {
-        if (message == null || mapping == null || mapping.isEmpty()) {
+    private Map<String, Object> getMappings(DynamicMessage message, ColumnMapping columnMapping) {
+        if (message == null || columnMapping == null || columnMapping.isEmpty()) {
             return Collections.emptyMap();
         }
         Descriptors.Descriptor descriptorForType = message.getDescriptorForType();
 
-        Map<String, Object> row = new HashMap<>(mapping.size());
-        mapping.forEach((key, value) -> {
+        Map<String, Object> row = new HashMap<>(columnMapping.size());
+        columnMapping.forEach((key, value) -> {
             String columnName = value.toString();
             String column = key.toString();
             if (column.equals(Config.RECORD_NAME)) {
