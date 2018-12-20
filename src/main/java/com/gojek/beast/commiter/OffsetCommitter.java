@@ -9,7 +9,6 @@ import com.gojek.beast.stats.Stats;
 import com.gojek.beast.worker.Worker;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 
@@ -24,7 +23,7 @@ public class OffsetCommitter implements Sink, Committer, Worker {
     private final Stats statsClient = Stats.client();
     private BlockingQueue<Records> commitQueue;
     private Set<Map<TopicPartition, OffsetAndMetadata>> partitionOffsetAck;
-    private KafkaConsumer<byte[], byte[]> consumer;
+    private KafkaCommitter kafkaCommitter;
     @Setter
     private long defaultSleepMs;
 
@@ -33,10 +32,10 @@ public class OffsetCommitter implements Sink, Committer, Worker {
 
     private volatile boolean stop;
 
-    public OffsetCommitter(BlockingQueue<Records> commitQueue, Set<Map<TopicPartition, OffsetAndMetadata>> partitionOffsetAck, KafkaConsumer<byte[], byte[]> consumer, OffsetState offsetState) {
+    public OffsetCommitter(BlockingQueue<Records> commitQueue, Set<Map<TopicPartition, OffsetAndMetadata>> partitionOffsetAck, KafkaCommitter kafkaCommitter, OffsetState offsetState) {
         this.commitQueue = commitQueue;
         this.partitionOffsetAck = partitionOffsetAck;
-        this.consumer = consumer;
+        this.kafkaCommitter = kafkaCommitter;
         this.defaultSleepMs = DEFAULT_SLEEP_MS;
         this.offsetState = offsetState;
     }
@@ -54,8 +53,9 @@ public class OffsetCommitter implements Sink, Committer, Worker {
 
     @Override
     public void close() {
+        log.info("Closing committer");
+        kafkaCommitter.wakeup();
         System.exit(1);
-        consumer.close();
     }
 
     @Override
@@ -78,8 +78,8 @@ public class OffsetCommitter implements Sink, Committer, Worker {
             if (partitionOffsetAck.contains(currentOffset)) {
                 Map<TopicPartition, OffsetAndMetadata> partitionsCommitOffset = commitQueue.remove().getPartitionsCommitOffset();
                 offsetState.resetOffset(partitionsCommitOffset);
-                synchronized (consumer) {
-                    consumer.commitSync(partitionsCommitOffset);
+                synchronized (kafkaCommitter) {
+                    kafkaCommitter.commitSync(partitionsCommitOffset);
                 }
                 partitionOffsetAck.remove(partitionsCommitOffset);
                 log.info("commit partition {} size {}", partitionsCommitOffset.toString(), partitionsCommitOffset.size());
@@ -97,7 +97,7 @@ public class OffsetCommitter implements Sink, Committer, Worker {
             }
             statsClient.timeIt("committer.processing.time", start);
         }
-        consumer.close();
+        kafkaCommitter.wakeup();
     }
 
     @Override

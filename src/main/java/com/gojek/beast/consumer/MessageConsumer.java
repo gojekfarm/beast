@@ -12,7 +12,7 @@ import com.gojek.beast.stats.Stats;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.errors.WakeupException;
 
 import java.time.Instant;
 import java.util.List;
@@ -21,26 +21,23 @@ import java.util.List;
 @AllArgsConstructor
 public class MessageConsumer {
 
-    private final KafkaConsumer<byte[], byte[]> kafkaConsumer;
+    private final KafkaConsumer kafkaConsumer;
     private final Sink sink;
     private final Converter recordConverter;
     private final long timeoutMillis;
 
     private final Stats statsClient = Stats.client();
 
-    public Status consume() {
+    public Status consume() throws WakeupException {
         Instant startTime = Instant.now();
-        ConsumerRecords<byte[], byte[]> messages;
-        synchronized (kafkaConsumer) {
-            messages = kafkaConsumer.poll(timeoutMillis);
-        }
-        statsClient.gauge("consumer.poll.messages", messages.count());
+        ConsumerRecords<byte[], byte[]> messages = kafkaConsumer.poll(timeoutMillis);
+        statsClient.gauge("kafkaConsumer.poll.messages", messages.count());
         if (messages.isEmpty()) {
             return new SuccessStatus();
         }
         log.info("Pulled {} messages", messages.count());
         Status status = pushToSink(messages);
-        statsClient.timeIt("consumer.consumption.time", startTime);
+        statsClient.timeIt("kafkaConsumer.consumption.time", startTime);
         return status;
     }
 

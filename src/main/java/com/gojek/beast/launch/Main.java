@@ -8,6 +8,7 @@ import com.gojek.beast.config.AppConfig;
 import com.gojek.beast.config.ColumnMapping;
 import com.gojek.beast.config.KafkaConfig;
 import com.gojek.beast.config.WorkerConfig;
+import com.gojek.beast.consumer.KafkaConsumer;
 import com.gojek.beast.consumer.MessageConsumer;
 import com.gojek.beast.converter.ConsumerRecordConverter;
 import com.gojek.beast.converter.RowMapper;
@@ -28,7 +29,6 @@ import com.google.cloud.bigquery.BigQueryOptions;
 import com.google.cloud.bigquery.TableId;
 import lombok.extern.slf4j.Slf4j;
 import org.aeonbits.owner.ConfigFactory;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.consumer.internals.NoOpConsumerRebalanceListener;
 import org.apache.kafka.common.TopicPartition;
@@ -57,7 +57,7 @@ public class Main {
         Map<String, Object> consumerConfig = new KafkaConfig(appConfig.getKafkaConfigPrefix()).get();
         ColumnMapping columnMapping = appConfig.getProtoColumnMapping();
 
-        KafkaConsumer<byte[], byte[]> kafkaConsumer = new KafkaConsumer<>(consumerConfig);
+        org.apache.kafka.clients.consumer.KafkaConsumer kafkaConsumer = new org.apache.kafka.clients.consumer.KafkaConsumer(consumerConfig);
         kafkaConsumer.subscribe(Pattern.compile(appConfig.getKafkaTopic()), new NoOpConsumerRebalanceListener());
 
         //BigQuery
@@ -68,14 +68,14 @@ public class Main {
         BlockingQueue<Records> committerQueue = new LinkedBlockingQueue<>(appConfig.getCommitQueueCapacity());
         QueueSink queueSink = new QueueSink(readQueue);
         Set<Map<TopicPartition, OffsetAndMetadata>> partitionsAck = Collections.synchronizedSet(new CopyOnWriteArraySet<Map<TopicPartition, OffsetAndMetadata>>());
-        OffsetCommitter committer = new OffsetCommitter(committerQueue, partitionsAck, kafkaConsumer, new OffsetState(appConfig.getOffsetAckTimeoutMs()));
+        KafkaConsumer consumer = new KafkaConsumer(kafkaConsumer);
+        OffsetCommitter committer = new OffsetCommitter(committerQueue, partitionsAck, consumer, new OffsetState(appConfig.getOffsetAckTimeoutMs()));
         MultiSink multiSink = new MultiSink(Arrays.asList(queueSink, committer));
 
 
         ProtoParser protoParser = new ProtoParser(StencilClientFactory.getClient(appConfig.getStencilUrl(), new HashMap<>()), appConfig.getProtoSchema());
         ConsumerRecordConverter parser = new ConsumerRecordConverter(new RowMapper(columnMapping), protoParser, new Clock());
-        MessageConsumer messageConsumer = new MessageConsumer(kafkaConsumer, multiSink, parser, appConfig.getConsumerPollTimeoutMs());
-
+        MessageConsumer messageConsumer = new MessageConsumer(consumer, multiSink, parser, appConfig.getConsumerPollTimeoutMs());
 
 
         ConsumerWorker consumerWorker = new ConsumerWorker(messageConsumer);
@@ -98,7 +98,7 @@ public class Main {
             committerThread.join();
         } catch (InterruptedException e) {
             e.printStackTrace();
-            log.error("Consumer and committer join failed", e);
+            log.error("KafkaConsumer and committer join failed", e);
         } finally {
             workers.forEach(Worker::stop);
         }

@@ -1,8 +1,8 @@
 package com.gojek.beast.commiter;
 
+import com.gojek.beast.consumer.KafkaConsumer;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.After;
@@ -222,7 +222,7 @@ public class OffsetCommitterTest {
         inOrder.verify(offsetState).startTimer();
         inOrder.verify(records, atLeastOnce()).getPartitionsCommitOffset();
         inOrder.verify(acknowledgeSetMock, atLeastOnce()).contains(commitPartitionsOffset);
-        inOrder.verify(kafkaConsumer).close();
+        inOrder.verify(kafkaConsumer).wakeup();
     }
 }
 

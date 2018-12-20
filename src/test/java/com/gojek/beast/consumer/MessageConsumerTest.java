@@ -8,7 +8,6 @@ import com.gojek.beast.models.Status;
 import com.gojek.beast.models.SuccessStatus;
 import com.gojek.beast.sink.Sink;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -35,7 +34,7 @@ public class MessageConsumerTest {
     private ConsumerRecords messages;
     private long timeout = 10;
     @Mock
-    private KafkaConsumer<byte[], byte[]> kafkaConsumer;
+    private org.apache.kafka.clients.consumer.KafkaConsumer kafkaConsumer;
     @Mock
     private Sink sink;
     @Mock
@@ -47,7 +46,7 @@ public class MessageConsumerTest {
 
     @Before
     public void setUp() {
-        consumer = new MessageConsumer(kafkaConsumer, sink, converter, timeout);
+        consumer = new MessageConsumer(new KafkaConsumer(kafkaConsumer), sink, converter, timeout);
         when(kafkaConsumer.poll(timeout)).thenReturn(messages);
     }
 
