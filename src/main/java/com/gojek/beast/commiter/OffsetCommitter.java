@@ -85,7 +85,7 @@ public class OffsetCommitter implements Sink, Committer, Worker {
                 log.info("commit partition {} size {}", partitionsCommitOffset.toString(), partitionsCommitOffset.size());
             } else {
                 if (offsetState.shouldCloseConsumer(currentOffset)) {
-                    log.error("Acknowledgement Timeout");
+                    log.error("Acknowledgement Timeout exceeded: {}", offsetState.getAcknowledgeTimeoutMs());
                     close();
                 }
                 try {

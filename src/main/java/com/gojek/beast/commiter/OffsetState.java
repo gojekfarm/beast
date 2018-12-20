@@ -1,5 +1,6 @@
 package com.gojek.beast.commiter;
 
+import lombok.Getter;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 
@@ -7,6 +8,7 @@ import java.time.Instant;
 import java.util.Map;
 
 public class OffsetState {
+    @Getter
     private final long acknowledgeTimeoutMs;
     private boolean start;
     private Map<TopicPartition, OffsetAndMetadata> lastCommitOffset;

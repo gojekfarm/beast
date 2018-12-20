@@ -53,4 +53,8 @@ public class MessageConsumer {
 
         return sink.push(new Records(records));
     }
+
+    public void close() {
+        kafkaConsumer.close();
+    }
 }

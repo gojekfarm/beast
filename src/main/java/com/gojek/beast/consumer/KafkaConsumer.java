@@ -14,14 +14,16 @@ import java.util.Map;
 public class KafkaConsumer implements KafkaCommitter {
     private final org.apache.kafka.clients.consumer.KafkaConsumer<byte[], byte[]> kafkaConsumer;
 
-    public ConsumerRecords<byte[], byte[]> poll(long timeout) {
+    public synchronized ConsumerRecords<byte[], byte[]> poll(long timeout) {
         return kafkaConsumer.poll(timeout);
     }
 
     @Override
     public void commitSync(Map<TopicPartition, OffsetAndMetadata> offsets) {
         log.debug("Committing offsets {}", offsets);
-        kafkaConsumer.commitSync(offsets);
+        synchronized (kafkaConsumer) {
+            kafkaConsumer.commitSync(offsets);
+        }
     }
 
     @Override

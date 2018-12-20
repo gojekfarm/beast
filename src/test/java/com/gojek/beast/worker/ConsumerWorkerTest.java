@@ -2,6 +2,7 @@ package com.gojek.beast.worker;
 
 import com.gojek.beast.consumer.MessageConsumer;
 import com.gojek.beast.models.SuccessStatus;
+import org.apache.kafka.common.errors.WakeupException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -39,5 +40,17 @@ public class ConsumerWorkerTest {
 
         verify(consumer, times(1)).consume();
 
+    }
+
+    @Test
+    public void shouldStopConsumptionWhenWakeupExceptionIsThrown() throws InterruptedException {
+        Worker worker = new ConsumerWorker(consumer);
+        when(consumer.consume()).thenThrow(WakeupException.class);
+        new Thread(worker).start();
+
+        Thread.sleep(15L);
+        worker.stop();
+        verify(consumer, times(1)).consume();
+        verify(consumer).close();
     }
 }
