@@ -3,6 +3,7 @@ package com.gojek.beast.util;
 import com.gojek.beast.Status;
 import com.gojek.beast.TestMessage;
 import com.gojek.beast.TestNestedMessage;
+import com.google.protobuf.Duration;
 import com.google.protobuf.Timestamp;
 
 import java.time.Instant;
@@ -19,6 +20,7 @@ public class ProtoUtil {
                 .setOrderDetails("order-details-" + call)
                 .setCreatedAt(createdAt)
                 .setStatus(Status.COMPLETED)
+                .setTripDuration(Duration.newBuilder().setSeconds(1).setNanos(1000000000).build())
                 .build();
 
     }

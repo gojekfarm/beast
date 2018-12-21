@@ -33,7 +33,7 @@ public class FieldFactoryTest {
                 .setStatus(Status.COMPLETED)
                 .putCurrentState("payment","cash")
                 .setUserToken(ByteString.copyFrom("token".getBytes()))
-                .setTripDuration(Duration.newBuilder().setSeconds(1).build())
+                .setTripDuration(Duration.newBuilder().setSeconds(1).setNanos(1000000000).build())
                 .build();
     }
 
@@ -75,6 +75,15 @@ public class FieldFactoryTest {
         Descriptors.FieldDescriptor nestedMessageDesc = nestedMessage.getDescriptorForType().findFieldByNumber(2);
 
         ProtoField protoField = FieldFactory.getField(nestedMessageDesc, nestedMessage.getField(nestedMessageDesc));
+
+        assertEquals(NestedField.class.getName(), protoField.getClass().getName());
+    }
+
+    @Test
+    public void shouldReturnDurationFieldAsNested() {
+        Descriptors.FieldDescriptor durationDesc = message.getDescriptorForType().findFieldByNumber(11);
+
+        ProtoField protoField = FieldFactory.getField(durationDesc, message.getField(durationDesc));
 
         assertEquals(NestedField.class.getName(), protoField.getClass().getName());
     }

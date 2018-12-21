@@ -10,6 +10,7 @@ import com.gojek.beast.parser.ProtoParser;
 import com.gojek.beast.util.ProtoUtil;
 import com.gojek.de.stencil.StencilClientFactory;
 import com.google.api.client.util.DateTime;
+import com.google.protobuf.Duration;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.Timestamp;
 import org.junit.Before;
@@ -66,6 +67,28 @@ public class RowMapperTest {
         assertEquals(new DateTime(nowMillis), fields.get("created_at"));
         assertEquals("COMPLETED", fields.get("order_status"));
         assertEquals(fieldMappings.size(), fields.size());
+    }
+
+    @Test
+    public void shouldParseDurationMessageSuccessfully() throws ParseException {
+        ColumnMapping fieldMappings = new ColumnMapping();
+        ColumnMapping durationMappings = new ColumnMapping();
+        durationMappings.put("record_name", "duration");
+        durationMappings.put("1", "seconds");
+        durationMappings.put("2", "nanos");
+        fieldMappings.put("1", "duration_id");
+        fieldMappings.put("11", durationMappings);
+
+        TestMessage message = ProtoUtil.generateTestMessage(now);
+
+        ProtoParser messageProtoParser = new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName());
+        Map<String, Object> messageFields = new RowMapper(fieldMappings).map(messageProtoParser.parse(message.toByteArray()));
+        assertEquals("order-1", messageFields.get("duration_id"));
+
+        ProtoParser durationProtoParser = new ProtoParser(StencilClientFactory.getClient(), Duration.class.getName());
+        Map<String, Object> durationFields = new RowMapper(durationMappings).map(durationProtoParser.parse(message.getTripDuration().toByteArray()));
+        assertEquals((long) 1, durationFields.get("seconds"));
+        assertEquals(1000000000, durationFields.get("nanos"));
     }
 
     @Test
