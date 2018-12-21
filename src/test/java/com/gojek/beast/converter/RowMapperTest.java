@@ -80,13 +80,10 @@ public class RowMapperTest {
         fieldMappings.put("11", durationMappings);
 
         TestMessage message = ProtoUtil.generateTestMessage(now);
-
         ProtoParser messageProtoParser = new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName());
-        Map<String, Object> messageFields = new RowMapper(fieldMappings).map(messageProtoParser.parse(message.toByteArray()));
-        assertEquals("order-1", messageFields.get("duration_id"));
-
-        ProtoParser durationProtoParser = new ProtoParser(StencilClientFactory.getClient(), Duration.class.getName());
-        Map<String, Object> durationFields = new RowMapper(durationMappings).map(durationProtoParser.parse(message.getTripDuration().toByteArray()));
+        Map<String, Object> fields = new RowMapper(fieldMappings).map(messageProtoParser.parse(message.toByteArray()));
+        Map durationFields = (Map) fields.get("duration");
+        assertEquals("order-1", fields.get("duration_id"));
         assertEquals((long) 1, durationFields.get("seconds"));
         assertEquals(1000000000, durationFields.get("nanos"));
     }
