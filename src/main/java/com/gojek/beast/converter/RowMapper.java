@@ -10,8 +10,10 @@ import com.google.protobuf.DynamicMessage;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -41,15 +43,20 @@ public class RowMapper {
                 return;
             }
             Integer protoIndex = Integer.valueOf(column);
-
             Descriptors.FieldDescriptor fieldDesc = descriptorForType.findFieldByNumber(protoIndex);
             if (fieldDesc != null && !message.getField(fieldDesc).toString().isEmpty()) {
                 Object field = message.getField(fieldDesc);
                 ProtoField protoField = FieldFactory.getField(fieldDesc, field);
                 Object fieldValue = protoField.getValue();
+
+                if (fieldValue instanceof List) {
+                    addRepeatedFields(row, (String) key, value, (List<Object>) fieldValue);
+                    return;
+                }
+
                 if (protoField.getClass().getName().equals(NestedField.class.getName())) {
                     try {
-                        columnName = ((ColumnMapping) value).get(Config.RECORD_NAME).toString();
+                        columnName = getNestedColumnName((ColumnMapping) value);
                         fieldValue = getMappings((DynamicMessage) field, (ColumnMapping) value);
                     } catch (Exception e) {
                         log.error("Handling nested field failure", e);
@@ -59,5 +66,25 @@ public class RowMapper {
             }
         });
         return row;
+    }
+
+    private String getNestedColumnName(ColumnMapping value) {
+        return value.get(Config.RECORD_NAME).toString();
+    }
+
+    private void addRepeatedFields(Map<String, Object> row, String key, Object value, List<Object> fieldValue) {
+        List<Object> repeatedNestedFields = new ArrayList<>();
+        String columnName = null;
+        for (Object f : fieldValue) {
+            if (f instanceof DynamicMessage) {
+                ColumnMapping nestedMappings = (ColumnMapping) value;
+                repeatedNestedFields.add(getMappings((DynamicMessage) f, nestedMappings));
+                columnName = getNestedColumnName(nestedMappings);
+            } else {
+                repeatedNestedFields.add(f);
+                columnName = (String) value;
+            }
+        }
+        row.put(columnName, repeatedNestedFields);
     }
 }

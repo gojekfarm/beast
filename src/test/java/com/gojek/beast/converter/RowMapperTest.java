@@ -3,6 +3,7 @@ package com.gojek.beast.converter;
 import com.gojek.beast.Status;
 import com.gojek.beast.TestMessage;
 import com.gojek.beast.TestNestedMessage;
+import com.gojek.beast.TestNestedRepeatedMessage;
 import com.gojek.beast.config.ColumnMapping;
 import com.gojek.beast.models.ConfigurationException;
 import com.gojek.beast.models.ParseException;
@@ -19,6 +20,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
@@ -111,11 +113,61 @@ public class RowMapperTest {
         });
     }
 
+    @Test
+    public void shouldParseRepeatedPrimitives() throws ParseException {
+        ColumnMapping fieldMappings = new ColumnMapping();
+        fieldMappings.put("1", "order_number");
+        fieldMappings.put("12", "aliases");
+
+        String orderNumber = "order-1";
+        TestMessage message = TestMessage.newBuilder()
+                .setOrderNumber(orderNumber)
+                .setOrderUrl("order-url-1")
+                .addAliases("alias1").addAliases("alias2")
+                .build();
+
+        ProtoParser protoParser = new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName());
+        Map<String, Object> fields = new RowMapper(fieldMappings).map(protoParser.parse(message.toByteArray()));
+
+        assertEquals(orderNumber, fields.get("order_number"));
+        assertEquals(Arrays.asList("alias1", "alias2"), fields.get("aliases"));
+    }
+
+    @Test
+    public void shouldParseRepeatedNestedMessages() throws ParseException {
+        int number = 1234;
+        TestMessage nested1 = ProtoUtil.generateTestMessage(now);
+        TestMessage nested2 = ProtoUtil.generateTestMessage(now);
+        TestNestedRepeatedMessage message = TestNestedRepeatedMessage.newBuilder()
+                .setNumberField(number)
+                .addRepeatedMessage(nested1)
+                .addRepeatedMessage(nested2)
+                .build();
+
+
+        ColumnMapping fieldMappings = new ColumnMapping();
+        fieldMappings.put("3", "number_field");
+        fieldMappings.put("2", getTestMessageColumnMapping());
+
+
+        ProtoParser protoParser = new ProtoParser(StencilClientFactory.getClient(), TestNestedRepeatedMessage.class.getName());
+        Map<String, Object> fields = new RowMapper(fieldMappings).map(protoParser.parse(message.toByteArray()));
+
+        assertEquals(number, fields.get("number_field"));
+        List repeatedMessagesMap = (List) fields.get("msg");
+        assertTestMessageFields((Map) repeatedMessagesMap.get(0), nested1);
+        assertTestMessageFields((Map) repeatedMessagesMap.get(1), nested2);
+    }
+
     private void assertNestedMessage(TestNestedMessage msg, Map<String, Object> fields) {
         assertEquals(msg.getNestedId(), fields.get("nested_id"));
         Map nestedFields = (Map) fields.get("msg");
         assertNotNull(nestedFields);
         TestMessage message = msg.getSingleMessage();
+        assertTestMessageFields(nestedFields, message);
+    }
+
+    private void assertTestMessageFields(Map nestedFields, TestMessage message) {
         assertEquals(message.getOrderNumber(), nestedFields.get("order_number_field"));
         assertEquals(message.getOrderUrl(), nestedFields.get("order_url_field"));
         assertEquals(message.getOrderDetails(), nestedFields.get("order_details_field"));

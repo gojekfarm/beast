@@ -4,6 +4,8 @@ import com.google.protobuf.Descriptors;
 import com.google.protobuf.DynamicMessage;
 import lombok.AllArgsConstructor;
 
+import java.util.List;
+
 @AllArgsConstructor
 public class NestedField implements ProtoField {
     private final Descriptors.FieldDescriptor descriptor;
@@ -16,6 +18,7 @@ public class NestedField implements ProtoField {
 
     @Override
     public boolean matches() {
-        return descriptor.getJavaType().name().equals("MESSAGE");
+        return descriptor.getJavaType().name().equals("MESSAGE")
+                && !(fieldValue instanceof List);
     }
 }

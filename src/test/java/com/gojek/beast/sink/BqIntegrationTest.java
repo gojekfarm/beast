@@ -4,17 +4,20 @@ import com.gojek.beast.Clock;
 import com.gojek.beast.TestKey;
 import com.gojek.beast.TestMessage;
 import com.gojek.beast.TestNestedMessage;
+import com.gojek.beast.TestNestedRepeatedMessage;
 import com.gojek.beast.config.ColumnMapping;
 import com.gojek.beast.converter.ConsumerRecordConverter;
 import com.gojek.beast.converter.Converter;
 import com.gojek.beast.converter.RowMapper;
 import com.gojek.beast.models.OffsetInfo;
+import com.gojek.beast.models.ParseException;
 import com.gojek.beast.models.Record;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
 import com.gojek.beast.parser.ProtoParser;
 import com.gojek.beast.sink.bq.BqSink;
 import com.gojek.beast.sink.bq.InsertStatus;
+import com.gojek.beast.util.ProtoUtil;
 import com.gojek.de.stencil.StencilClientFactory;
 import com.google.api.client.http.LowLevelHttpResponse;
 import com.google.api.client.testing.http.MockHttpTransport;
@@ -45,6 +48,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -79,7 +83,7 @@ public class BqIntegrationTest {
 
     public BigQuery authenticatedBQ() {
         GoogleCredentials credentials = null;
-        File credentialsPath = new File(System.getenv("SOME_CREDENTIALS_FILE"));
+        File credentialsPath = new File(System.getenv("GOOGLE_CREDENTIALS"));
         try (FileInputStream serviceAccountStream = new FileInputStream(credentialsPath)) {
             credentials = ServiceAccountCredentials.fromStream(serviceAccountStream);
         } catch (IOException e) {
@@ -143,6 +147,38 @@ public class BqIntegrationTest {
 
     @Ignore
     @Test
+    public void shouldPushTestNestedRepeatedMessages() throws ParseException {
+        Instant now = Instant.now();
+        long second = now.getEpochSecond();
+        ProtoParser protoParser = new ProtoParser(StencilClientFactory.getClient(), TestNestedRepeatedMessage.class.getName());
+        TestNestedRepeatedMessage protoMessage = TestNestedRepeatedMessage.newBuilder()
+                .addRepeatedMessage(ProtoUtil.generateTestMessage(now))
+                .addRepeatedMessage(ProtoUtil.generateTestMessage(now))
+                .build();
+
+        TableId tableId = TableId.of("bqsinktest", "nested_messages");
+        BqSink bqSink = new BqSink(authenticatedBQ(), tableId);
+
+        ColumnMapping columnMapping = new ColumnMapping();
+        ColumnMapping nested = new ColumnMapping();
+        nested.put("record_name", "messsages");
+        nested.put("1", "order_number");
+        nested.put("2", "order_url");
+        columnMapping.put("2", nested);
+        ConsumerRecordConverter customConverter = new ConsumerRecordConverter(new RowMapper(columnMapping), protoParser, clock);
+
+
+        ConsumerRecord<byte[], byte[]> consumerRecord = new ConsumerRecord<>("topic", 1, 1, second, TimestampType.CREATE_TIME,
+                0, 0, 1, null, protoMessage.toByteArray());
+
+        List<Record> records = customConverter.convert(Collections.singleton(consumerRecord));
+        InsertStatus push = bqSink.push(new Records(records));
+
+        assertTrue(push.isSuccess());
+    }
+
+    @Ignore
+    @Test
     public void shouldPushMessagesToBqActual() {
         TableId tableId = TableId.of("bqsinktest", "users");
         BqSink bqSink = new BqSink(authenticatedBQ(), tableId);
@@ -178,15 +214,15 @@ public class BqIntegrationTest {
         long second = now.getEpochSecond();
         int nano = now.getNano();
         ColumnMapping mapping = new ColumnMapping();
-        mapping.put(1, "order_number");
-        mapping.put(2, "order_url");
-        mapping.put(3, "order_details");
-        mapping.put(4, "created_at");
-        mapping.put(5, "status");
-        mapping.put(6, "discounted_value");
-        mapping.put(7, "success");
-        mapping.put(8, "order_price");
-        mapping.put(12, "aliases");
+        mapping.put("1", "order_number");
+        mapping.put("2", "order_url");
+        mapping.put("3", "order_details");
+        mapping.put("4", "created_at");
+        mapping.put("5", "status");
+        mapping.put("6", "discounted_value");
+        mapping.put("7", "success");
+        mapping.put("8", "order_price");
+        mapping.put("12", "aliases");
 
         converter = new ConsumerRecordConverter(new RowMapper(mapping), new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName()), clock);
         Timestamp createdAt = Timestamp.newBuilder().setSeconds(second).setNanos(nano).build();
