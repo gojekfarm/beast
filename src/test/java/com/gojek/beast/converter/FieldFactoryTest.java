@@ -3,7 +3,12 @@ package com.gojek.beast.converter;
 import com.gojek.beast.Status;
 import com.gojek.beast.TestMessage;
 import com.gojek.beast.TestNestedMessage;
-import com.gojek.beast.converter.fields.*;
+import com.gojek.beast.converter.fields.ByteField;
+import com.gojek.beast.converter.fields.DefaultProtoField;
+import com.gojek.beast.converter.fields.EnumField;
+import com.gojek.beast.converter.fields.NestedField;
+import com.gojek.beast.converter.fields.ProtoField;
+import com.gojek.beast.converter.fields.TimestampField;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Duration;
@@ -13,6 +18,7 @@ import org.junit.Test;
 
 import java.time.Instant;
 import java.util.Base64;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 
@@ -34,6 +40,7 @@ public class FieldFactoryTest {
                 .putCurrentState("payment", "cash")
                 .setUserToken(ByteString.copyFrom("token".getBytes()))
                 .setTripDuration(Duration.newBuilder().setSeconds(1).setNanos(1000000000).build())
+                .addAliases("alias1").addAliases("alias2").addAliases("alias3")
                 .build();
     }
 
@@ -86,5 +93,15 @@ public class FieldFactoryTest {
         ProtoField protoField = FieldFactory.getField(durationDesc, message.getField(durationDesc));
 
         assertEquals(NestedField.class.getName(), protoField.getClass().getName());
+    }
+
+    @Test
+    public void shouldReturnRepeatedFieldForGivenData() {
+        Descriptors.FieldDescriptor repeatedFieldDesc = message.getDescriptorForType().findFieldByNumber(12);
+
+        ProtoField protoField = FieldFactory.getField(repeatedFieldDesc, message.getField(repeatedFieldDesc));
+
+        assertEquals(DefaultProtoField.class.getName(), protoField.getClass().getName());
+        assertEquals(protoField.getValue(), message.getAliasesList().stream().map(String::toString).collect(Collectors.toList()));
     }
 }

@@ -145,13 +145,22 @@ public class BqIntegrationTest {
     @Test
     public void shouldPushMessagesToBqActual() {
         TableId tableId = TableId.of("bqsinktest", "users");
-        BqSink bqSink = new BqSink(bigQuery, tableId);
+        BqSink bqSink = new BqSink(authenticatedBQ(), tableId);
 
         HashMap<String, Object> columns = new HashMap<>();
-        columns.put("name", "alice");
-        columns.put("aga", 25);
-        columns.put("location", 25123);
+        columns.put("name", "someone_else");
+        columns.put("age", 26);
+        columns.put("location", 15123);
         columns.put("created_at", new DateTime(new Date()));
+
+        HashMap<String, Object> route1 = new HashMap<>();
+        route1.put("name", "route1");
+        route1.put("position", "1");
+        HashMap<String, Object> route2 = new HashMap<>();
+        route2.put("name", "route2");
+        route2.put("position", "2");
+
+        columns.put("routes", Arrays.asList(route1, route2));
 
         Status push = bqSink.push(new Records(Arrays.asList(new Record(new OffsetInfo("default-topic", 0, 0, Instant.now().toEpochMilli()), columns))));
 
@@ -173,10 +182,11 @@ public class BqIntegrationTest {
         mapping.put(2, "order_url");
         mapping.put(3, "order_details");
         mapping.put(4, "created_at");
-        mapping.put(5, "order_status");
+        mapping.put(5, "status");
         mapping.put(6, "discounted_value");
         mapping.put(7, "success");
         mapping.put(8, "order_price");
+        mapping.put(12, "aliases");
 
         converter = new ConsumerRecordConverter(new RowMapper(mapping), new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName()), clock);
         Timestamp createdAt = Timestamp.newBuilder().setSeconds(second).setNanos(nano).build();
@@ -193,6 +203,7 @@ public class BqIntegrationTest {
                 .setDiscount(discount)
                 .setPrice(price)
                 .setSuccess(true)
+                .addAliases("alias1").addAliases("alias2")
                 .build();
         String topic = "topic";
         int partition = 1, offset = 1;
@@ -205,7 +216,8 @@ public class BqIntegrationTest {
         when(bigQueryMock.insertAll(insertRequestCaptor.capture())).thenReturn(successfulResponse);
 
         List<Record> records = converter.convert(messages);
-        assertTrue(bqSink.push(new Records(records)).isSuccess());
+        InsertStatus status = bqSink.push(new Records(records));
+        assertTrue(status.isSuccess());
 
         List<InsertAllRequest.RowToInsert> bqRows = insertRequestCaptor.getValue().getRows();
         assertEquals(1, bqRows.size());
@@ -215,9 +227,10 @@ public class BqIntegrationTest {
         assertEquals(orderNumber, contents.get("order_number"));
         assertEquals(orderDetails, contents.get("order_details"));
         assertEquals(new DateTime(Instant.ofEpochSecond(second, nano).toEpochMilli()), contents.get("created_at"));
-        assertEquals(completed.toString(), contents.get("order_status"));
+        assertEquals(completed.toString(), contents.get("status"));
         assertEquals(discount, contents.get("discounted_value"));
         assertEquals(price, contents.get("order_price"));
+        assertEquals(Arrays.asList("alias1", "alias2"), contents.get("aliases"));
         assertTrue(Boolean.valueOf(contents.get("success").toString()));
         containsMetadata(contents, new OffsetInfo(topic, partition, offset, recordTimestamp));
     }

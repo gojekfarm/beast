@@ -26,6 +26,7 @@ message TestMessage {
     map<string, string> current_state = 9;
     bytes user_token = 10;
     google.protobuf.Duration trip_duration = 11;
+    repeated string aliases = 12;
 }
 
 message TestNestedMessage {
