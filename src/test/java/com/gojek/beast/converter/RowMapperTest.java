@@ -10,7 +10,6 @@ import com.gojek.beast.parser.ProtoParser;
 import com.gojek.beast.util.ProtoUtil;
 import com.gojek.de.stencil.StencilClientFactory;
 import com.google.api.client.util.DateTime;
-import com.google.protobuf.Duration;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.Timestamp;
 import org.junit.Before;

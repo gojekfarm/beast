@@ -10,6 +10,7 @@ import java.time.Instant;
 
 public class ProtoUtil {
     private static int call = 0;
+    private static final int TRIP_DURATION_NANOS = 1000000000;
 
     public static TestMessage generateTestMessage(Instant now) {
         call++;
@@ -20,7 +21,7 @@ public class ProtoUtil {
                 .setOrderDetails("order-details-" + call)
                 .setCreatedAt(createdAt)
                 .setStatus(Status.COMPLETED)
-                .setTripDuration(Duration.newBuilder().setSeconds(1).setNanos(1000000000).build())
+                .setTripDuration(Duration.newBuilder().setSeconds(1).setNanos(TRIP_DURATION_NANOS).build())
                 .build();
 
     }
