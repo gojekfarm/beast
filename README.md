@@ -46,3 +46,17 @@ Run `cp env/sample.properties env/local.properties` and update the values
 * [] Custom Mappers
 * [] Functions & Future
 * [] Queue Implementations and performance
+
+## Commands:
+- query total records
+```
+bq query --nouse_legacy_sql 'SELECT count(*) FROM `bq-project.bqsinktest.bq_table` LIMIT 10'
+```
+- update bq schema from local schema json file
+```
+bq update --format=prettyjson bq-project:bqsinktest.bq_table  booking.schema
+```
+-  dump the schema of table to fileA
+```
+bq show --schema --format=prettyjson bq-project:bqsinktest.bq_table > booking.schem
+```
