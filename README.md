@@ -48,5 +48,5 @@ bq update --format=prettyjson bq-project:bqsinktest.bq_table  booking.schema
 ```
 -  dump the schema of table to fileA
 ```
-bq show --schema --format=prettyjson bq-project:bqsinktest.bq_table > booking.schem
+bq show --schema --format=prettyjson bq-project:bqsinktest.bq_table > booking.schema
 ```

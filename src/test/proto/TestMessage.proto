@@ -4,6 +4,7 @@ package com.gojek.beast;
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
+import "google/protobuf/struct.proto";
 
 option java_multiple_files = true;
 option java_package = "com.gojek.beast";
@@ -27,6 +28,7 @@ message TestMessage {
     bytes user_token = 10;
     google.protobuf.Duration trip_duration = 11;
     repeated string aliases = 12;
+    google.protobuf.Struct properties = 13;
 }
 
 message TestNestedMessage {

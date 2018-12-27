@@ -12,7 +12,10 @@ import com.gojek.beast.util.ProtoUtil;
 import com.gojek.de.stencil.StencilClientFactory;
 import com.google.api.client.util.DateTime;
 import com.google.protobuf.DynamicMessage;
+import com.google.protobuf.ListValue;
+import com.google.protobuf.Struct;
 import com.google.protobuf.Timestamp;
+import com.google.protobuf.Value;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -188,6 +191,38 @@ public class RowMapperTest {
         assertEquals("state_value_1", ((Map) repeatedStateMap.get(0)).get("value"));
         assertEquals("state_key_2", ((Map) repeatedStateMap.get(1)).get("key"));
         assertEquals("state_value_2", ((Map) repeatedStateMap.get(1)).get("value"));
+    }
+
+    @Test
+    public void shouldMapStructFields() throws ParseException {
+        ListValue.Builder builder = ListValue.newBuilder();
+        ListValue listValue = builder
+                .addValues(Value.newBuilder().setNumberValue(1).build())
+                .addValues(Value.newBuilder().setNumberValue(2).build())
+                .addValues(Value.newBuilder().setNumberValue(3).build())
+                .build();
+        Struct value = Struct.newBuilder()
+                .putFields("number", Value.newBuilder().setNumberValue(123.45).build())
+                .putFields("string", Value.newBuilder().setStringValue("string_val").build())
+                .putFields("list", Value.newBuilder().setListValue(listValue).build())
+                .putFields("boolean", Value.newBuilder().setBoolValue(true).build())
+                .build();
+
+        TestMessage message = TestMessage.newBuilder()
+                .setOrderNumber("order-1")
+                .setProperties(value)
+                .build();
+
+        ColumnMapping fieldMappings = new ColumnMapping();
+        fieldMappings.put("1", "order_number_field");
+        fieldMappings.put("13", "properties");
+
+        ProtoParser protoParser = new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName());
+        Map<String, Object> fields = new RowMapper(fieldMappings).map(protoParser.parse(message.toByteArray()));
+
+        assertEquals(message.getOrderNumber(), fields.get("order_number_field"));
+        String expectedProperties = "{\"number\":123.45,\"string\":\"string_val\",\"list\":[1.0,2.0,3.0],\"boolean\":true}";
+        assertEquals(expectedProperties, fields.get("properties"));
     }
 
     private void assertNestedMessage(TestNestedMessage msg, Map<String, Object> fields) {
