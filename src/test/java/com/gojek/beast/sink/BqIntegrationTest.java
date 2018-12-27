@@ -224,6 +224,12 @@ public class BqIntegrationTest {
         mapping.put("8", "order_price");
         mapping.put("12", "aliases");
 
+        ColumnMapping currStateMapping = new ColumnMapping();
+        currStateMapping.put("record_name", "current_state");
+        currStateMapping.put("1", "key");
+        currStateMapping.put("2", "value");
+        mapping.put("9", currStateMapping);
+
         converter = new ConsumerRecordConverter(new RowMapper(mapping), new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName()), clock);
         Timestamp createdAt = Timestamp.newBuilder().setSeconds(second).setNanos(nano).build();
         TestKey key = TestKey.newBuilder().setOrderNumber(orderNumber).setOrderUrl(orderUrl).build();
@@ -240,6 +246,8 @@ public class BqIntegrationTest {
                 .setPrice(price)
                 .setSuccess(true)
                 .addAliases("alias1").addAliases("alias2")
+                .putCurrentState("state_key_1", "state_value_1")
+                .putCurrentState("state_key_2", "state_value_2")
                 .build();
         String topic = "topic";
         int partition = 1, offset = 1;
@@ -269,6 +277,11 @@ public class BqIntegrationTest {
         assertEquals(Arrays.asList("alias1", "alias2"), contents.get("aliases"));
         assertTrue(Boolean.valueOf(contents.get("success").toString()));
         containsMetadata(contents, new OffsetInfo(topic, partition, offset, recordTimestamp));
+        List repeatedStateMap = (List) contents.get("current_state");
+        assertEquals("state_key_1", ((Map) repeatedStateMap.get(0)).get("key"));
+        assertEquals("state_value_1", ((Map) repeatedStateMap.get(0)).get("value"));
+        assertEquals("state_key_2", ((Map) repeatedStateMap.get(1)).get("key"));
+        assertEquals("state_value_2", ((Map) repeatedStateMap.get(1)).get("value"));
     }
 
     private void containsMetadata(Map<String, Object> columns, OffsetInfo offsetInfo) {

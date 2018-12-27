@@ -159,6 +159,37 @@ public class RowMapperTest {
         assertTestMessageFields((Map) repeatedMessagesMap.get(1), nested2);
     }
 
+    @Test
+    public void shouldParseMapFields() throws ParseException {
+        TestMessage message = TestMessage.newBuilder()
+                .setOrderNumber("order-1")
+                .setOrderUrl("order-url-1")
+                .setOrderDetails("order-details-1")
+                .putCurrentState("state_key_1", "state_value_1")
+                .putCurrentState("state_key_2", "state_value_2")
+                .build();
+
+        ColumnMapping fieldMappings = new ColumnMapping();
+        fieldMappings.put("1", "order_number_field");
+        fieldMappings.put("2", "order_url_field");
+        ColumnMapping currStateMapping = new ColumnMapping();
+        currStateMapping.put("record_name", "current_state");
+        currStateMapping.put("1", "key");
+        currStateMapping.put("2", "value");
+        fieldMappings.put("9", currStateMapping);
+
+        ProtoParser protoParser = new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName());
+        Map<String, Object> fields = new RowMapper(fieldMappings).map(protoParser.parse(message.toByteArray()));
+
+        assertEquals(message.getOrderNumber(), fields.get("order_number_field"));
+        assertEquals(message.getOrderUrl(), fields.get("order_url_field"));
+        List repeatedStateMap = (List) fields.get("current_state");
+        assertEquals("state_key_1", ((Map) repeatedStateMap.get(0)).get("key"));
+        assertEquals("state_value_1", ((Map) repeatedStateMap.get(0)).get("value"));
+        assertEquals("state_key_2", ((Map) repeatedStateMap.get(1)).get("key"));
+        assertEquals("state_value_2", ((Map) repeatedStateMap.get(1)).get("value"));
+    }
+
     private void assertNestedMessage(TestNestedMessage msg, Map<String, Object> fields) {
         assertEquals(msg.getNestedId(), fields.get("nested_id"));
         Map nestedFields = (Map) fields.get("msg");
