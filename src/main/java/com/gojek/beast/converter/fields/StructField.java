@@ -14,7 +14,9 @@ public class StructField implements ProtoField {
     @Override
     public Object getValue() {
         try {
-            return JsonFormat.printer().print((DynamicMessage) fieldValue).trim().replaceAll("\n", "").replaceAll(" ", "");
+            return JsonFormat.printer()
+                    .omittingInsignificantWhitespace()
+                    .print((DynamicMessage) fieldValue);
         } catch (InvalidProtocolBufferException e) {
             return "";
         }

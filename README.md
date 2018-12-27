@@ -5,7 +5,8 @@ Kafka to BigQuery Sink
 Note: Until not in production use `latest` tag for docker images. Also, we don't support Struct protobuf fields.
 
 ### Setup:
-Run `cp env/sample.properties env/local.properties` and update the values
+* For Terminal - Run `cp env/sample.properties env/local.properties` and update the values
+* For IntelliJ - Install the `envfile` plugin, and create envfile with `cp env/sample.properties env/local.env`. Then source `local.env` in envfile settings.
 
 ### Task List:
 * Fix tests - `shouldPushMessagesToBq`, `shouldCommitOffsetsInSequenceWhenAcknowledgedRandom` for CI
@@ -25,7 +26,7 @@ Run `cp env/sample.properties env/local.properties` and update the values
 * DLQ
 
 ### Enhancements
-* Use java 11
+* Use java 10/11
 * Find package like factorybot, and make factories
 * Refactor KafkaConsumerUtil
 * Add Draft for development
@@ -36,6 +37,11 @@ Run `cp env/sample.properties env/local.properties` and update the values
 * Custom Mappers
 * Functions & Future
 * Queue Implementations and performance
+
+<<<<<<< HEAD
+=======
+## Sample schema/configuration:
+Proto column mappings & BigQuery table schemas are available in `schema` directory
 
 ## Commands:
 - query total records
