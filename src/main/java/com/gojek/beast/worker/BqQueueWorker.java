@@ -35,6 +35,8 @@ public class BqQueueWorker implements Worker {
                 Records poll = queue.poll(config.getTimeout(), config.getTimeoutUnit());
                 if (poll != null && sink.push(poll).isSuccess()) {
                     committer.acknowledge(poll.getPartitionsCommitOffset());
+                } else {
+                    statsClient.increment("worker.queue.bq.push_failure");
                 }
             } catch (InterruptedException e) {
                 statsClient.increment("worker.queue.bq.errors");

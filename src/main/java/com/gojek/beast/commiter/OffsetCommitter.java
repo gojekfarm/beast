@@ -86,6 +86,7 @@ public class OffsetCommitter implements Sink, Committer, Worker {
             } else {
                 if (offsetState.shouldCloseConsumer(currentOffset)) {
                     log.error("Acknowledgement Timeout exceeded: {}", offsetState.getAcknowledgeTimeoutMs());
+                    statsClient.increment("committer.ack.timeout");
                     close();
                 }
                 try {

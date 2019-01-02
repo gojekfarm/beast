@@ -10,6 +10,7 @@ import com.gojek.beast.config.KafkaConfig;
 import com.gojek.beast.config.WorkerConfig;
 import com.gojek.beast.consumer.KafkaConsumer;
 import com.gojek.beast.consumer.MessageConsumer;
+import com.gojek.beast.consumer.RebalanceListener;
 import com.gojek.beast.converter.ConsumerRecordConverter;
 import com.gojek.beast.converter.RowMapper;
 import com.gojek.beast.models.Records;
@@ -30,7 +31,6 @@ import com.google.cloud.bigquery.TableId;
 import lombok.extern.slf4j.Slf4j;
 import org.aeonbits.owner.ConfigFactory;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.clients.consumer.internals.NoOpConsumerRebalanceListener;
 import org.apache.kafka.common.TopicPartition;
 
 import java.io.File;
@@ -58,7 +58,7 @@ public class Main {
         ColumnMapping columnMapping = appConfig.getProtoColumnMapping();
 
         org.apache.kafka.clients.consumer.KafkaConsumer kafkaConsumer = new org.apache.kafka.clients.consumer.KafkaConsumer(consumerConfig);
-        kafkaConsumer.subscribe(Pattern.compile(appConfig.getKafkaTopic()), new NoOpConsumerRebalanceListener());
+        kafkaConsumer.subscribe(Pattern.compile(appConfig.getKafkaTopic()), new RebalanceListener());
 
         //BigQuery
         Sink bqSink = buildBqSink(appConfig);
