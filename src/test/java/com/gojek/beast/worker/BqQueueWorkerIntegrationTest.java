@@ -70,8 +70,8 @@ public class BqQueueWorkerIntegrationTest {
         assertEquals(1, queue.size());
     }
 
-    private void startWorkers(List<Worker> workers) {
-        workers.forEach(w -> new Thread(w).start());
+    private void startWorkers(List<Worker> workerList) {
+        workerList.forEach(w -> new Thread(w).start());
     }
 
     @After
