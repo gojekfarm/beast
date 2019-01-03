@@ -59,9 +59,10 @@ public class OffsetCommitter implements Sink, Committer, Worker {
     }
 
     @Override
-    public void acknowledge(Map<TopicPartition, OffsetAndMetadata> offsets) {
-        partitionOffsetAck.add(offsets);
+    public boolean acknowledge(Map<TopicPartition, OffsetAndMetadata> offsets) {
+        boolean status = partitionOffsetAck.add(offsets);
         statsClient.gauge("queue.elements,name=ack", partitionOffsetAck.size());
+        return status;
     }
 
     @Override

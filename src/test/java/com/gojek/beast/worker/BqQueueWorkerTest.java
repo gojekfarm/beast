@@ -70,14 +70,16 @@ public class BqQueueWorkerTest {
         BlockingQueue<Records> queue = new LinkedBlockingQueue<>();
         BqQueueWorker worker = new BqQueueWorker(queue, successfulSink, workerConfig, committer);
         Records messages2 = mock(Records.class);
+        when(committer.acknowledge(any())).thenReturn(true);
         queue.put(messages);
         queue.put(messages2);
 
         Thread workerThread = new Thread(worker);
         workerThread.start();
 
-        WorkerUtil.closeWorker(worker, 100);
+        Thread closer = WorkerUtil.closeWorker(worker, 1000);
         workerThread.join();
+        closer.join();
         verify(successfulSink).push(messages);
         verify(successfulSink).push(messages2);
     }
@@ -91,7 +93,7 @@ public class BqQueueWorkerTest {
         Thread workerThread = new Thread(worker);
         workerThread.start();
 
-        WorkerUtil.closeWorker(worker, 1000);
+        WorkerUtil.closeWorker(worker, 200);
         workerThread.join();
         verify(successfulSink).push(messages);
         verify(committer).acknowledge(offsetInfos);

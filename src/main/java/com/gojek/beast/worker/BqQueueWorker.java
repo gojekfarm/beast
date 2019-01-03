@@ -38,19 +38,11 @@ public class BqQueueWorker implements Worker {
                 if (poll == null || poll.isEmpty()) {
                     continue;
                 }
-                Status status = sink.push(poll);
-                if (status.isSuccess()) {
-                    committer.acknowledge(poll.getPartitionsCommitOffset());
-                } else {
-                    // TODO: retry message when failed, maintain the retry count in `Records`
-                    statsClient.increment("worker.queue.bq.push_failure");
+                boolean success = pushToSink(poll);
+                if (!success) {
+                    queue.put(poll);
+                    stop();
                 }
-            } catch (BigQueryException e) {
-                statsClient.increment("worker.queue.bq.errors");
-                log.error("Failed to write to BQ: {}", e);
-                // This stops the consumer
-                committer.close();
-                stop();
             } catch (InterruptedException e) {
                 statsClient.increment("worker.queue.bq.errors");
                 log.error("Failed to poll records from read queue: {}", e);
@@ -59,10 +51,28 @@ public class BqQueueWorker implements Worker {
         } while (!stop);
     }
 
+    private boolean pushToSink(Records poll) {
+        Status status;
+        try {
+            status = sink.push(poll);
+        } catch (BigQueryException e) {
+            statsClient.increment("worker.queue.bq.errors");
+            log.error("Failed to write to BQ: {}", e);
+            return false;
+        }
+        if (status.isSuccess()) {
+            return committer.acknowledge(poll.getPartitionsCommitOffset());
+        } else {
+            statsClient.increment("worker.queue.bq.push_failure");
+        }
+        return false;
+    }
+
     @Override
     public void stop() {
         log.info("Stopping BqWorker");
-        stop = true;
+        committer.close();
         sink.close();
+        stop = true;
     }
 }
