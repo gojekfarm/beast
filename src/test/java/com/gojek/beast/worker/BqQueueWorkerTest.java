@@ -1,7 +1,7 @@
 package com.gojek.beast.worker;
 
 import com.gojek.beast.commiter.Committer;
-import com.gojek.beast.config.WorkerConfig;
+import com.gojek.beast.config.QueueConfig;
 import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.SuccessStatus;
@@ -34,7 +34,7 @@ public class BqQueueWorkerTest {
     private Sink successfulSink;
     @Mock
     private Records messages;
-    private WorkerConfig workerConfig;
+    private QueueConfig queueConfig;
     private int pollTimeout;
     @Mock
     private Committer committer;
@@ -46,7 +46,7 @@ public class BqQueueWorkerTest {
     @Before
     public void setUp() {
         pollTimeout = 200;
-        workerConfig = new WorkerConfig(pollTimeout);
+        queueConfig = new QueueConfig(pollTimeout);
         when(successfulSink.push(any())).thenReturn(new SuccessStatus());
         when(messages.getPartitionsCommitOffset()).thenReturn(offsetInfos);
     }
@@ -54,7 +54,7 @@ public class BqQueueWorkerTest {
     @Test
     public void shouldReadFromQueueAndPushToSink() throws InterruptedException {
         BlockingQueue<Records> queue = new LinkedBlockingQueue<>();
-        BqQueueWorker worker = new BqQueueWorker(queue, successfulSink, workerConfig, committer);
+        BqQueueWorker worker = new BqQueueWorker(queue, successfulSink, queueConfig, committer);
         queue.put(messages);
 
         Thread thread = new Thread(worker);
@@ -68,7 +68,7 @@ public class BqQueueWorkerTest {
     @Test
     public void shouldReadFromQueueForeverAndPushToSink() throws InterruptedException {
         BlockingQueue<Records> queue = new LinkedBlockingQueue<>();
-        BqQueueWorker worker = new BqQueueWorker(queue, successfulSink, workerConfig, committer);
+        BqQueueWorker worker = new BqQueueWorker(queue, successfulSink, queueConfig, committer);
         Records messages2 = mock(Records.class);
         when(committer.acknowledge(any())).thenReturn(true);
         queue.put(messages);
@@ -87,7 +87,7 @@ public class BqQueueWorkerTest {
     @Test
     public void shouldAckAfterSuccessfulPush() throws InterruptedException {
         BlockingQueue<Records> queue = new LinkedBlockingQueue<>();
-        BqQueueWorker worker = new BqQueueWorker(queue, successfulSink, workerConfig, committer);
+        BqQueueWorker worker = new BqQueueWorker(queue, successfulSink, queueConfig, committer);
         queue.put(messages);
 
         Thread workerThread = new Thread(worker);
@@ -103,7 +103,7 @@ public class BqQueueWorkerTest {
     public void shouldNotAckAfterFailurePush() throws InterruptedException {
         when(failureSink.push(messages)).thenReturn(new FailureStatus(new Exception()));
         BlockingQueue<Records> queue = new LinkedBlockingQueue<>();
-        BqQueueWorker worker = new BqQueueWorker(queue, failureSink, workerConfig, committer);
+        BqQueueWorker worker = new BqQueueWorker(queue, failureSink, queueConfig, committer);
 
         queue.put(messages);
 
@@ -119,7 +119,7 @@ public class BqQueueWorkerTest {
     @Test
     public void shouldNotPushToSinkIfNoMessage() throws InterruptedException {
         BlockingQueue<Records> queue = new LinkedBlockingQueue<>();
-        BqQueueWorker worker = new BqQueueWorker(queue, successfulSink, workerConfig, committer);
+        BqQueueWorker worker = new BqQueueWorker(queue, successfulSink, queueConfig, committer);
         Thread workerThread = new Thread(worker);
 
         workerThread.start();
@@ -134,7 +134,7 @@ public class BqQueueWorkerTest {
         BlockingQueue<Records> queue = new LinkedBlockingQueue<>();
         queue.put(messages);
         doThrow(new BigQueryException(10, "Some Error")).when(failureSink).push(messages);
-        BqQueueWorker worker = new BqQueueWorker(queue, failureSink, workerConfig, committer);
+        BqQueueWorker worker = new BqQueueWorker(queue, failureSink, queueConfig, committer);
         Thread workerThread = new Thread(worker);
 
         workerThread.start();

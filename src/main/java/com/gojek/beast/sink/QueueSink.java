@@ -1,5 +1,6 @@
 package com.gojek.beast.sink;
 
+import com.gojek.beast.config.QueueConfig;
 import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
@@ -13,13 +14,14 @@ import java.util.concurrent.BlockingQueue;
 @AllArgsConstructor
 public class QueueSink implements Sink {
     private final Stats statsClient = Stats.client();
-    private BlockingQueue<Records> recordQueue;
+    private final BlockingQueue<Records> recordQueue;
+    private final QueueConfig config;
 
     @Override
     public Status push(Records messages) {
         Instant start = Instant.now();
         try {
-            recordQueue.put(messages);
+            recordQueue.offer(messages, config.getTimeout(), config.getTimeoutUnit());
             statsClient.gauge("queue.elements,name=records", recordQueue.size());
         } catch (InterruptedException e) {
             return new FailureStatus(e);
@@ -31,6 +33,6 @@ public class QueueSink implements Sink {
 
     @Override
     public void close() {
-
+        recordQueue.clear();
     }
 }

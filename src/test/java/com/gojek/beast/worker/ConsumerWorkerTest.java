@@ -6,9 +6,10 @@ import org.apache.kafka.common.errors.WakeupException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -45,12 +46,11 @@ public class ConsumerWorkerTest {
     @Test
     public void shouldStopConsumptionWhenWakeupExceptionIsThrown() throws InterruptedException {
         Worker worker = new ConsumerWorker(consumer);
-        when(consumer.consume()).thenThrow(WakeupException.class);
+        doThrow(new WakeupException()).when(consumer).consume();
         new Thread(worker).start();
 
         Thread.sleep(15L);
-        worker.stop();
-        verify(consumer, times(1)).consume();
+        verify(consumer).consume();
         verify(consumer).close();
     }
 }

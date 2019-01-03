@@ -54,8 +54,8 @@ public class OffsetCommitter implements Sink, Committer, Worker {
     @Override
     public void close() {
         log.info("Closing committer");
+        stop = true;
         kafkaCommitter.wakeup();
-        System.exit(1);
     }
 
     @Override
@@ -99,6 +99,7 @@ public class OffsetCommitter implements Sink, Committer, Worker {
             }
             statsClient.timeIt("committer.processing.time", start);
         }
+        log.info("Stopped Offset Committer Successfully.");
         kafkaCommitter.wakeup();
     }
 

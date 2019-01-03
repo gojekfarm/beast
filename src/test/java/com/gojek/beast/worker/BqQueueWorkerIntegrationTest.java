@@ -1,7 +1,7 @@
 package com.gojek.beast.worker;
 
 import com.gojek.beast.commiter.Committer;
-import com.gojek.beast.config.WorkerConfig;
+import com.gojek.beast.config.QueueConfig;
 import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.sink.Sink;
@@ -39,7 +39,7 @@ public class BqQueueWorkerIntegrationTest {
     @Before
     public void setUp() throws Exception {
         queue = new LinkedBlockingQueue<>();
-        WorkerConfig config = new WorkerConfig(1000);
+        QueueConfig config = new QueueConfig(1000);
         int totalWorkers = 5;
 
         for (int i = 0; i < totalWorkers; i++) {

@@ -9,7 +9,6 @@ import com.gojek.beast.models.Status;
 import com.gojek.beast.models.SuccessStatus;
 import com.gojek.beast.sink.Sink;
 import com.gojek.beast.stats.Stats;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.common.errors.WakeupException;
@@ -18,15 +17,20 @@ import java.time.Instant;
 import java.util.List;
 
 @Slf4j
-@AllArgsConstructor
 public class MessageConsumer {
 
     private final KafkaConsumer kafkaConsumer;
     private final Sink sink;
     private final Converter recordConverter;
     private final long timeoutMillis;
-
     private final Stats statsClient = Stats.client();
+
+    public MessageConsumer(KafkaConsumer kafkaConsumer, Sink sink, Converter recordConverter, long timeoutMillis) {
+        this.kafkaConsumer = kafkaConsumer;
+        this.sink = sink;
+        this.recordConverter = recordConverter;
+        this.timeoutMillis = timeoutMillis;
+    }
 
     public Status consume() throws WakeupException {
         Instant startTime = Instant.now();
@@ -56,5 +60,10 @@ public class MessageConsumer {
 
     public void close() {
         kafkaConsumer.close();
+        log.info("Successfully stopped message consumer");
+    }
+
+    public boolean isClosed() {
+        return kafkaConsumer.isClosed();
     }
 }

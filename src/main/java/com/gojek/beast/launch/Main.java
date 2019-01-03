@@ -7,7 +7,7 @@ import com.gojek.beast.commiter.OffsetState;
 import com.gojek.beast.config.AppConfig;
 import com.gojek.beast.config.ColumnMapping;
 import com.gojek.beast.config.KafkaConfig;
-import com.gojek.beast.config.WorkerConfig;
+import com.gojek.beast.config.QueueConfig;
 import com.gojek.beast.consumer.KafkaConsumer;
 import com.gojek.beast.consumer.MessageConsumer;
 import com.gojek.beast.consumer.RebalanceListener;
@@ -66,7 +66,7 @@ public class Main {
         BlockingQueue<Records> readQueue = new LinkedBlockingQueue<>(appConfig.getReadQueueCapacity());
 
         BlockingQueue<Records> committerQueue = new LinkedBlockingQueue<>(appConfig.getCommitQueueCapacity());
-        QueueSink queueSink = new QueueSink(readQueue);
+        QueueSink queueSink = new QueueSink(readQueue, new QueueConfig(appConfig.getBqWorkerPollTimeoutMs()));
         Set<Map<TopicPartition, OffsetAndMetadata>> partitionsAck = Collections.synchronizedSet(new CopyOnWriteArraySet<Map<TopicPartition, OffsetAndMetadata>>());
         KafkaConsumer consumer = new KafkaConsumer(kafkaConsumer);
         OffsetCommitter committer = new OffsetCommitter(committerQueue, partitionsAck, consumer, new OffsetState(appConfig.getOffsetAckTimeoutMs()));
@@ -134,7 +134,7 @@ public class Main {
         Integer bqWorkerPoolSize = appConfig.getBqWorkerPoolSize();
         List<Worker> threads = new ArrayList<>(bqWorkerPoolSize);
         for (int i = 0; i < bqWorkerPoolSize; i++) {
-            Worker bqQueueWorker = new BqQueueWorker(queue, bqSink, new WorkerConfig(appConfig.getBqWorkerPollTimeoutMs()), committer);
+            Worker bqQueueWorker = new BqQueueWorker(queue, bqSink, new QueueConfig(appConfig.getBqWorkerPollTimeoutMs()), committer);
             Thread bqWorkerThread = new Thread(bqQueueWorker, "bq-worker-" + i);
             bqWorkerThread.start();
             threads.add(bqQueueWorker);

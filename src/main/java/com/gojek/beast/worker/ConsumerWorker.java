@@ -10,7 +10,6 @@ import org.apache.kafka.common.errors.WakeupException;
 public class ConsumerWorker implements Worker {
     private final MessageConsumer messageConsumer;
     private final Stats statsClient = Stats.client();
-    private volatile boolean stop;
 
     public ConsumerWorker(MessageConsumer messageConsumer) {
         this.messageConsumer = messageConsumer;
@@ -18,24 +17,25 @@ public class ConsumerWorker implements Worker {
 
     @Override
     public void run() {
-        do {
-            try {
+        try {
+            do {
                 Status status = messageConsumer.consume();
                 if (!status.isSuccess()) {
-                    log.error("message consumption failed: {}", status.toString());
+                    log.error("message consumption failed:", status.toString());
                     statsClient.increment("worker.consumer.consume.errors");
                 }
-            } catch (WakeupException e) {
-                log.error("Stop Message Consumption: {}", e);
-                messageConsumer.close();
-                stop = true;
-            }
-        } while (!stop);
+            } while (!messageConsumer.isClosed());
+        } catch (WakeupException e) {
+            log.error("Stop Message Consumption:", e);
+        } finally {
+            stop();
+        }
+        log.info("Stopped Message Consumer Successfully.");
     }
 
     @Override
     public void stop() {
         log.info("Stopping consumer");
-        stop = true;
+        messageConsumer.close();
     }
 }

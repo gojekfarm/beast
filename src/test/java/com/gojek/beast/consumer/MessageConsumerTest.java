@@ -8,6 +8,7 @@ import com.gojek.beast.models.Status;
 import com.gojek.beast.models.SuccessStatus;
 import com.gojek.beast.sink.Sink;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.common.errors.WakeupException;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -23,6 +24,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.when;
 
@@ -70,5 +72,12 @@ public class MessageConsumerTest {
         Status status = consumer.consume();
 
         assertFalse(status.isSuccess());
+    }
+
+    @Test(expected = WakeupException.class)
+    public void shouldRethrowWakeUpExceptionThrown() {
+        doThrow(new WakeupException()).when(kafkaConsumer).poll(timeout);
+
+        consumer.consume();
     }
 }

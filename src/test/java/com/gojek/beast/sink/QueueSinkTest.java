@@ -1,9 +1,11 @@
 package com.gojek.beast.sink;
 
+import com.gojek.beast.config.QueueConfig;
 import com.gojek.beast.models.OffsetInfo;
 import com.gojek.beast.models.Record;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.time.Instant;
@@ -23,12 +25,18 @@ import static org.mockito.Mockito.mock;
 public class QueueSinkTest {
 
     private final OffsetInfo offsetInfo = new OffsetInfo("default-topic", 0, 0, Instant.now().toEpochMilli());
+    private QueueConfig queueConfig;
     private Sink queueSink;
+
+    @Before
+    public void setUp() throws Exception {
+        queueConfig = new QueueConfig(1000);
+    }
 
     @Test
     public void shouldPushMessageToQueue() throws InterruptedException {
         BlockingQueue<Records> queue = new LinkedBlockingQueue<>();
-        queueSink = new QueueSink(queue);
+        queueSink = new QueueSink(queue, queueConfig);
         Records messages = new Records(Collections.singletonList(new Record(offsetInfo, new HashMap<>())));
 
         Status status = queueSink.push(messages);
@@ -41,7 +49,7 @@ public class QueueSinkTest {
     @Test
     public void shouldPushMultipleMessagesToQueue() throws InterruptedException {
         BlockingQueue<Records> queue = new LinkedBlockingQueue<>();
-        queueSink = new QueueSink(queue);
+        queueSink = new QueueSink(queue, queueConfig);
         Records messages = new Records(Arrays.asList(new Record(offsetInfo, new HashMap<>()), new Record(offsetInfo, new HashMap<>())));
 
         Status status = queueSink.push(messages);
@@ -55,8 +63,8 @@ public class QueueSinkTest {
     public void shouldReturnFailureStatusOnException() throws InterruptedException {
         BlockingQueue<Records> queue = mock(BlockingQueue.class);
         Records messages = new Records(Arrays.asList(new Record(offsetInfo, new HashMap<>()), new Record(offsetInfo, new HashMap<>())));
-        queueSink = new QueueSink(queue);
-        doThrow(new InterruptedException()).when(queue).put(messages);
+        queueSink = new QueueSink(queue, queueConfig);
+        doThrow(new InterruptedException()).when(queue).offer(messages, queueConfig.getTimeout(), queueConfig.getTimeoutUnit());
 
         Status status = queueSink.push(messages);
 

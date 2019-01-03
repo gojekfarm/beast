@@ -5,10 +5,12 @@ import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
 import com.gojek.beast.models.SuccessStatus;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @AllArgsConstructor
 public class MultiSink implements Sink {
     private final List<Sink> sinks;
@@ -24,6 +26,7 @@ public class MultiSink implements Sink {
 
     @Override
     public void close() {
-
+        sinks.forEach(Sink::close);
+        log.info("Stopped MultiSink Successfully");
     }
 }

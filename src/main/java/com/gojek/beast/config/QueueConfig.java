@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit;
 
 @AllArgsConstructor
 @Data
-public class WorkerConfig {
+public class QueueConfig {
     private final long timeout;
     private final TimeUnit timeoutUnit = TimeUnit.MILLISECONDS;
 }
