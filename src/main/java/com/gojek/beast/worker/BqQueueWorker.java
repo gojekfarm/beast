@@ -3,8 +3,10 @@ package com.gojek.beast.worker;
 import com.gojek.beast.commiter.Committer;
 import com.gojek.beast.config.WorkerConfig;
 import com.gojek.beast.models.Records;
+import com.gojek.beast.models.Status;
 import com.gojek.beast.sink.Sink;
 import com.gojek.beast.stats.Stats;
+import com.google.cloud.bigquery.BigQueryException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.Instant;
@@ -33,11 +35,22 @@ public class BqQueueWorker implements Worker {
             Instant start = Instant.now();
             try {
                 Records poll = queue.poll(config.getTimeout(), config.getTimeoutUnit());
-                if (poll != null && sink.push(poll).isSuccess()) {
+                if (poll == null || poll.isEmpty()) {
+                    continue;
+                }
+                Status status = sink.push(poll);
+                if (status.isSuccess()) {
                     committer.acknowledge(poll.getPartitionsCommitOffset());
                 } else {
+                    // TODO: retry message when failed, maintain the retry count in `Records`
                     statsClient.increment("worker.queue.bq.push_failure");
                 }
+            } catch (BigQueryException e) {
+                statsClient.increment("worker.queue.bq.errors");
+                log.error("Failed to write to BQ: {}", e);
+                // This stops the consumer
+                committer.close();
+                stop();
             } catch (InterruptedException e) {
                 statsClient.increment("worker.queue.bq.errors");
                 log.error("Failed to poll records from read queue: {}", e);

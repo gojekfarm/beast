@@ -7,4 +7,6 @@ import java.util.Map;
 
 public interface Committer {
     void acknowledge(Map<TopicPartition, OffsetAndMetadata> offsets);
+
+    void close();
 }

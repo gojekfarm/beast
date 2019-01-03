@@ -7,6 +7,7 @@ import com.gojek.beast.models.Records;
 import com.gojek.beast.models.SuccessStatus;
 import com.gojek.beast.sink.Sink;
 import com.gojek.beast.util.WorkerUtil;
+import com.google.cloud.bigquery.BigQueryException;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.Before;
@@ -20,6 +21,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -125,4 +127,18 @@ public class BqQueueWorkerTest {
         verify(successfulSink, never()).push(any());
     }
 
+    @Test
+    public void shouldCloseCommitterWhenBiqQueryExceptionHappens() throws InterruptedException {
+        BlockingQueue<Records> queue = new LinkedBlockingQueue<>();
+        queue.put(messages);
+        doThrow(new BigQueryException(10, "Some Error")).when(failureSink).push(messages);
+        BqQueueWorker worker = new BqQueueWorker(queue, failureSink, workerConfig, committer);
+        Thread workerThread = new Thread(worker);
+
+        workerThread.start();
+
+        WorkerUtil.closeWorker(worker, 1000);
+        workerThread.join();
+        verify(committer).close();
+    }
 }
