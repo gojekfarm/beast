@@ -45,8 +45,8 @@ public final class Stats {
 
     private String getDefaultTags() {
         HashMap<String, String> desiredTags = new HashMap<>();
-        desiredTags.put("KUBE_NODE_NAME", "node");
-        desiredTags.put("KUBE_POD_NAME", "pod");
+        desiredTags.put("NODE_NAME", "node");
+        desiredTags.put("POD_NAME", "pod");
         desiredTags.put("KAFKA_CONSUMER_GROUP_ID", "consumer");
 
         List<String> tags = desiredTags.entrySet().stream().map((entry) -> {
