@@ -69,4 +69,8 @@ public interface AppConfig extends Config {
     @DefaultValue("true")
     @Key(Constants.Config.COLUMN_MAPPING_CHECK_DUPLICATES)
     Boolean isColumnMappingDuplicateValidationEnabled();
+
+    @DefaultValue("false")
+    @Key("KAFKA_CONSUMER_ENABLE_AUTO_COMMIT")
+    Boolean isAutoCommitEnabled();
 }

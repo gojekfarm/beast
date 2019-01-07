@@ -20,10 +20,11 @@ public class KafkaConfig extends com.gojek.de.Config {
                 .collect(Collectors.toMap(e -> removePrefix(e.getKey()), e -> get(e.getKey())));
     }
 
-    public Map<String, Object> get() {
+    public Map<String, Object> get(AppConfig appConfig) {
         if (consumerConfigs == null) {
             consumerConfigs = build();
         }
+        consumerConfigs.put("enable.auto.commit", appConfig.isAutoCommitEnabled());
         return consumerConfigs;
     }
 

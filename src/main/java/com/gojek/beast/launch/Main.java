@@ -54,7 +54,7 @@ import java.util.regex.Pattern;
 public class Main {
     public static void main(String[] args) {
         AppConfig appConfig = ConfigFactory.create(AppConfig.class, System.getenv());
-        Map<String, Object> consumerConfig = new KafkaConfig(appConfig.getKafkaConfigPrefix()).get();
+        Map<String, Object> consumerConfig = new KafkaConfig(appConfig.getKafkaConfigPrefix()).get(appConfig);
         ColumnMapping columnMapping = appConfig.getProtoColumnMapping();
 
         org.apache.kafka.clients.consumer.KafkaConsumer kafkaConsumer = new org.apache.kafka.clients.consumer.KafkaConsumer(consumerConfig);
