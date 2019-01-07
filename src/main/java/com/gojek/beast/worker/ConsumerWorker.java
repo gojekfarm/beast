@@ -4,7 +4,6 @@ import com.gojek.beast.consumer.MessageConsumer;
 import com.gojek.beast.models.Status;
 import com.gojek.beast.stats.Stats;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.common.errors.WakeupException;
 
 @Slf4j
 public class ConsumerWorker implements Worker {
@@ -25,7 +24,7 @@ public class ConsumerWorker implements Worker {
                     statsClient.increment("worker.consumer.consume.errors");
                 }
             } while (!messageConsumer.isClosed());
-        } catch (WakeupException e) {
+        } catch (RuntimeException e) {
             log.error("Stop Message Consumption:", e);
         } finally {
             stop();

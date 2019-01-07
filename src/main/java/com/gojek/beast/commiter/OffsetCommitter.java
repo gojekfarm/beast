@@ -68,38 +68,43 @@ public class OffsetCommitter implements Sink, Committer, Worker {
     @Override
     public void run() {
         offsetState.startTimer();
-
-        while (!stop) {
-            Instant start = Instant.now();
-            Records commitOffset = commitQueue.peek();
-            if (commitOffset == null) {
-                continue;
-            }
-            Map<TopicPartition, OffsetAndMetadata> currentOffset = commitOffset.getPartitionsCommitOffset();
-            if (partitionOffsetAck.contains(currentOffset)) {
-                Map<TopicPartition, OffsetAndMetadata> partitionsCommitOffset = commitQueue.remove().getPartitionsCommitOffset();
-                kafkaCommitter.commitSync(partitionsCommitOffset);
-                partitionOffsetAck.remove(partitionsCommitOffset);
-                Records nextOffset = commitQueue.peek();
-                if (nextOffset != null) offsetState.resetOffset(nextOffset.getPartitionsCommitOffset());
-                log.info("commit partition {} size {}", partitionsCommitOffset.toString(), partitionsCommitOffset.size());
-            } else {
-                if (offsetState.shouldCloseConsumer(currentOffset)) {
-                    log.error("Acknowledgement Timeout exceeded: {}", offsetState.getAcknowledgeTimeoutMs());
-                    statsClient.increment("committer.ack.timeout");
-                    close();
+        try {
+            while (!stop) {
+                Instant start = Instant.now();
+                Records commitOffset = commitQueue.peek();
+                if (commitOffset == null) {
+                    continue;
                 }
-                try {
+                Map<TopicPartition, OffsetAndMetadata> currentOffset = commitOffset.getPartitionsCommitOffset();
+                if (partitionOffsetAck.contains(currentOffset)) {
+                    Map<TopicPartition, OffsetAndMetadata> partitionsCommitOffset = commitQueue.remove().getPartitionsCommitOffset();
+                    kafkaCommitter.commitSync(partitionsCommitOffset);
+                    partitionOffsetAck.remove(partitionsCommitOffset);
+                    Records nextOffset = commitQueue.peek();
+                    if (nextOffset != null) offsetState.resetOffset(nextOffset.getPartitionsCommitOffset());
+                    log.info("commit partition {} size {}", partitionsCommitOffset.toString(), partitionsCommitOffset.size());
+                } else {
+                    if (offsetState.shouldCloseConsumer(currentOffset)) {
+                        log.error("Acknowledgement Timeout exceeded: {}", offsetState.getAcknowledgeTimeoutMs());
+                        statsClient.increment("committer.ack.timeout");
+                        close();
+                    }
                     Thread.sleep(defaultSleepMs);
                     statsClient.gauge("committer.queue.wait.ms", defaultSleepMs);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+
                 }
+                statsClient.timeIt("committer.processing.time", start);
             }
-            statsClient.timeIt("committer.processing.time", start);
+        } catch (InterruptedException e) {
+            log.error("InterrupedException in offset committer", e);
+            e.printStackTrace();
+        } catch (RuntimeException e) {
+            log.error("Exception in offset committer", e);
+            e.printStackTrace();
+        } finally {
+            close();
         }
         log.info("Stopped Offset Committer Successfully.");
-        kafkaCommitter.wakeup();
     }
 
     @Override

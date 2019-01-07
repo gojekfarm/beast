@@ -15,6 +15,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -27,8 +28,10 @@ import static com.gojek.beast.util.WorkerUtil.closeWorker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -204,7 +207,22 @@ public class OffsetCommitterTest {
         assertTrue(acknowledgements.isEmpty());
     }
 
+    @Test
+    public void shouldStopProcessWhenCommitterGetException() throws InterruptedException {
+        doThrow(ConcurrentModificationException.class).when(kafkaConsumer).commitSync(anyMap());
+        commitQ.put(records);
+        when(records.getPartitionsCommitOffset()).thenReturn(commitPartitionsOffset);
+        acknowledgements.add(commitPartitionsOffset);
 
+        Thread commiterThread = new Thread(offsetCommitter);
+        commiterThread.start();
+
+        closeWorker(offsetCommitter, 500).join();
+        commiterThread.join();
+
+        verify(kafkaConsumer).commitSync(anyMap());
+        verify(kafkaConsumer, atLeastOnce()).wakeup();
+    }
 }
 
 class Acknowledger extends Thread {

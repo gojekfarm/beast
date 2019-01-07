@@ -43,9 +43,10 @@ public class BqQueueWorker implements Worker {
                     queue.offer(poll, config.getTimeout(), config.getTimeoutUnit());
                     stop();
                 }
-            } catch (InterruptedException e) {
+            } catch (InterruptedException | RuntimeException e) {
                 statsClient.increment("worker.queue.bq.errors");
-                log.error("Failed to poll records from read queue: {}", e);
+                log.error("Failed to poll records from read queue", e);
+                stop();
             }
             statsClient.timeIt("worker.queue.bq.processing", start);
         } while (!stop);

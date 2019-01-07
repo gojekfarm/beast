@@ -29,7 +29,7 @@ public class BqSink implements Sink {
         records.forEach((Record m) -> builder.addRow(m.getColumns()));
         InsertAllRequest rows = builder.build();
         InsertAllResponse response = bigquery.insertAll(rows);
-        log.info("Pushing {} records to BQ, errors: {}", records.size(), response.getInsertErrors());
+        log.info("Pushing {} records to BQ success?: {}", records.size(), !response.hasErrors());
         statsClient.gauge("sink.bq.push.records", records.size());
         statsClient.timeIt("sink.bq.push.time", start);
         return new InsertStatus(!response.hasErrors(), response.getInsertErrors());
