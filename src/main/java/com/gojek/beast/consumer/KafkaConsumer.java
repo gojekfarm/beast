@@ -21,8 +21,10 @@ public class KafkaConsumer implements KafkaCommitter {
         this.closed = false;
     }
 
-    public synchronized ConsumerRecords<byte[], byte[]> poll(long timeout) throws WakeupException {
-        return kafkaConsumer.poll(timeout);
+    public ConsumerRecords<byte[], byte[]> poll(long timeout) throws WakeupException {
+        synchronized (kafkaConsumer) {
+            return kafkaConsumer.poll(timeout);
+        }
     }
 
     @Override
