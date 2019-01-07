@@ -134,7 +134,7 @@ public class Main {
         Integer bqWorkerPoolSize = appConfig.getBqWorkerPoolSize();
         List<Worker> threads = new ArrayList<>(bqWorkerPoolSize);
         for (int i = 0; i < bqWorkerPoolSize; i++) {
-            Worker bqQueueWorker = new BqQueueWorker(queue, bqSink, new QueueConfig(appConfig.getBqWorkerPollTimeoutMs()), committer);
+            Worker bqQueueWorker = new BqQueueWorker(queue, bqSink, new QueueConfig(appConfig.getBqWorkerPollTimeoutMs(), appConfig.getMaxPushAttempts()), committer);
             Thread bqWorkerThread = new Thread(bqQueueWorker, "bq-worker-" + i);
             bqWorkerThread.start();
             threads.add(bqQueueWorker);

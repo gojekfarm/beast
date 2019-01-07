@@ -38,10 +38,16 @@ public class BqQueueWorker implements Worker {
                 if (poll == null || poll.isEmpty()) {
                     continue;
                 }
+                log.info("Max BQ push attempts reached");
                 boolean success = pushToSink(poll);
+                poll.incrementAttempts();
+                if (poll.getPushAttempts() >= config.getMaxPushAttempts()) {
+                    log.error("Max BQ push attempts reached");
+                    stop();
+                }
+
                 if (!success) {
                     queue.offer(poll, config.getTimeout(), config.getTimeoutUnit());
-                    stop();
                 }
             } catch (InterruptedException | RuntimeException e) {
                 statsClient.increment("worker.queue.bq.errors");

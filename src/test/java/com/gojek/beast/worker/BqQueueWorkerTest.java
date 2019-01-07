@@ -6,6 +6,7 @@ import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.SuccessStatus;
 import com.gojek.beast.sink.Sink;
+import com.gojek.beast.util.RecordsUtil;
 import com.gojek.beast.util.WorkerUtil;
 import com.google.cloud.bigquery.BigQueryException;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -24,6 +25,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -42,13 +44,18 @@ public class BqQueueWorkerTest {
     private Sink failureSink;
     @Mock
     private Map<TopicPartition, OffsetAndMetadata> offsetInfos;
+    private int maxPushAttempts;
+    private RecordsUtil recordUtil;
 
     @Before
     public void setUp() {
         pollTimeout = 200;
-        queueConfig = new QueueConfig(pollTimeout);
+        maxPushAttempts = 1;
+        recordUtil = new RecordsUtil();
+        queueConfig = new QueueConfig(pollTimeout, maxPushAttempts);
         when(successfulSink.push(any())).thenReturn(new SuccessStatus());
         when(messages.getPartitionsCommitOffset()).thenReturn(offsetInfos);
+        when(committer.acknowledge(any())).thenReturn(true);
     }
 
     @Test
@@ -102,6 +109,7 @@ public class BqQueueWorkerTest {
     @Test
     public void shouldNotAckAfterFailurePush() throws InterruptedException {
         when(failureSink.push(messages)).thenReturn(new FailureStatus(new Exception()));
+        when(messages.getPushAttempts()).thenReturn(1, 2, 3, 4, 5);
         BlockingQueue<Records> queue = new LinkedBlockingQueue<>();
         BqQueueWorker worker = new BqQueueWorker(queue, failureSink, queueConfig, committer);
 
@@ -142,5 +150,23 @@ public class BqQueueWorkerTest {
         WorkerUtil.closeWorker(worker, 1000);
         workerThread.join();
         verify(committer).close();
+    }
+
+    @Test
+    public void shouldPushToBQSinkUntilMaxAttempts() throws InterruptedException {
+        Records poll = recordUtil.createRecords("customer-", 1);
+        when(failureSink.push(poll)).thenReturn(new FailureStatus(new Exception()));
+
+        BlockingQueue<Records> queue = new LinkedBlockingQueue<>();
+        BqQueueWorker worker = new BqQueueWorker(queue, failureSink, queueConfig, committer);
+
+        queue.put(poll);
+
+        Thread workerThread = new Thread(worker);
+        workerThread.start();
+
+        WorkerUtil.closeWorker(worker, 100).join();
+        workerThread.join();
+        verify(failureSink, times(maxPushAttempts)).push(poll);
     }
 }
