@@ -7,12 +7,11 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -32,6 +31,7 @@ import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -93,7 +93,6 @@ public class OffsetCommitterTest {
         assertTrue(acknowledgements.contains(partition1Offset));
     }
 
-    @Ignore
     @Test
     public void shouldCommitFirstOffsetWhenAcknowledged() {
         when(records.getPartitionsCommitOffset()).thenReturn(commitPartitionsOffset);
@@ -134,9 +133,8 @@ public class OffsetCommitterTest {
         commitQueue.clear();
     }
 
-    @Ignore
     @Test
-    public void shouldCommitOffsetsInSequenceWhenAcknowledgedRandom() {
+    public void shouldCommitOffsetsInSequenceWhenAcknowledgedRandom() throws InterruptedException {
         Map<TopicPartition, OffsetAndMetadata> record1CommitOffset = mock(Map.class);
         Map<TopicPartition, OffsetAndMetadata> record2CommitOffset = mock(Map.class);
         Map<TopicPartition, OffsetAndMetadata> record3CommitOffset = mock(Map.class);
@@ -152,22 +150,28 @@ public class OffsetCommitterTest {
         committer.acknowledge(record3CommitOffset);
         committer.acknowledge(record1CommitOffset);
         committer.acknowledge(record2CommitOffset);
+        Thread committerThread = new Thread(committer);
 
-        new Thread(committer).start();
+        committerThread.start();
+        closeWorker(committer, 3000);
+        committerThread.join();
 
         InOrder inOrder = inOrder(kafkaConsumer, offsetState);
-        closeWorker(committer, 1000);
-
         inOrder.verify(offsetState).startTimer();
         inOrder.verify(kafkaConsumer).commitSync(record1CommitOffset);
+        inOrder.verify(offsetState, atLeastOnce()).resetOffset(record2CommitOffset);
+
         inOrder.verify(kafkaConsumer).commitSync(record2CommitOffset);
+        inOrder.verify(offsetState, atLeastOnce()).resetOffset(record3CommitOffset);
+
         inOrder.verify(kafkaConsumer).commitSync(record3CommitOffset);
+        inOrder.verify(offsetState, never()).resetOffset(null);
+        inOrder.verify(offsetState, never()).shouldCloseConsumer(record3CommitOffset);
 
         assertTrue(commitQ.isEmpty());
         assertTrue(acknowledgements.isEmpty());
     }
 
-    @Ignore
     @Test
     public void shouldCommitInSequenceWithParallelAcknowledgements() throws InterruptedException {
         Map<TopicPartition, OffsetAndMetadata> record1CommitOffset = mock(Map.class);
@@ -200,30 +204,7 @@ public class OffsetCommitterTest {
         assertTrue(acknowledgements.isEmpty());
     }
 
-    @Test
-    public void shouldStopConsumerIfPartitionNotAcknowledgedWithinTimeout() throws InterruptedException {
-        LinkedBlockingQueue<Records> commitQueue = new LinkedBlockingQueue<>(2);
-        commitQueue.put(records);
-        when(records.getPartitionsCommitOffset()).thenReturn(commitPartitionsOffset);
-        when(acknowledgeSetMock.contains(commitPartitionsOffset)).thenReturn(false);
-        long ackTimeout = 100;
-        OffsetCommitter committer = new OffsetCommitter(commitQueue, acknowledgeSetMock, kafkaConsumer, offsetState);
-        committer.setDefaultSleepMs(10);
 
-        Thread committerThread = new Thread(committer);
-        committerThread.start();
-
-        Thread closer = closeWorker(committer, ackTimeout * 10);
-
-        closer.join();
-        committerThread.join();
-
-        InOrder inOrder = inOrder(offsetState, records, acknowledgeSetMock, kafkaConsumer);
-        inOrder.verify(offsetState).startTimer();
-        inOrder.verify(records, atLeastOnce()).getPartitionsCommitOffset();
-        inOrder.verify(acknowledgeSetMock, atLeastOnce()).contains(commitPartitionsOffset);
-        inOrder.verify(kafkaConsumer).wakeup();
-    }
 }
 
 class Acknowledger extends Thread {

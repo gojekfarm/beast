@@ -12,6 +12,7 @@ public class WorkerUtil {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+            System.out.println("Closing given Thread with worker util " + sleepMillis);
             worker.stop();
         });
         closer.start();

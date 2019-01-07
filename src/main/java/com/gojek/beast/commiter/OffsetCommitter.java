@@ -78,11 +78,10 @@ public class OffsetCommitter implements Sink, Committer, Worker {
             Map<TopicPartition, OffsetAndMetadata> currentOffset = commitOffset.getPartitionsCommitOffset();
             if (partitionOffsetAck.contains(currentOffset)) {
                 Map<TopicPartition, OffsetAndMetadata> partitionsCommitOffset = commitQueue.remove().getPartitionsCommitOffset();
-                offsetState.resetOffset(partitionsCommitOffset);
-                synchronized (kafkaCommitter) {
-                    kafkaCommitter.commitSync(partitionsCommitOffset);
-                }
+                kafkaCommitter.commitSync(partitionsCommitOffset);
                 partitionOffsetAck.remove(partitionsCommitOffset);
+                Records nextOffset = commitQueue.peek();
+                if (nextOffset != null) offsetState.resetOffset(nextOffset.getPartitionsCommitOffset());
                 log.info("commit partition {} size {}", partitionsCommitOffset.toString(), partitionsCommitOffset.size());
             } else {
                 if (offsetState.shouldCloseConsumer(currentOffset)) {
@@ -105,6 +104,7 @@ public class OffsetCommitter implements Sink, Committer, Worker {
 
     @Override
     public void stop() {
+        close();
         stop = true;
     }
 
