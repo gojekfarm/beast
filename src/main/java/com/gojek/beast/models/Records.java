@@ -14,8 +14,6 @@ public class Records implements Iterable<Record> {
     @Delegate
     @Getter
     private final List<Record> records;
-    @Getter
-    private int pushAttempts = 0;
     private Map<TopicPartition, OffsetAndMetadata> partitionsCommitOffset = new HashMap<>();
 
     public Records(List<Record> records) {
@@ -37,9 +35,5 @@ public class Records implements Iterable<Record> {
             }
         });
         return partitionsCommitOffset;
-    }
-
-    public void incrementAttempts() {
-        pushAttempts++;
     }
 }

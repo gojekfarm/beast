@@ -64,13 +64,9 @@ public interface AppConfig extends Config {
 
     @DefaultValue("15000")
     @Key("OFFSET_ACK_TIMEOUT")
-    Long getOffsetAckTimeoutMs();
+    long getOffsetAckTimeoutMs();
 
-    @DefaultValue("5")
-    @Key("MAX_BQ_PUSH_ATTEMPTS")
-    Integer getMaxPushAttempts();
-
-    @DefaultValue("false")
+    @DefaultValue("true")
     @Key(Constants.Config.COLUMN_MAPPING_CHECK_DUPLICATES)
     Boolean isColumnMappingDuplicateValidationEnabled();
 

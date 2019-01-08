@@ -1,6 +1,5 @@
 package com.gojek.beast.config;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -27,7 +26,6 @@ public class ProtoIndexToProtoFieldMapConverterTest {
         assertThat(actualProperties.getProperty("3"), equalTo("driver_id"));
     }
 
-    @Ignore
     @Test
     public void shouldValidateJsonConfigForDuplicates() {
         String json = "{\"1\":\"order_number\",\"2\":\"event_timestamp\",\"3\":\"event_timestamp\"}";
@@ -36,7 +34,6 @@ public class ProtoIndexToProtoFieldMapConverterTest {
         new ProtoIndexToFieldMapConverter().convert(null, json);
     }
 
-    @Ignore
     @Test
     public void shouldValidateJsonConfigForDuplicatesInNestedJsons() {
         String json = "{\"1\":\"order_number\",\"2\":\"event_timestamp\",\"3\":{\"1\":\"event_timestamp\",\"2\":\"order_number\"}}";
