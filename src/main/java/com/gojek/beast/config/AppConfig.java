@@ -73,4 +73,8 @@ public interface AppConfig extends Config {
     @DefaultValue("false")
     @Key("KAFKA_CONSUMER_ENABLE_AUTO_COMMIT")
     Boolean isAutoCommitEnabled();
+
+    @DefaultValue("5")
+    @Key("MAX_BQ_PUSH_ATTEMPTS")
+    Integer getMaxPushAttempts();
 }

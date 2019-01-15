@@ -1,10 +1,13 @@
 package com.gojek.beast.launch;
 
 import com.gojek.beast.Clock;
+import com.gojek.beast.backoff.BackOff;
+import com.gojek.beast.backoff.ExponentialBackOffProvider;
 import com.gojek.beast.commiter.Committer;
 import com.gojek.beast.commiter.OffsetCommitter;
 import com.gojek.beast.commiter.OffsetState;
 import com.gojek.beast.config.AppConfig;
+import com.gojek.beast.config.BackOffConfig;
 import com.gojek.beast.config.ColumnMapping;
 import com.gojek.beast.config.KafkaConfig;
 import com.gojek.beast.config.QueueConfig;
@@ -17,6 +20,7 @@ import com.gojek.beast.models.Records;
 import com.gojek.beast.parser.ProtoParser;
 import com.gojek.beast.sink.MultiSink;
 import com.gojek.beast.sink.QueueSink;
+import com.gojek.beast.sink.RetrySink;
 import com.gojek.beast.sink.Sink;
 import com.gojek.beast.sink.bq.BqSink;
 import com.gojek.beast.worker.BqQueueWorker;
@@ -54,6 +58,7 @@ import java.util.regex.Pattern;
 public class Main {
     public static void main(String[] args) {
         AppConfig appConfig = ConfigFactory.create(AppConfig.class, System.getenv());
+        BackOffConfig backOffConfig = ConfigFactory.create(BackOffConfig.class, System.getenv());
         Map<String, Object> consumerConfig = new KafkaConfig(appConfig.getKafkaConfigPrefix()).get(appConfig);
         ColumnMapping columnMapping = appConfig.getProtoColumnMapping();
 
@@ -62,6 +67,7 @@ public class Main {
 
         //BigQuery
         Sink bqSink = buildBqSink(appConfig);
+        Sink retryBqSink = new RetrySink(bqSink, new ExponentialBackOffProvider(backOffConfig.getExponentialBackoffInitialTimeInMs(), backOffConfig.getExponentialBackoffMaximumTimeInMs(), backOffConfig.getExponentialBackoffRate(), new BackOff()), appConfig.getMaxPushAttempts());
 
         BlockingQueue<Records> readQueue = new LinkedBlockingQueue<>(appConfig.getReadQueueCapacity());
 
@@ -83,7 +89,7 @@ public class Main {
         consumerThread.start();
 
 
-        List<Worker> workers = spinBqWorkers(appConfig, readQueue, bqSink, committer);
+        List<Worker> workers = spinBqWorkers(appConfig, readQueue, retryBqSink, committer);
         workers.add(committer);
 
         Thread committerThread = new Thread(committer, "committer");
@@ -130,11 +136,11 @@ public class Main {
         }));
     }
 
-    private static List<Worker> spinBqWorkers(AppConfig appConfig, BlockingQueue<Records> queue, Sink bqSink, Committer committer) {
+    private static List<Worker> spinBqWorkers(AppConfig appConfig, BlockingQueue<Records> queue, Sink retryBqSink, Committer committer) {
         Integer bqWorkerPoolSize = appConfig.getBqWorkerPoolSize();
         List<Worker> threads = new ArrayList<>(bqWorkerPoolSize);
         for (int i = 0; i < bqWorkerPoolSize; i++) {
-            Worker bqQueueWorker = new BqQueueWorker(queue, bqSink, new QueueConfig(appConfig.getBqWorkerPollTimeoutMs()), committer);
+            Worker bqQueueWorker = new BqQueueWorker(queue, retryBqSink, new QueueConfig(appConfig.getBqWorkerPollTimeoutMs()), committer);
             Thread bqWorkerThread = new Thread(bqQueueWorker, "bq-worker-" + i);
             bqWorkerThread.start();
             threads.add(bqQueueWorker);

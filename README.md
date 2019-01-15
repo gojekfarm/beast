@@ -44,6 +44,10 @@ Note: Until not in production use `latest` tag for docker images. Also, we don't
 Proto column mappings & BigQuery table schemas are available in `schema` directory
 
 ## Commands:
+- create new table
+```
+bq mk --table <project_name>:<dataset_name>.<table_name> <path_to_schema_file>
+```
 - query total records
 ```
 bq query --nouse_legacy_sql 'SELECT count(*) FROM `bq-project.bqsinktest.bq_table` LIMIT 10'
