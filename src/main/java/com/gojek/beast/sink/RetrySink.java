@@ -1,9 +1,9 @@
 package com.gojek.beast.sink;
 
 import com.gojek.beast.backoff.BackOffProvider;
-import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
+import com.gojek.beast.sink.executor.RetryExecutor;
 import com.gojek.beast.stats.Stats;
 import lombok.AllArgsConstructor;
 
@@ -19,22 +19,14 @@ public class RetrySink implements Sink {
     @Override
     public Status push(Records records) {
         Instant start = Instant.now();
-        int attemptCount = 0;
         Status pushStatus;
+        int attemptCount = 0;
+
+        RetryExecutor retryExecutor = new RetryExecutor(sink, records);
         do {
             attemptCount++;
-            try {
-                pushStatus = sink.push(records);
-            } catch (Exception e) {
-                pushStatus = new FailureStatus(e);
-            }
-
-            if (pushStatus.isSuccess()) {
-                break;
-            } else {
-                backOffProvider.backOff(attemptCount);
-            }
-        } while (attemptCount < maxRetryAttempts);
+            pushStatus = retryExecutor.execute().ifFailure(backOffProvider, attemptCount).status();
+        } while ((attemptCount < maxRetryAttempts) && (!pushStatus.isSuccess()));
 
         statsClient.gauge("RetrySink.queue.push.messages", records.size());
         statsClient.timeIt("RetrySink.queue.push.time", start);
