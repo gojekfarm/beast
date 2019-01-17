@@ -109,7 +109,7 @@ public class OffsetCommitterTest {
 
         new Thread(committer).start();
 
-        closeWorker(committer, 500);
+        closeWorker(committer, 2000);
         verify(commitQueue, atLeast(1)).peek();
 
         InOrder callOrder = inOrder(kafkaConsumer, records);
