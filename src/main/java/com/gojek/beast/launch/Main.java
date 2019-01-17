@@ -104,7 +104,7 @@ public class Main {
             committerThread.join();
         } catch (InterruptedException e) {
             e.printStackTrace();
-            log.error("KafkaConsumer and committer join failed", e);
+            log.error("Exception::KafkaConsumer and committer join failed: {}", e.getMessage());
         } finally {
             workers.forEach(Worker::stop);
         }

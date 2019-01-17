@@ -45,7 +45,7 @@ public class OffsetCommitter implements Sink, Committer, Worker {
             commitQueue.put(records);
             statsClient.gauge("queue.elements,name=commiter", commitQueue.size());
         } catch (InterruptedException e) {
-            log.error("push to commit queue failed: {}", e.getMessage());
+            log.error("Exception::push to commit queue failed: {}", e.getMessage());
             return new FailureStatus(e);
         }
         return new SuccessStatus();
@@ -96,10 +96,10 @@ public class OffsetCommitter implements Sink, Committer, Worker {
                 statsClient.timeIt("committer.processing.time", start);
             }
         } catch (InterruptedException e) {
-            log.error("InterrupedException in offset committer", e);
+            log.error("Exception::InterrupedException in offset committer: {}", e.getMessage());
             e.printStackTrace();
         } catch (RuntimeException e) {
-            log.error("Exception in offset committer", e);
+            log.error("Exception in offset committer: {}", e.getMessage());
             e.printStackTrace();
         } finally {
             close();

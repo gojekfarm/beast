@@ -45,7 +45,7 @@ public class BqQueueWorker implements Worker {
                 }
             } catch (InterruptedException | RuntimeException e) {
                 statsClient.increment("worker.queue.bq.errors");
-                log.error("Failed to poll records from read queue", e);
+                log.error("Exception::Failed to poll records from read queue {}", e.getMessage());
                 stop();
             }
             statsClient.timeIt("worker.queue.bq.processing", start);
@@ -59,7 +59,7 @@ public class BqQueueWorker implements Worker {
             status = sink.push(poll);
         } catch (BigQueryException e) {
             statsClient.increment("worker.queue.bq.errors");
-            log.error("Failed to write to BQ:", e);
+            log.error("Exception::Failed to write to BQ: {}", e.getMessage());
             return false;
         }
         if (status.isSuccess()) {

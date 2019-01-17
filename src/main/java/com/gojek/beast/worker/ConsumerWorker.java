@@ -20,12 +20,12 @@ public class ConsumerWorker implements Worker {
             do {
                 Status status = messageConsumer.consume();
                 if (!status.isSuccess()) {
-                    log.error("message consumption failed:", status.toString());
+                    log.error("message consumption failed: {}", status.toString());
                     statsClient.increment("worker.consumer.consume.errors");
                 }
             } while (!messageConsumer.isClosed());
         } catch (RuntimeException e) {
-            log.error("Stop Message Consumption:", e);
+            log.error("Exception::Stop Message Consumption: {}", e.getMessage());
         } finally {
             stop();
         }

@@ -59,7 +59,7 @@ public class RowMapper {
                         columnName = getNestedColumnName((ColumnMapping) value);
                         fieldValue = getMappings((DynamicMessage) field, (ColumnMapping) value);
                     } catch (Exception e) {
-                        log.error("Handling nested field failure", e);
+                        log.error("Exception::Handling nested field failure: {}", e.getMessage());
                     }
                 }
                 row.put(columnName, fieldValue);
