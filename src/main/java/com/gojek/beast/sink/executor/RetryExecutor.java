@@ -10,12 +10,17 @@ public class RetryExecutor implements Executor {
 
     private Sink sink;
     private Records records;
+    private int maxAttempts;
+    private BackOffProvider backOffProvider;
 
     private Status status;
+    private int attemptCount = 0;
 
-    public RetryExecutor(Sink sink, Records records) {
+    public RetryExecutor(Sink sink, Records records, int maxAttempts, BackOffProvider backOffProvider) {
         this.sink = sink;
         this.records = records;
+        this.maxAttempts = maxAttempts;
+        this.backOffProvider = backOffProvider;
     }
 
     @Override
@@ -23,20 +28,28 @@ public class RetryExecutor implements Executor {
         return status;
     }
 
+    private boolean shouldExecute() {
+        return ((attemptCount < maxAttempts) && (!status.isSuccess()));
+    }
+
     @Override
-    public Executor ifFailure(BackOffProvider backOffProvider, int attemptCount) {
-        if (!status.isSuccess())
+    public Executor ifFailure() {
+        if (shouldExecute()) {
             backOffProvider.backOff(attemptCount);
+            execute();
+        }
         return this;
     }
 
     @Override
     public Executor execute() {
+        attemptCount++;
         try {
             status = sink.push(records);
         } catch (Exception e) {
             status = new FailureStatus(e);
         }
+        ifFailure();
         return this;
     }
 }

@@ -20,13 +20,9 @@ public class RetrySink implements Sink {
     public Status push(Records records) {
         Instant start = Instant.now();
         Status pushStatus;
-        int attemptCount = 0;
 
-        RetryExecutor retryExecutor = new RetryExecutor(sink, records);
-        do {
-            attemptCount++;
-            pushStatus = retryExecutor.execute().ifFailure(backOffProvider, attemptCount).status();
-        } while ((attemptCount < maxRetryAttempts) && (!pushStatus.isSuccess()));
+        RetryExecutor retryExecutor = new RetryExecutor(sink, records, maxRetryAttempts, backOffProvider);
+        pushStatus = retryExecutor.execute().status();
 
         statsClient.gauge("RetrySink.queue.push.messages", records.size());
         statsClient.timeIt("RetrySink.queue.push.time", start);
