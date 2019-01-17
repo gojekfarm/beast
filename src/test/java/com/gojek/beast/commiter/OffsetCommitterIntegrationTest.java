@@ -25,6 +25,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
@@ -83,7 +84,7 @@ public class OffsetCommitterIntegrationTest {
         inOrder.verify(kafkaConsumer).commitSync(records1.getPartitionsCommitOffset());
         inOrder.verify(kafkaConsumer).commitSync(records2.getPartitionsCommitOffset());
         inOrder.verify(kafkaConsumer).commitSync(records3.getPartitionsCommitOffset());
-        inOrder.verify(kafkaConsumer, atLeastOnce()).wakeup();
+        inOrder.verify(kafkaConsumer, atLeastOnce()).wakeup(anyString());
         assertTrue(acknowledgements.isEmpty());
     }
 
@@ -120,7 +121,7 @@ public class OffsetCommitterIntegrationTest {
         assertEquals(2, commitQueue.size());
         assertEquals(records2, commitQueue.take());
         assertEquals(records3, commitQueue.take());
-        inOrder.verify(kafkaConsumer, atLeastOnce()).wakeup();
+        inOrder.verify(kafkaConsumer, atLeastOnce()).wakeup(anyString());
         assertEquals(1, acknowledgements.size());
         assertEquals(records3.getPartitionsCommitOffset(), acknowledgements.stream().findFirst().get());
     }
@@ -141,7 +142,7 @@ public class OffsetCommitterIntegrationTest {
         InOrder inOrder = inOrder(kafkaConsumer);
         inOrder.verify(kafkaConsumer, never()).commitSync(anyMap());
         assertEquals(3, commitQueue.size());
-        inOrder.verify(kafkaConsumer, atLeastOnce()).wakeup();
+        inOrder.verify(kafkaConsumer, atLeastOnce()).wakeup(anyString());
         assertTrue(acknowledgements.isEmpty());
     }
 }

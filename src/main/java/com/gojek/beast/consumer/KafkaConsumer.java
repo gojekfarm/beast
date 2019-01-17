@@ -36,8 +36,8 @@ public class KafkaConsumer implements KafkaCommitter {
     }
 
     @Override
-    public void wakeup() {
-        log.info("kafka consumer wakeup");
+    public void wakeup(String reason) {
+        log.info("kafka.consumer.wakeup::reason: {}", reason);
         kafkaConsumer.wakeup();
         closed = true;
     }

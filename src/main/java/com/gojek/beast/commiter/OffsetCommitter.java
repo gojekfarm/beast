@@ -55,7 +55,11 @@ public class OffsetCommitter implements Sink, Committer, Worker {
     public void close() {
         log.info("Closing committer");
         stop = true;
-        kafkaCommitter.wakeup();
+    }
+
+    public void closeCommitter(String reason) {
+        close();
+        kafkaCommitter.wakeup(reason);
     }
 
     @Override
@@ -67,6 +71,7 @@ public class OffsetCommitter implements Sink, Committer, Worker {
 
     @Override
     public void run() {
+        String failureReason = "UNKNOWN";
         offsetState.startTimer();
         try {
             while (!stop) {
@@ -85,9 +90,10 @@ public class OffsetCommitter implements Sink, Committer, Worker {
                     log.info("commit partition {} size {}", partitionsCommitOffset.toString(), partitionsCommitOffset.size());
                 } else {
                     if (offsetState.shouldCloseConsumer(currentOffset)) {
-                        log.error("Acknowledgement Timeout exceeded: {}", offsetState.getAcknowledgeTimeoutMs());
+                        failureReason = "Acknowledgement Timeout exceeded: " + offsetState.getAcknowledgeTimeoutMs();
                         statsClient.increment("committer.ack.timeout");
-                        close();
+                        log.error(failureReason);
+                        closeCommitter(failureReason);
                     }
                     Thread.sleep(defaultSleepMs);
                     statsClient.gauge("committer.queue.wait.ms", defaultSleepMs);
@@ -96,13 +102,13 @@ public class OffsetCommitter implements Sink, Committer, Worker {
                 statsClient.timeIt("committer.processing.time", start);
             }
         } catch (InterruptedException e) {
-            log.error("Exception::InterrupedException in offset committer: {}", e.getMessage());
-            e.printStackTrace();
+            failureReason = "Exception::InterrupedException in offset committer: " + e.getMessage();
+            log.error(failureReason);
         } catch (RuntimeException e) {
-            log.error("Exception in offset committer: {}", e.getMessage());
-            e.printStackTrace();
+            failureReason = "Exception in offset committer: " + e.getMessage();
+            log.error(failureReason);
         } finally {
-            close();
+            closeCommitter(failureReason);
         }
         log.info("Stopped Offset Committer Successfully.");
     }

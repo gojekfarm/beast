@@ -9,5 +9,5 @@ public interface KafkaCommitter {
     void commitSync(Map<TopicPartition, OffsetAndMetadata> offsets);
 
     // Use wakeup to throw exception and consumer handles it and closes the loop
-    void wakeup();
+    void wakeup(String reason);
 }
