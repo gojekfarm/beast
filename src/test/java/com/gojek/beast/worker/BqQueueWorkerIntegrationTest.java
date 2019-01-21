@@ -76,7 +76,7 @@ public class BqQueueWorkerIntegrationTest {
 
     @After
     public void tearDown() throws Exception {
-        workers.forEach(Worker::stop);
+        workers.forEach(worker -> worker.stop("some reason"));
         workers.clear();
         queue.clear();
     }

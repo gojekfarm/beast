@@ -74,7 +74,7 @@ public class OffsetCommitterTest {
     public void tearDown() throws Exception {
         commitQ.clear();
         acknowledgements.clear();
-        offsetCommitter.stop();
+        offsetCommitter.stop("some reason");
     }
 
     @Test

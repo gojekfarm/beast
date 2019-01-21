@@ -8,5 +8,5 @@ import java.util.Map;
 public interface Committer {
     boolean acknowledge(Map<TopicPartition, OffsetAndMetadata> offsets);
 
-    void close();
+    void close(String reason);
 }

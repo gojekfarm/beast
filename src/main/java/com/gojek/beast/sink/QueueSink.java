@@ -32,7 +32,7 @@ public class QueueSink implements Sink {
     }
 
     @Override
-    public void close() {
+    public void close(String reason) {
         recordQueue.clear();
     }
 }

@@ -106,7 +106,7 @@ public class Main {
             e.printStackTrace();
             log.error("Exception::KafkaConsumer and committer join failed: {}", e.getMessage());
         } finally {
-            workers.forEach(Worker::stop);
+            workers.forEach(worker -> worker.stop("Shutdown::consumer and/or committer thread closed"));
         }
     }
 
@@ -132,7 +132,7 @@ public class Main {
     private static void addShutDownHooks(List<Worker> workers) {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             Logger.getLogger("ShutDown").log(Level.INFO, "Shuttting down!!!");
-            workers.forEach(Worker::stop);
+            workers.forEach(worker -> worker.stop("Shutdown::shutdown hook"));
         }));
     }
 

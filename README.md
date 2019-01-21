@@ -8,6 +8,14 @@ Note: Until not in production use `latest` tag for docker images. Also, we don't
 * For Terminal - Run `cp env/sample.properties env/local.properties` and update the values
 * For IntelliJ - Install the `envfile` plugin, and create envfile with `cp env/sample.properties env/local.env`. Then source `local.env` in envfile settings.
 
+### Building & Running
+
+* To build:
+`export $(cat ./env/sample.properties | xargs -L1) && gradle clean build`
+
+* To run:
+`export $(cat ./env/sample.properties | xargs -L1) && gradle clean runConsumer`
+
 ### Task List:
 * Fix tests - `shouldPushMessagesToBq`, `shouldCommitOffsetsInSequenceWhenAcknowledgedRandom` for CI
 * Resiliency

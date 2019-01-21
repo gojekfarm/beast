@@ -6,5 +6,5 @@ import com.gojek.beast.models.Status;
 public interface Sink {
     Status push(Records records);
 
-    void close();
+    void close(String reason);
 }

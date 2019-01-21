@@ -30,7 +30,7 @@ public class RetrySink implements Sink {
     }
 
     @Override
-    public void close() {
-        sink.close();
+    public void close(String reason) {
+        sink.close(reason);
     }
 }

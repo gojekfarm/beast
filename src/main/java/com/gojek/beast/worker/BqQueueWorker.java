@@ -31,6 +31,7 @@ public class BqQueueWorker implements Worker {
 
     @Override
     public void run() {
+        String failureReason;
         do {
             Instant start = Instant.now();
             try {
@@ -41,12 +42,15 @@ public class BqQueueWorker implements Worker {
                 boolean success = pushToSink(poll);
                 if (!success) {
                     queue.offer(poll, config.getTimeout(), config.getTimeoutUnit());
-                    stop();
+                    failureReason = "Error::Failed to push records to sink";
+                    log.error(failureReason);
+                    stop(failureReason);
                 }
             } catch (InterruptedException | RuntimeException e) {
                 statsClient.increment("worker.queue.bq.errors");
-                log.error("Exception::Failed to poll records from read queue {}", e.getMessage());
-                stop();
+                failureReason = "Exception::Failed to poll records from read queue: " + e.getMessage();
+                log.error(failureReason);
+                stop(failureReason);
             }
             statsClient.timeIt("worker.queue.bq.processing", start);
         } while (!stop);
@@ -71,10 +75,10 @@ public class BqQueueWorker implements Worker {
     }
 
     @Override
-    public void stop() {
-        log.info("Stopping BqWorker");
-        committer.close();
-        sink.close();
+    public void stop(String reason) {
+        log.info("Stopping BqWorker: {}", reason);
+        committer.close(reason);
+        sink.close(reason);
         stop = true;
     }
 }

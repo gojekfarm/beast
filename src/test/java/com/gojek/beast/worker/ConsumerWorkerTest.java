@@ -27,14 +27,14 @@ public class ConsumerWorkerTest {
         new Thread(worker).start();
 
         Thread.sleep(50L);
-        worker.stop();
+        worker.stop("some reason");
         verify(consumer, atLeast(5)).consume();
     }
 
     @Test
     public void shouldConsumeOnlyOnceWhenStopped() throws InterruptedException {
         Worker worker = new ConsumerWorker(consumer);
-        worker.stop();
+        worker.stop("some reason");
 
         new Thread(worker).start();
         Thread.sleep(10L);

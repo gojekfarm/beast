@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -141,6 +142,6 @@ public class BqQueueWorkerTest {
 
         WorkerUtil.closeWorker(worker, 1000);
         workerThread.join();
-        verify(committer).close();
+        verify(committer).close(anyString());
     }
 }

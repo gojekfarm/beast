@@ -36,6 +36,6 @@ public class BqSink implements Sink {
     }
 
     @Override
-    public void close() {
+    public void close(String reason) {
     }
 }

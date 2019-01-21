@@ -43,7 +43,7 @@ public class OffsetCommitter implements Sink, Committer, Worker {
     public Status push(Records records) {
         try {
             commitQueue.put(records);
-            statsClient.gauge("queue.elements,name=commiter", commitQueue.size());
+            statsClient.gauge("queue.elements,name=committer", commitQueue.size());
         } catch (InterruptedException e) {
             log.error("Exception::push to commit queue failed: {}", e.getMessage());
             return new FailureStatus(e);
@@ -52,13 +52,9 @@ public class OffsetCommitter implements Sink, Committer, Worker {
     }
 
     @Override
-    public void close() {
+    public void close(String reason) {
         log.info("Closing committer");
         stop = true;
-    }
-
-    public void closeCommitter(String reason) {
-        close();
         kafkaCommitter.wakeup(reason);
     }
 
@@ -93,7 +89,7 @@ public class OffsetCommitter implements Sink, Committer, Worker {
                         failureReason = "Acknowledgement Timeout exceeded: " + offsetState.getAcknowledgeTimeoutMs();
                         statsClient.increment("committer.ack.timeout");
                         log.error(failureReason);
-                        closeCommitter(failureReason);
+                        close(failureReason);
                     }
                     Thread.sleep(defaultSleepMs);
                     statsClient.gauge("committer.queue.wait.ms", defaultSleepMs);
@@ -108,14 +104,14 @@ public class OffsetCommitter implements Sink, Committer, Worker {
             failureReason = "Exception in offset committer: " + e.getMessage();
             log.error(failureReason);
         } finally {
-            closeCommitter(failureReason);
+            close(failureReason);
         }
         log.info("Stopped Offset Committer Successfully.");
     }
 
     @Override
-    public void stop() {
-        close();
+    public void stop(String reason) {
+        close(reason);
         stop = true;
     }
 

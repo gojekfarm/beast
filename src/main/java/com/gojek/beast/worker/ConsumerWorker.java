@@ -27,13 +27,13 @@ public class ConsumerWorker implements Worker {
         } catch (RuntimeException e) {
             log.error("Exception::Stop Message Consumption: {}", e.getMessage());
         } finally {
-            stop();
+            stop("Stopping ConsumerWorker");
         }
         log.info("Stopped Message Consumer Successfully.");
     }
 
     @Override
-    public void stop() {
+    public void stop(String reason) {
         log.info("Stopping consumer");
         messageConsumer.close();
     }

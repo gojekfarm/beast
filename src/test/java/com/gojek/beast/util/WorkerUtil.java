@@ -13,7 +13,7 @@ public class WorkerUtil {
                 e.printStackTrace();
             }
             System.out.println("Closing given Thread with worker util " + sleepMillis);
-            worker.stop();
+            worker.stop("some reason");
         });
         closer.start();
         return closer;
@@ -23,7 +23,7 @@ public class WorkerUtil {
         Thread closer = new Thread(() -> {
             try {
                 Thread.sleep(sleepMillis);
-                workers.forEach(Worker::stop);
+                workers.forEach(worker -> worker.stop("some reason"));
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

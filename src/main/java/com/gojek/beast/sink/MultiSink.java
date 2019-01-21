@@ -25,8 +25,8 @@ public class MultiSink implements Sink {
     }
 
     @Override
-    public void close() {
-        sinks.forEach(Sink::close);
-        log.info("Stopped MultiSink Successfully");
+    public void close(String reason) {
+        sinks.forEach(sink -> sink.close(reason));
+        log.info("Stopped MultiSink Successfully: {}", reason);
     }
 }
