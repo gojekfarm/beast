@@ -20,10 +20,13 @@ Note: Until not in production use `latest` tag for docker images. Also, we don't
 * Fix tests - `shouldPushMessagesToBq`, `shouldCommitOffsetsInSequenceWhenAcknowledgedRandom` for CI
 * Resiliency
 * No data loss
-* Kill process, when something goes wrong
-* Add total consumer threads & worker threads in metrics
 * Add integration test with BQ (separate stage in pipeline)
-* BqSinkWorker - bqsink.push() could be made as async with commit in callback
+* Rename committer to Acknowledger
+* offsetCommiter pull out Worker part
+* Remove Sink from OffsetCommitter
+* Introduce event library, close -> send event so subscribers can stop
+* Factories
+* Fix Ignored Tests
 
 ### Laundry List
 * Copy jacaco and checkstyle reports to test artifacts
