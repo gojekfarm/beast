@@ -27,6 +27,10 @@ public final class Stats {
         defaultTags = getDefaultTags();
     }
 
+    public StatsDClient getStatsDClient() {
+        return statsDClient;
+    }
+
     public static Stats client() {
         return STATS_CLIENT;
     }

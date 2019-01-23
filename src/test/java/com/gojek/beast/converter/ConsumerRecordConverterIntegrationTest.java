@@ -4,12 +4,12 @@ import com.gojek.beast.Clock;
 import com.gojek.beast.TestMessage;
 import com.gojek.beast.config.ColumnMapping;
 import com.gojek.beast.models.OffsetInfo;
-import com.gojek.beast.models.ParseException;
 import com.gojek.beast.models.Record;
-import com.gojek.beast.parser.Parser;
-import com.gojek.beast.parser.ProtoParser;
 import com.gojek.beast.util.KafkaConsumerUtil;
 import com.gojek.de.stencil.StencilClientFactory;
+import com.gojek.de.stencil.parser.Parser;
+import com.gojek.de.stencil.parser.ProtoParser;
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.Before;
 import org.junit.Test;
@@ -55,7 +55,7 @@ public class ConsumerRecordConverterIntegrationTest {
     }
 
     @Test
-    public void shouldGetRecordForBQFromConsumerRecords() throws ParseException {
+    public void shouldGetRecordForBQFromConsumerRecords() throws InvalidProtocolBufferException {
         OffsetInfo record1Offset = new OffsetInfo("topic1", 1, 101, Instant.now().toEpochMilli());
         OffsetInfo record2Offset = new OffsetInfo("topic1", 2, 102, Instant.now().toEpochMilli());
         ConsumerRecord<byte[], byte[]> record1 = util.withOffsetInfo(record1Offset).createConsumerRecord("order-1", "order-url-1", "order-details-1");
@@ -88,7 +88,7 @@ public class ConsumerRecordConverterIntegrationTest {
     }
 
     @Test
-    public void shouldPopulateOffsetInformationForRecord() throws ParseException {
+    public void shouldPopulateOffsetInformationForRecord() throws InvalidProtocolBufferException {
         String topic = "order-logs";
         OffsetInfo record1Offset = new OffsetInfo(topic, 1, 100, Instant.now().toEpochMilli());
         OffsetInfo record2Offset = new OffsetInfo(topic, 2, 200, Instant.now().toEpochMilli());

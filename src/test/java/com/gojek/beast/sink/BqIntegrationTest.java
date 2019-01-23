@@ -10,15 +10,14 @@ import com.gojek.beast.converter.ConsumerRecordConverter;
 import com.gojek.beast.converter.Converter;
 import com.gojek.beast.converter.RowMapper;
 import com.gojek.beast.models.OffsetInfo;
-import com.gojek.beast.models.ParseException;
 import com.gojek.beast.models.Record;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
-import com.gojek.beast.parser.ProtoParser;
 import com.gojek.beast.sink.bq.BqSink;
 import com.gojek.beast.sink.bq.InsertStatus;
 import com.gojek.beast.util.ProtoUtil;
 import com.gojek.de.stencil.StencilClientFactory;
+import com.gojek.de.stencil.parser.ProtoParser;
 import com.google.api.client.http.LowLevelHttpResponse;
 import com.google.api.client.testing.http.MockHttpTransport;
 import com.google.api.client.testing.http.MockLowLevelHttpRequest;
@@ -31,6 +30,7 @@ import com.google.cloud.bigquery.BigQueryOptions;
 import com.google.cloud.bigquery.InsertAllRequest;
 import com.google.cloud.bigquery.InsertAllResponse;
 import com.google.cloud.bigquery.TableId;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Timestamp;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.record.TimestampType;
@@ -147,7 +147,7 @@ public class BqIntegrationTest {
 
     @Ignore
     @Test
-    public void shouldPushTestNestedRepeatedMessages() throws ParseException {
+    public void shouldPushTestNestedRepeatedMessages() throws InvalidProtocolBufferException {
         Instant now = Instant.now();
         long second = now.getEpochSecond();
         ProtoParser protoParser = new ProtoParser(StencilClientFactory.getClient(), TestNestedRepeatedMessage.class.getName());

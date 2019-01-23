@@ -17,16 +17,18 @@ import com.gojek.beast.consumer.RebalanceListener;
 import com.gojek.beast.converter.ConsumerRecordConverter;
 import com.gojek.beast.converter.RowMapper;
 import com.gojek.beast.models.Records;
-import com.gojek.beast.parser.ProtoParser;
 import com.gojek.beast.sink.MultiSink;
 import com.gojek.beast.sink.QueueSink;
 import com.gojek.beast.sink.RetrySink;
 import com.gojek.beast.sink.Sink;
 import com.gojek.beast.sink.bq.BqSink;
+import com.gojek.beast.stats.Stats;
 import com.gojek.beast.worker.BqQueueWorker;
 import com.gojek.beast.worker.ConsumerWorker;
 import com.gojek.beast.worker.Worker;
 import com.gojek.de.stencil.StencilClientFactory;
+import com.gojek.de.stencil.client.StencilClient;
+import com.gojek.de.stencil.parser.ProtoParser;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.bigquery.BigQuery;
@@ -54,7 +56,7 @@ import java.util.regex.Pattern;
 
 @Slf4j
 public class Main {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         AppConfig appConfig = ConfigFactory.create(AppConfig.class, System.getenv());
         BackOffConfig backOffConfig = ConfigFactory.create(BackOffConfig.class, System.getenv());
         Map<String, Object> consumerConfig = new KafkaConfig(appConfig.getKafkaConfigPrefix()).get(appConfig);
@@ -79,7 +81,8 @@ public class Main {
         MultiSink multiSink = new MultiSink(Arrays.asList(readQueueSink, committerQueueSink));
 
 
-        ProtoParser protoParser = new ProtoParser(StencilClientFactory.getClient(appConfig.getStencilUrl(), new HashMap<>()), appConfig.getProtoSchema());
+        StencilClient stencilClient = StencilClientFactory.getClient(appConfig.getStencilUrl(), System.getenv(), Stats.client().getStatsDClient());
+        ProtoParser protoParser = new ProtoParser(stencilClient, appConfig.getProtoSchema());
         ConsumerRecordConverter parser = new ConsumerRecordConverter(new RowMapper(columnMapping), protoParser, new Clock());
         MessageConsumer messageConsumer = new MessageConsumer(consumer, multiSink, parser, appConfig.getConsumerPollTimeoutMs());
 
@@ -106,6 +109,7 @@ public class Main {
             e.printStackTrace();
             log.error("Exception::KafkaConsumer and committer join failed: {}", e.getMessage());
         } finally {
+            stencilClient.close();
             workers.forEach(worker -> worker.stop("Shutdown::consumer and/or committer thread closed"));
         }
     }

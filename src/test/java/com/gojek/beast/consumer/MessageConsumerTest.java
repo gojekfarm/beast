@@ -1,12 +1,9 @@
 package com.gojek.beast.consumer;
 
 import com.gojek.beast.converter.ConsumerRecordConverter;
-import com.gojek.beast.models.ParseException;
-import com.gojek.beast.models.Record;
-import com.gojek.beast.models.Records;
-import com.gojek.beast.models.Status;
-import com.gojek.beast.models.SuccessStatus;
+import com.gojek.beast.models.*;
 import com.gojek.beast.sink.Sink;
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.common.errors.WakeupException;
 import org.junit.Before;
@@ -20,13 +17,9 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MessageConsumerTest {
@@ -53,7 +46,7 @@ public class MessageConsumerTest {
     }
 
     @Test
-    public void shouldConsumeMessagesAndPushToSink() throws ParseException {
+    public void shouldConsumeMessagesAndPushToSink() throws InvalidProtocolBufferException {
         when(converter.convert(messages)).thenReturn(records);
         when(sink.push(any())).thenReturn(success);
         InOrder callOrder = inOrder(converter, sink);
@@ -67,8 +60,8 @@ public class MessageConsumerTest {
     }
 
     @Test
-    public void shouldReturnFailureStatusWhenParsingFails() throws ParseException {
-        when(converter.convert(any())).thenThrow(new ParseException("test reason", null));
+    public void shouldReturnFailureStatusWhenParsingFails() throws InvalidProtocolBufferException {
+        when(converter.convert(any())).thenThrow(new InvalidProtocolBufferException("test reason", null));
         Status status = consumer.consume();
 
         assertFalse(status.isSuccess());

@@ -6,16 +6,11 @@ import com.gojek.beast.TestNestedMessage;
 import com.gojek.beast.TestNestedRepeatedMessage;
 import com.gojek.beast.config.ColumnMapping;
 import com.gojek.beast.models.ConfigurationException;
-import com.gojek.beast.models.ParseException;
-import com.gojek.beast.parser.ProtoParser;
 import com.gojek.beast.util.ProtoUtil;
 import com.gojek.de.stencil.StencilClientFactory;
+import com.gojek.de.stencil.parser.ProtoParser;
 import com.google.api.client.util.DateTime;
-import com.google.protobuf.DynamicMessage;
-import com.google.protobuf.ListValue;
-import com.google.protobuf.Struct;
-import com.google.protobuf.Timestamp;
-import com.google.protobuf.Value;
+import com.google.protobuf.*;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,9 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class RowMapperTest {
@@ -39,7 +32,7 @@ public class RowMapperTest {
     private long nowMillis;
 
     @Before
-    public void setUp() throws ParseException {
+    public void setUp() throws InvalidProtocolBufferException {
         ProtoParser protoParser = new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName());
         now = Instant.now();
         createdAt = Timestamp.newBuilder().setSeconds(now.getEpochSecond()).setNanos(now.getNano()).build();
@@ -74,7 +67,7 @@ public class RowMapperTest {
     }
 
     @Test
-    public void shouldParseDurationMessageSuccessfully() throws ParseException {
+    public void shouldParseDurationMessageSuccessfully() throws InvalidProtocolBufferException {
         ColumnMapping fieldMappings = new ColumnMapping();
         ColumnMapping durationMappings = new ColumnMapping();
         durationMappings.put("record_name", "duration");
@@ -93,7 +86,7 @@ public class RowMapperTest {
     }
 
     @Test
-    public void shouldParseNestedMessageSuccessfully() throws ParseException {
+    public void shouldParseNestedMessageSuccessfully() {
         ColumnMapping fieldMappings = new ColumnMapping();
         ColumnMapping nestedMappings = getTestMessageColumnMapping();
         fieldMappings.put("1", "nested_id");
@@ -109,7 +102,7 @@ public class RowMapperTest {
             Map<String, Object> fields = null;
             try {
                 fields = new RowMapper(fieldMappings).map(protoParser.parse(msg.toByteArray()));
-            } catch (ParseException e) {
+            } catch (InvalidProtocolBufferException e) {
                 e.printStackTrace();
             }
             assertNestedMessage(msg, fields);
@@ -117,7 +110,7 @@ public class RowMapperTest {
     }
 
     @Test
-    public void shouldParseRepeatedPrimitives() throws ParseException {
+    public void shouldParseRepeatedPrimitives() throws InvalidProtocolBufferException {
         ColumnMapping fieldMappings = new ColumnMapping();
         fieldMappings.put("1", "order_number");
         fieldMappings.put("12", "aliases");
@@ -137,7 +130,7 @@ public class RowMapperTest {
     }
 
     @Test
-    public void shouldParseRepeatedNestedMessages() throws ParseException {
+    public void shouldParseRepeatedNestedMessages() throws InvalidProtocolBufferException {
         int number = 1234;
         TestMessage nested1 = ProtoUtil.generateTestMessage(now);
         TestMessage nested2 = ProtoUtil.generateTestMessage(now);
@@ -163,7 +156,7 @@ public class RowMapperTest {
     }
 
     @Test
-    public void shouldParseMapFields() throws ParseException {
+    public void shouldParseMapFields() throws InvalidProtocolBufferException {
         TestMessage message = TestMessage.newBuilder()
                 .setOrderNumber("order-1")
                 .setOrderUrl("order-url-1")
@@ -194,7 +187,7 @@ public class RowMapperTest {
     }
 
     @Test
-    public void shouldMapStructFields() throws ParseException {
+    public void shouldMapStructFields() throws InvalidProtocolBufferException {
         ListValue.Builder builder = ListValue.newBuilder();
         ListValue listValue = builder
                 .addValues(Value.newBuilder().setNumberValue(1).build())

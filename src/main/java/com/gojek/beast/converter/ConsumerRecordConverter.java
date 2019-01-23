@@ -3,10 +3,10 @@ package com.gojek.beast.converter;
 import com.gojek.beast.Clock;
 import com.gojek.beast.config.Constants;
 import com.gojek.beast.models.OffsetInfo;
-import com.gojek.beast.models.ParseException;
 import com.gojek.beast.models.Record;
-import com.gojek.beast.parser.Parser;
+import com.gojek.de.stencil.parser.Parser;
 import com.google.api.client.util.DateTime;
+import com.google.protobuf.InvalidProtocolBufferException;
 import lombok.AllArgsConstructor;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
@@ -20,7 +20,7 @@ public class ConsumerRecordConverter implements Converter {
     private final Parser parser;
     private final Clock clock;
 
-    public List<Record> convert(final Iterable<ConsumerRecord<byte[], byte[]>> messages) throws ParseException {
+    public List<Record> convert(final Iterable<ConsumerRecord<byte[], byte[]>> messages) throws InvalidProtocolBufferException {
         ArrayList<Record> records = new ArrayList<>();
         for (ConsumerRecord<byte[], byte[]> message : messages) {
             byte[] value = message.value();

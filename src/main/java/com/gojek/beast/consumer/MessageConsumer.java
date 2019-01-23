@@ -2,13 +2,13 @@ package com.gojek.beast.consumer;
 
 import com.gojek.beast.converter.Converter;
 import com.gojek.beast.models.FailureStatus;
-import com.gojek.beast.models.ParseException;
 import com.gojek.beast.models.Record;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
 import com.gojek.beast.models.SuccessStatus;
 import com.gojek.beast.sink.Sink;
 import com.gojek.beast.stats.Stats;
+import com.google.protobuf.InvalidProtocolBufferException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.common.errors.WakeupException;
@@ -49,7 +49,7 @@ public class MessageConsumer {
         List<Record> records;
         try {
             records = recordConverter.convert(messages);
-        } catch (ParseException e) {
+        } catch (InvalidProtocolBufferException e) {
             Status failure = new FailureStatus(e);
             log.error("Error while converting messages: {}", failure.toString());
             return failure;
