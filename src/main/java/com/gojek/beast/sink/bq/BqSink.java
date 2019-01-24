@@ -13,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.time.Instant;
 
+import static com.google.cloud.bigquery.InsertAllRequest.*;
+
 @Slf4j
 @AllArgsConstructor
 public class BqSink implements Sink {
@@ -25,8 +27,8 @@ public class BqSink implements Sink {
     @Override
     public InsertStatus push(Records records) {
         Instant start = Instant.now();
-        InsertAllRequest.Builder builder = InsertAllRequest.newBuilder(tableId);
-        records.forEach((Record m) -> builder.addRow(m.getColumns()));
+        Builder builder = newBuilder(tableId);
+        records.forEach((Record m) -> builder.addRow(RowToInsert.of(m.getId(), m.getColumns())));
         InsertAllRequest rows = builder.build();
         InsertAllResponse response = bigquery.insertAll(rows);
         log.info("Pushing {} records to BQ success?: {}", records.size(), !response.hasErrors());

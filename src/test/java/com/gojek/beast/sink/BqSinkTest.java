@@ -15,7 +15,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -59,9 +59,9 @@ public class BqSinkTest {
 
     @Test
     public void shouldPushMessageToBigQuerySuccessfully() {
-        Map<String, Object> user1 = createUser("alice");
-        InsertAllRequest request = builder.addRow(user1).build();
-        Records records = new Records(Arrays.asList(new Record(offsetInfo, user1)));
+        Record user = new Record(offsetInfo, createUser("alice"));
+        InsertAllRequest request = builder.addRow(user.getId(), user.getColumns()).build();
+        Records records = new Records(Arrays.asList(user));
 
         Status status = sink.push(records);
 
@@ -71,11 +71,15 @@ public class BqSinkTest {
 
     @Test
     public void shouldPushMultipleMessagesToBigQuerySuccessfully() {
-        Map<String, Object> user1 = createUser("alice");
-        Map<String, Object> user2 = createUser("bob");
-        Map<String, Object> user3 = createUser("mary");
-        InsertAllRequest request = builder.addRow(user1).addRow(user2).addRow(user3).build();
-        Records records = new Records(Arrays.asList(new Record(offsetInfo, user1), new Record(offsetInfo, user2), new Record(offsetInfo, user3)));
+        Record user1 = new Record(offsetInfo, createUser("alice"));
+        Record user2 = new Record(offsetInfo, createUser("bob"));
+        Record user3 = new Record(offsetInfo, createUser("mary"));
+        Records records = new Records(Arrays.asList(user1, user2, user3));
+        InsertAllRequest request = builder
+                .addRow(user1.getId(), user1.getColumns())
+                .addRow(user2.getId(), user2.getColumns())
+                .addRow(user3.getId(), user3.getColumns())
+                .build();
 
         Status status = sink.push(records);
 
@@ -83,12 +87,11 @@ public class BqSinkTest {
         assertTrue(status.isSuccess());
     }
 
-
     @Test
     public void shouldErrorWhenBigQueryInsertFails() {
-        Map<String, Object> user1 = createUser("alice");
-        InsertAllRequest request = builder.addRow(user1).build();
-        Records records = new Records(Arrays.asList(new Record(offsetInfo, user1)));
+        Record user1 = new Record(offsetInfo, createUser("alice"));
+        InsertAllRequest request = builder.addRow(user1.getId(), user1.getColumns()).build();
+        Records records = new Records(Arrays.asList(user1));
         when(bigquery.insertAll(request)).thenReturn(failureResponse);
 
         Status status = sink.push(records);

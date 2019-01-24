@@ -27,6 +27,17 @@ Note: Until not in production use `latest` tag for docker images. Also, we don't
 * Introduce event library, close -> send event so subscribers can stop
 * Factories
 * Fix Ignored Tests
+* Data loss
+    - verified in kafka messages (the lost message is available)
+        - by rerunning consumer
+        - also checking in log segments in data-logs of the specific partition
+    - verified the logs ,which shows that the partition,offset is committed (after BQ push)
+    - manually injected data with log-feeder and verified - no data loss (couldn't reproduce issue)
+    - setting up kibana for easy access of logs (WIP)
+    - ran consumer from earliest
+    
+    - Yet to do : chaos testing tool
+    - Bq Client lib load test
 
 ### Laundry List
 * Copy jacaco and checkstyle reports to test artifacts
@@ -49,8 +60,6 @@ Note: Until not in production use `latest` tag for docker images. Also, we don't
 * Functions & Future
 * Queue Implementations and performance
 
-<<<<<<< HEAD
-=======
 ## Sample schema/configuration:
 Proto column mappings & BigQuery table schemas are available in `schema` directory
 
@@ -61,13 +70,13 @@ bq mk --table <project_name>:<dataset_name>.<table_name> <path_to_schema_file>
 ```
 - query total records
 ```
-bq query --nouse_legacy_sql 'SELECT count(*) FROM `bq-project.bqsinktest.bq_table` LIMIT 10'
+bq query --nouse_legacy_sql 'SELECT count(*) FROM `<project_name>:<dataset_name>.<table_name>` LIMIT 10'
 ```
 - update bq schema from local schema json file
 ```
-bq update --format=prettyjson bq-project:bqsinktest.bq_table  booking.schema
+bq update --format=prettyjson <project_name>:<dataset_name>.<table_name>  booking.schema
 ```
 -  dump the schema of table to fileA
 ```
-bq show --schema --format=prettyjson bq-project:bqsinktest.bq_table > booking.schema
+bq show --schema --format=prettyjson <project_name>:<dataset_name>.<table_name> > booking.schema
 ```
