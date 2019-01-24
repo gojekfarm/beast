@@ -70,13 +70,15 @@ public class Main {
         Sink retryBqSink = new RetrySink(bqSink, new ExponentialBackOffProvider(backOffConfig.getExponentialBackoffInitialTimeInMs(), backOffConfig.getExponentialBackoffMaximumTimeInMs(), backOffConfig.getExponentialBackoffRate(), new BackOff()), appConfig.getMaxPushAttempts());
 
         BlockingQueue<Records> readQueue = new LinkedBlockingQueue<>(appConfig.getReadQueueCapacity());
+        QueueSink readQueueSink = new QueueSink(readQueue, new QueueConfig(appConfig.getBqWorkerPollTimeoutMs(), "read"));
 
         BlockingQueue<Records> committerQueue = new LinkedBlockingQueue<>(appConfig.getCommitQueueCapacity());
-        QueueSink queueSink = new QueueSink(readQueue, new QueueConfig(appConfig.getBqWorkerPollTimeoutMs()));
+        QueueSink committerQueueSink = new QueueSink(committerQueue, new QueueConfig(appConfig.getBqWorkerPollTimeoutMs(), "commit"));
+
         Set<Map<TopicPartition, OffsetAndMetadata>> partitionsAck = Collections.synchronizedSet(new CopyOnWriteArraySet<Map<TopicPartition, OffsetAndMetadata>>());
         KafkaConsumer consumer = new KafkaConsumer(kafkaConsumer);
         OffsetCommitter committer = new OffsetCommitter(committerQueue, partitionsAck, consumer, new OffsetState(appConfig.getOffsetAckTimeoutMs()));
-        MultiSink multiSink = new MultiSink(Arrays.asList(queueSink, committer));
+        MultiSink multiSink = new MultiSink(Arrays.asList(readQueueSink, committerQueueSink));
 
 
         ProtoParser protoParser = new ProtoParser(StencilClientFactory.getClient(appConfig.getStencilUrl(), new HashMap<>()), appConfig.getProtoSchema());

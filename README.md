@@ -27,6 +27,8 @@ Note: Until not in production use `latest` tag for docker images. Also, we don't
 * Introduce event library, close -> send event so subscribers can stop
 * Factories
 * Fix Ignored Tests
+* Show error of bq sink push failure
+* Push stats: remaining queue size
 * Data loss
     - verified in kafka messages (the lost message is available)
         - by rerunning consumer

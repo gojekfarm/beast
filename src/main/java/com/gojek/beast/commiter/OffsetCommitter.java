@@ -1,10 +1,6 @@
 package com.gojek.beast.commiter;
 
-import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.models.Records;
-import com.gojek.beast.models.Status;
-import com.gojek.beast.models.SuccessStatus;
-import com.gojek.beast.sink.Sink;
 import com.gojek.beast.stats.Stats;
 import com.gojek.beast.worker.Worker;
 import lombok.Setter;
@@ -18,7 +14,7 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 
 @Slf4j
-public class OffsetCommitter implements Sink, Committer, Worker {
+public class OffsetCommitter implements Committer, Worker {
     private static final int DEFAULT_SLEEP_MS = 100;
     private final Stats statsClient = Stats.client();
     private BlockingQueue<Records> commitQueue;
@@ -38,17 +34,6 @@ public class OffsetCommitter implements Sink, Committer, Worker {
         this.kafkaCommitter = kafkaCommitter;
         this.defaultSleepMs = DEFAULT_SLEEP_MS;
         this.offsetState = offsetState;
-    }
-
-    public Status push(Records records) {
-        try {
-            commitQueue.put(records);
-            statsClient.gauge("queue.elements,name=committer", commitQueue.size());
-        } catch (InterruptedException e) {
-            log.error("Exception::push to commit queue failed: {}", e.getMessage());
-            return new FailureStatus(e);
-        }
-        return new SuccessStatus();
     }
 
     @Override

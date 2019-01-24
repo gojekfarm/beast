@@ -10,4 +10,9 @@ import java.util.concurrent.TimeUnit;
 public class QueueConfig {
     private final long timeout;
     private final TimeUnit timeoutUnit = TimeUnit.MILLISECONDS;
+    private String name;
+
+    public QueueConfig(long timeout) {
+        this.timeout = timeout;
+    }
 }

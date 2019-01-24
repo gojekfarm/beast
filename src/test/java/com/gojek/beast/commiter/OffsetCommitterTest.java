@@ -2,7 +2,6 @@ package com.gojek.beast.commiter;
 
 import com.gojek.beast.consumer.KafkaConsumer;
 import com.gojek.beast.models.Records;
-import com.gojek.beast.models.Status;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.After;
@@ -14,16 +13,11 @@ import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.ConcurrentModificationException;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import static com.gojek.beast.util.WorkerUtil.closeWorker;
 import static org.awaitility.Awaitility.await;
@@ -70,15 +64,6 @@ public class OffsetCommitterTest {
     }
 
     @Test
-    public void shouldPushIncomingRecordsToCommitQueue() {
-        Status status = offsetCommitter.push(records);
-
-        assertEquals(1, commitQ.size());
-        assertEquals(records, commitQ.poll());
-        assertTrue(status.isSuccess());
-    }
-
-    @Test
     public void shouldPushAcknowledgementsToSet() {
         Map<TopicPartition, OffsetAndMetadata> partition1Offset = mock(Map.class);
 
@@ -99,7 +84,7 @@ public class OffsetCommitterTest {
         BlockingQueue<Records> commitQueue = spy(new LinkedBlockingQueue<Records>());
         OffsetCommitter committer = new OffsetCommitter(commitQueue, acks, kafkaConsumer, offsetState);
         committer.setDefaultSleepMs(10);
-        committer.push(records);
+        commitQueue.put(records);
         committer.acknowledge(commitPartitionsOffset);
 
         Thread commitThread = new Thread(committer);
@@ -119,23 +104,6 @@ public class OffsetCommitterTest {
     }
 
     @Test
-    public void shouldBlockPushingWhenQueueIsFull() throws InterruptedException {
-        CopyOnWriteArraySet<Map<TopicPartition, OffsetAndMetadata>> ackSet = new CopyOnWriteArraySet<>();
-        Set<Map<TopicPartition, OffsetAndMetadata>> acks = Collections.synchronizedSet(ackSet);
-        LinkedBlockingQueue<Records> commitQueue = new LinkedBlockingQueue<>(1);
-        OffsetCommitter committer = new OffsetCommitter(commitQueue, acks, kafkaConsumer, new OffsetState(acknowledgeTimeoutMs));
-        committer.push(records);
-
-        Thread blockingThread = new Thread(() -> committer.push(records));
-        blockingThread.start();
-
-        Thread.sleep(200);
-        closeWorker(committer, 100);
-        assertEquals(1, commitQueue.size());
-        commitQueue.clear();
-    }
-
-    @Test
     public void shouldCommitOffsetsInSequenceWhenAcknowledgedRandom() throws InterruptedException {
         Map<TopicPartition, OffsetAndMetadata> record1CommitOffset = mock(Map.class);
         Map<TopicPartition, OffsetAndMetadata> record2CommitOffset = mock(Map.class);
@@ -146,9 +114,12 @@ public class OffsetCommitterTest {
         when(records1.getPartitionsCommitOffset()).thenReturn(record1CommitOffset);
         when(records2.getPartitionsCommitOffset()).thenReturn(record2CommitOffset);
         when(records3.getPartitionsCommitOffset()).thenReturn(record3CommitOffset);
-        OffsetCommitter committer = new OffsetCommitter(new LinkedBlockingQueue<>(), acknowledgements, kafkaConsumer, offsetState);
+        LinkedBlockingQueue<Records> commitQueue = new LinkedBlockingQueue<>();
+        OffsetCommitter committer = new OffsetCommitter(commitQueue, acknowledgements, kafkaConsumer, offsetState);
 
-        Arrays.asList(records1, records2, records3).forEach(rs -> committer.push(rs));
+        for (Records rs : Arrays.asList(records1, records2, records3)) {
+            commitQueue.offer(rs, 1, TimeUnit.SECONDS);
+        }
         committer.acknowledge(record3CommitOffset);
         committer.acknowledge(record1CommitOffset);
         committer.acknowledge(record2CommitOffset);
@@ -189,7 +160,9 @@ public class OffsetCommitterTest {
         when(records3.getPartitionsCommitOffset()).thenReturn(record3CommitOffset);
         offsetCommitter.setDefaultSleepMs(50);
         List<Records> incomingRecords = Arrays.asList(records1, records2, records3);
-        incomingRecords.forEach(rs -> offsetCommitter.push(rs));
+        for (Records incomingRecord : incomingRecords) {
+            commitQ.offer(incomingRecord, 1, TimeUnit.SECONDS);
+        }
 
         Thread commiterThread = new Thread(offsetCommitter);
         commiterThread.start();

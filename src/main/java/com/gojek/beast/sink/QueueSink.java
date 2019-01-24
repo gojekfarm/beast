@@ -23,7 +23,7 @@ public class QueueSink implements Sink {
         boolean offered;
         try {
             offered = recordQueue.offer(messages, config.getTimeout(), config.getTimeoutUnit());
-            statsClient.gauge("queue.elements,name=records", recordQueue.size());
+            statsClient.gauge("queue.elements,name=" + config.getName(), recordQueue.size());
         } catch (InterruptedException e) {
             return new FailureStatus(e);
         }
