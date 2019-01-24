@@ -20,6 +20,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
@@ -76,7 +77,7 @@ public class OffsetCommitterIntegrationTest {
         }));
 
         ackThread.start();
-        await().until(() -> commitQueue.isEmpty());
+        await().atMost(1, TimeUnit.MINUTES).until(() -> commitQueue.isEmpty() && acknowledgements.isEmpty());
         committer.close("job done");
         ackThread.join();
         committerThread.join();

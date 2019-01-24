@@ -14,6 +14,6 @@ public class Record {
     private Map<String, Object> columns;
 
     public String getId() {
-        return String.format("%d_%d", offsetInfo.getPartition(), offsetInfo.getOffset());
+        return String.format("%s_%d_%d", offsetInfo.getTopic(), offsetInfo.getPartition(), offsetInfo.getOffset());
     }
 }
