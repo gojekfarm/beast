@@ -2,9 +2,9 @@ package com.gojek.beast.sink;
 
 import com.gojek.beast.config.QueueConfig;
 import com.gojek.beast.models.FailureStatus;
-import com.gojek.beast.models.GenericStatus;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
+import com.gojek.beast.models.SuccessStatus;
 import com.gojek.beast.stats.Stats;
 import lombok.AllArgsConstructor;
 
@@ -29,7 +29,8 @@ public class QueueSink implements Sink {
         }
         statsClient.gauge("sink.queue.push.messages", messages.size());
         statsClient.timeIt("sink.queue.push.time", start);
-        return new GenericStatus(offered, new RuntimeException("Queue is full: capacity: " + recordQueue.size()));
+        return offered ? new SuccessStatus()
+                : new FailureStatus(new RuntimeException(String.format("%s queue is full with capacity: %d", config.getName(), recordQueue.size())));
     }
 
     @Override

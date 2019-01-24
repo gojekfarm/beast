@@ -50,8 +50,6 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 @Slf4j
@@ -133,7 +131,6 @@ public class Main {
 
     private static void addShutDownHooks(List<Worker> workers) {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            Logger.getLogger("ShutDown").log(Level.INFO, "Shuttting down!!!");
             workers.forEach(worker -> worker.stop("Shutdown::shutdown hook"));
         }));
     }

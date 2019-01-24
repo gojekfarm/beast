@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 public class MultiException extends Exception implements Status {
@@ -22,7 +23,8 @@ public class MultiException extends Exception implements Status {
     @Override
     public String toString() {
         return "MultiException{"
-                + "exceptions=" + exceptions.toString()
+                + "exceptions=" + exceptions.stream()
+                .map(Object::toString).collect(Collectors.joining(","))
                 + '}';
     }
 }

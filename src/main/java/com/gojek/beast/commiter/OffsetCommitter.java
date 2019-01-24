@@ -38,7 +38,7 @@ public class OffsetCommitter implements Committer, Worker {
 
     @Override
     public void close(String reason) {
-        log.info("Closing committer");
+        log.info("Closing committer: {}", reason);
         stop = true;
         kafkaCommitter.wakeup(reason);
     }
@@ -73,21 +73,15 @@ public class OffsetCommitter implements Committer, Worker {
                     if (offsetState.shouldCloseConsumer(currentOffset)) {
                         failureReason = "Acknowledgement Timeout exceeded: " + offsetState.getAcknowledgeTimeoutMs();
                         statsClient.increment("committer.ack.timeout");
-                        log.error(failureReason);
                         close(failureReason);
                     }
                     Thread.sleep(defaultSleepMs);
                     statsClient.gauge("committer.queue.wait.ms", defaultSleepMs);
-
                 }
                 statsClient.timeIt("committer.processing.time", start);
             }
-        } catch (InterruptedException e) {
-            failureReason = "Exception::InterrupedException in offset committer: " + e.getMessage();
-            log.error(failureReason);
-        } catch (RuntimeException e) {
+        } catch (InterruptedException | RuntimeException e) {
             failureReason = "Exception in offset committer: " + e.getMessage();
-            log.error(failureReason);
         } finally {
             close(failureReason);
         }
