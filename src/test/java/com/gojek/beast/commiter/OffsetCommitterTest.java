@@ -26,21 +26,13 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import static com.gojek.beast.util.WorkerUtil.closeWorker;
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class OffsetCommitterTest {
@@ -144,9 +136,9 @@ public class OffsetCommitterTest {
         Map<TopicPartition, OffsetAndMetadata> record1CommitOffset = mock(Map.class);
         Map<TopicPartition, OffsetAndMetadata> record2CommitOffset = mock(Map.class);
         Map<TopicPartition, OffsetAndMetadata> record3CommitOffset = mock(Map.class);
+        Records records1 = mock(Records.class);
         Records records2 = mock(Records.class);
         Records records3 = mock(Records.class);
-        Records records1 = mock(Records.class);
         when(records1.getPartitionsCommitOffset()).thenReturn(record1CommitOffset);
         when(records2.getPartitionsCommitOffset()).thenReturn(record2CommitOffset);
         when(records3.getPartitionsCommitOffset()).thenReturn(record3CommitOffset);
@@ -156,10 +148,11 @@ public class OffsetCommitterTest {
         committer.acknowledge(record3CommitOffset);
         committer.acknowledge(record1CommitOffset);
         committer.acknowledge(record2CommitOffset);
-        Thread committerThread = new Thread(committer);
+        Thread committerThread = new Thread(committer, "commiter");
 
         committerThread.start();
-        closeWorker(committer, 3000);
+        await().until(() -> acknowledgements.isEmpty());
+        committer.close("done job");
         committerThread.join();
 
         InOrder inOrder = inOrder(kafkaConsumer, offsetState);
