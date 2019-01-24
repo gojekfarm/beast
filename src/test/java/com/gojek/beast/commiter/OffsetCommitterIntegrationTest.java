@@ -3,7 +3,6 @@ package com.gojek.beast.commiter;
 import com.gojek.beast.consumer.KafkaConsumer;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.util.RecordsUtil;
-import com.gojek.beast.util.WorkerUtil;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.Before;
@@ -22,6 +21,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -76,7 +76,8 @@ public class OffsetCommitterIntegrationTest {
         }));
 
         ackThread.start();
-        WorkerUtil.closeWorker(committer, acknowledgeTimeoutMs * 5).join();
+        await().until(() -> commitQueue.isEmpty());
+        committer.close("job done");
         ackThread.join();
         committerThread.join();
 

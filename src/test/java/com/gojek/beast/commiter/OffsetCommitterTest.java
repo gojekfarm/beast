@@ -92,7 +92,7 @@ public class OffsetCommitterTest {
 
     @Ignore
     @Test
-    public void shouldCommitFirstOffsetWhenAcknowledged() {
+    public void shouldCommitFirstOffsetWhenAcknowledged() throws InterruptedException {
         when(records.getPartitionsCommitOffset()).thenReturn(commitPartitionsOffset);
         CopyOnWriteArraySet<Map<TopicPartition, OffsetAndMetadata>> ackSet = spy(new CopyOnWriteArraySet<>());
         Set<Map<TopicPartition, OffsetAndMetadata>> acks = Collections.synchronizedSet(ackSet);
@@ -102,9 +102,13 @@ public class OffsetCommitterTest {
         committer.push(records);
         committer.acknowledge(commitPartitionsOffset);
 
-        new Thread(committer).start();
+        Thread commitThread = new Thread(committer);
+        commitThread.start();
 
-        closeWorker(committer, 500);
+        await().until(() -> commitQueue.isEmpty());
+        committer.close("job done");
+        commitThread.join();
+
         verify(commitQueue, atLeast(1)).peek();
 
         InOrder callOrder = inOrder(kafkaConsumer, records);
@@ -195,7 +199,9 @@ public class OffsetCommitterTest {
         Acknowledger acknowledger3 = new Acknowledger(record3CommitOffset, offsetCommitter, new Random().nextInt(ackDelayRandomMs));
         List<Acknowledger> acknowledgers = Arrays.asList(acknowledger1, acknowledger2, acknowledger3);
         acknowledgers.forEach(Thread::start);
-        closeWorker(offsetCommitter, ackDelayRandomMs + 10);
+
+        await().until(() -> commitQ.isEmpty());
+        offsetCommitter.close("job done");
         commiterThread.join();
         InOrder inOrder = inOrder(kafkaConsumer);
         incomingRecords.forEach(rs -> inOrder.verify(kafkaConsumer).commitSync(rs.getPartitionsCommitOffset()));
