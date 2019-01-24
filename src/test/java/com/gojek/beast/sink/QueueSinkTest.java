@@ -70,4 +70,15 @@ public class QueueSinkTest {
 
         assertFalse(status.isSuccess());
     }
+
+    @Test
+    public void shouldReturnFailureStatusWhenQueueIsFull() throws InterruptedException {
+        BlockingQueue<Records> queue = new LinkedBlockingQueue<>(1);
+        Records messages = new Records(Arrays.asList(new Record(offsetInfo, new HashMap<>()), new Record(offsetInfo, new HashMap<>())));
+        queue.offer(messages);
+        queueSink = new QueueSink(queue, queueConfig);
+        Status status = queueSink.push(messages);
+
+        assertFalse(status.isSuccess());
+    }
 }

@@ -2,9 +2,9 @@ package com.gojek.beast.sink;
 
 import com.gojek.beast.config.QueueConfig;
 import com.gojek.beast.models.FailureStatus;
+import com.gojek.beast.models.GenericStatus;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
-import com.gojek.beast.models.SuccessStatus;
 import com.gojek.beast.stats.Stats;
 import lombok.AllArgsConstructor;
 
@@ -20,15 +20,16 @@ public class QueueSink implements Sink {
     @Override
     public Status push(Records messages) {
         Instant start = Instant.now();
+        boolean offered;
         try {
-            recordQueue.offer(messages, config.getTimeout(), config.getTimeoutUnit());
+            offered = recordQueue.offer(messages, config.getTimeout(), config.getTimeoutUnit());
             statsClient.gauge("queue.elements,name=records", recordQueue.size());
         } catch (InterruptedException e) {
             return new FailureStatus(e);
         }
         statsClient.gauge("sink.queue.push.messages", messages.size());
         statsClient.timeIt("sink.queue.push.time", start);
-        return new SuccessStatus();
+        return new GenericStatus(offered, new RuntimeException("Queue is full: capacity: " + recordQueue.size()));
     }
 
     @Override
