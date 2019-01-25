@@ -19,14 +19,11 @@ import org.mockito.runners.MockitoJUnitRunner;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class BqQueueWorkerTest {
@@ -78,9 +75,9 @@ public class BqQueueWorkerTest {
         Thread workerThread = new Thread(worker);
         workerThread.start();
 
-        Thread closer = WorkerUtil.closeWorker(worker, 1000);
+        await().atMost(10, TimeUnit.SECONDS).until(() -> queue.isEmpty());
+        worker.onStopEvent(new StopEvent("job done"));
         workerThread.join();
-        closer.join();
         verify(successfulSink).push(messages);
         verify(successfulSink).push(messages2);
     }
@@ -124,8 +121,9 @@ public class BqQueueWorkerTest {
         Thread workerThread = new Thread(worker);
 
         workerThread.start();
+        Thread.sleep(100);
+        worker.onStopEvent(new StopEvent("close worker"));
 
-        WorkerUtil.closeWorker(worker, 200);
         workerThread.join();
         verify(successfulSink, never()).push(any());
     }
@@ -140,8 +138,8 @@ public class BqQueueWorkerTest {
 
         workerThread.start();
 
-        WorkerUtil.closeWorker(worker, 1000);
         workerThread.join();
+
         verify(committer).close(anyString());
     }
 }

@@ -2,8 +2,10 @@ package com.gojek.beast.worker;
 
 import com.gojek.beast.commiter.Committer;
 import com.gojek.beast.config.QueueConfig;
+import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
+import com.gojek.beast.models.SuccessStatus;
 import com.gojek.beast.sink.Sink;
 import com.gojek.beast.stats.Stats;
 import com.google.cloud.bigquery.BigQueryException;
@@ -13,7 +15,7 @@ import java.time.Instant;
 import java.util.concurrent.BlockingQueue;
 
 @Slf4j
-public class BqQueueWorker implements Worker {
+public class BqQueueWorker extends CoolWorker {
     // Should have separate instance of sink for this worker
     private final Sink sink;
     private final QueueConfig config;
@@ -30,28 +32,22 @@ public class BqQueueWorker implements Worker {
     }
 
     @Override
-    public void run() {
-        String failureReason;
-        do {
-            Instant start = Instant.now();
-            try {
-                Records poll = queue.poll(config.getTimeout(), config.getTimeoutUnit());
-                if (poll == null || poll.isEmpty()) {
-                    continue;
-                }
-                boolean success = pushToSink(poll);
-                if (!success) {
-                    queue.offer(poll, config.getTimeout(), config.getTimeoutUnit());
-                    stop("Error::Failed to push records to sink");
-                }
-            } catch (InterruptedException | RuntimeException e) {
-                statsClient.increment("worker.queue.bq.errors");
-                failureReason = "Exception::Failed to poll records from read queue: " + e.getMessage();
-                stop(failureReason);
+    public Status job() {
+        Instant start = Instant.now();
+        try {
+            Records poll = queue.poll(config.getTimeout(), config.getTimeoutUnit());
+            if (poll == null || poll.isEmpty()) return new SuccessStatus();
+            boolean success = pushToSink(poll);
+            if (!success) {
+                queue.offer(poll, config.getTimeout(), config.getTimeoutUnit());
+                return new FailureStatus(new RuntimeException("Push failed"));
             }
-            statsClient.timeIt("worker.queue.bq.processing", start);
-        } while (!stop);
-        log.info("Stopped BQ Queue Worker Successfully.");
+        } catch (InterruptedException | RuntimeException e) {
+            statsClient.increment("worker.queue.bq.errors");
+            log.debug("Exception::Failed to poll records from read queue: " + e.getMessage());
+        }
+        statsClient.timeIt("worker.queue.bq.processing", start);
+        return new SuccessStatus();
     }
 
     private boolean pushToSink(Records poll) {
@@ -74,6 +70,7 @@ public class BqQueueWorker implements Worker {
 
     @Override
     public void stop(String reason) {
+        if (stop) return;
         log.debug("Stopping BqWorker: {}", reason);
         committer.close(reason);
         sink.close(reason);

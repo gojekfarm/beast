@@ -2,11 +2,14 @@ package com.gojek.beast.commiter;
 
 import com.gojek.beast.models.Records;
 import com.gojek.beast.stats.Stats;
+import com.gojek.beast.worker.StopEvent;
 import com.gojek.beast.worker.Worker;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
 
 import java.time.Instant;
 import java.util.Map;
@@ -34,6 +37,7 @@ public class OffsetCommitter implements Committer, Worker {
         this.kafkaCommitter = kafkaCommitter;
         this.defaultSleepMs = DEFAULT_SLEEP_MS;
         this.offsetState = offsetState;
+        EventBus.getDefault().register(this);
     }
 
     @Override
@@ -92,7 +96,13 @@ public class OffsetCommitter implements Committer, Worker {
     public void stop(String reason) {
         close(reason);
         stop = true;
+        EventBus.getDefault().unregister(this);
     }
 
+    @Subscribe
+    public void onCloseEvent(StopEvent event) {
+        log.debug("Got Event and closed commiter {} ", event);
+        stop(event.getReason());
+    }
 }
 

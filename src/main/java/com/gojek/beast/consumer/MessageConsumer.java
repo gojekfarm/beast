@@ -33,6 +33,9 @@ public class MessageConsumer {
     }
 
     public Status consume() throws WakeupException {
+        if (isClosed()) {
+            return new FailureStatus(new RuntimeException("Message consumer was closed"));
+        }
         Instant startTime = Instant.now();
         ConsumerRecords<byte[], byte[]> messages = kafkaConsumer.poll(timeoutMillis);
         statsClient.gauge("kafkaConsumer.poll.messages", messages.count());

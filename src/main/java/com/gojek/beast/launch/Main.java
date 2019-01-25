@@ -25,6 +25,7 @@ import com.gojek.beast.sink.bq.BqSink;
 import com.gojek.beast.stats.Stats;
 import com.gojek.beast.worker.BqQueueWorker;
 import com.gojek.beast.worker.ConsumerWorker;
+import com.gojek.beast.worker.StopEvent;
 import com.gojek.beast.worker.Worker;
 import com.gojek.de.stencil.StencilClientFactory;
 import com.gojek.de.stencil.client.StencilClient;
@@ -38,6 +39,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.aeonbits.owner.ConfigFactory;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
+import org.greenrobot.eventbus.EventBus;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -99,7 +101,7 @@ public class Main {
 
         workers.add(consumerWorker);
 
-        addShutDownHooks(workers);
+        addShutDownHooks();
 
         try {
             consumerThread.join();
@@ -109,7 +111,6 @@ public class Main {
             log.error("Exception::KafkaConsumer and committer join failed: {}", e.getMessage());
         } finally {
             stencilClient.close();
-            workers.forEach(worker -> worker.stop("Shutdown::consumer and/or committer thread closed"));
         }
     }
 
@@ -132,9 +133,9 @@ public class Main {
                 .build().getService();
     }
 
-    private static void addShutDownHooks(List<Worker> workers) {
+    private static void addShutDownHooks() {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            workers.forEach(worker -> worker.stop("Shutdown::shutdown hook"));
+            EventBus.getDefault().post(new StopEvent("Received Shutdown interrupt"));
         }));
     }
 
