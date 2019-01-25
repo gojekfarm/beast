@@ -19,7 +19,7 @@ public class RecordsUtil {
         List<Record> users = new ArrayList<>();
         for (int i = 0; i < total; i++) {
             long now = new Clock().currentEpochMillis();
-            OffsetInfo offsetInfo = new OffsetInfo("topic" + namePrefix, 0, offsetCount++, now);
+            OffsetInfo offsetInfo = new OffsetInfo("topic_" + namePrefix, 0, offsetCount++, now);
             users.add(new Record(offsetInfo, createUser(namePrefix + total)));
         }
         return new Records(users);

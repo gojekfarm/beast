@@ -42,15 +42,16 @@ public class OffsetCommitterIntegrationTest {
     private LinkedBlockingQueue<Records> commitQueue;
     private RecordsUtil recordsUtil;
     private OffsetCommitter committer;
+    private OffsetState offsetState;
 
     @Before
     public void setUp() {
         commitQueue = new LinkedBlockingQueue<>();
         CopyOnWriteArraySet<Map<TopicPartition, OffsetAndMetadata>> ackSet = new CopyOnWriteArraySet<>();
         acknowledgements = Collections.synchronizedSet(ackSet);
-        acknowledgeTimeoutMs = 1000;
+        acknowledgeTimeoutMs = 3000;
         recordsUtil = new RecordsUtil();
-        OffsetState offsetState = new OffsetState(acknowledgeTimeoutMs);
+        offsetState = new OffsetState(acknowledgeTimeoutMs);
         committer = new OffsetCommitter(commitQueue, acknowledgements, kafkaConsumer, offsetState);
     }
 
@@ -66,20 +67,16 @@ public class OffsetCommitterIntegrationTest {
         Thread committerThread = new Thread(committer);
         committerThread.start();
 
-        Thread ackThread = new Thread(() -> recordsList.forEach(records -> {
-            try {
-                Thread.sleep(new Random().nextInt(100));
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            System.out.println("Committed partitions of records with index: " + records.getPartitionsCommitOffset());
-            committer.acknowledge(records.getPartitionsCommitOffset());
-        }));
+        new Thread(() -> {
+            Arrays.asList(2, 1, 0).forEach(index -> {
+                Map<TopicPartition, OffsetAndMetadata> partitionsCommitOffset = recordsList.get(index).getPartitionsCommitOffset();
+                boolean acknowledge = committer.acknowledge(partitionsCommitOffset);
+                assertTrue("Couldn't ack" + partitionsCommitOffset + " " + index, acknowledge);
+            });
+        }).start();
 
-        ackThread.start();
-        await().atMost(1, TimeUnit.MINUTES).until(() -> commitQueue.isEmpty() && acknowledgements.isEmpty());
+        await().atMost(30, TimeUnit.SECONDS).until(() -> commitQueue.isEmpty() && acknowledgements.isEmpty());
         committer.close("job done");
-        ackThread.join();
         committerThread.join();
 
         InOrder inOrder = inOrder(kafkaConsumer);
@@ -106,10 +103,9 @@ public class OffsetCommitterIntegrationTest {
             try {
                 Thread.sleep(new Random().nextInt(10));
             } catch (InterruptedException e) {
-                e.printStackTrace();
             }
-            System.out.println("Committed partitions of records with index: " + records.getPartitionsCommitOffset());
-            committer.acknowledge(records.getPartitionsCommitOffset());
+            Map<TopicPartition, OffsetAndMetadata> partitionsCommitOffset = records.getPartitionsCommitOffset();
+            assertTrue("couldn't ack" + partitionsCommitOffset, committer.acknowledge(partitionsCommitOffset));
         }));
 
         ackThread.start();

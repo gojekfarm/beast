@@ -36,4 +36,12 @@ public class Records implements Iterable<Record> {
         });
         return partitionsCommitOffset;
     }
+
+    @Override
+    public String toString() {
+        return "Records{"
+                + "partitionsCommitOffset=" + getPartitionsCommitOffset()
+                + "size=" + records.size()
+                + '}';
+    }
 }
