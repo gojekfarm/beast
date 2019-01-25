@@ -42,9 +42,11 @@ public class OffsetCommitter implements Committer, Worker {
 
     @Override
     public void close(String reason) {
+        if (stop) return;
         log.info("Closing committer: {}", reason);
         stop = true;
         kafkaCommitter.wakeup(reason);
+        EventBus.getDefault().post(new StopEvent("committer stopped with " + reason));
     }
 
     @Override
@@ -97,6 +99,7 @@ public class OffsetCommitter implements Committer, Worker {
         close(reason);
         stop = true;
         EventBus.getDefault().unregister(this);
+        //TODO: extend from coolworker
     }
 
     @Subscribe

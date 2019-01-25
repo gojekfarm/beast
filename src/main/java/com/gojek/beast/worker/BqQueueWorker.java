@@ -72,7 +72,6 @@ public class BqQueueWorker extends CoolWorker {
     public void stop(String reason) {
         if (stop) return;
         log.debug("Stopping BqWorker: {}", reason);
-        committer.close(reason);
         sink.close(reason);
         stop = true;
     }

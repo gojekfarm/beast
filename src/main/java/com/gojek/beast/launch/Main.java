@@ -25,8 +25,8 @@ import com.gojek.beast.sink.bq.BqSink;
 import com.gojek.beast.stats.Stats;
 import com.gojek.beast.worker.BqQueueWorker;
 import com.gojek.beast.worker.ConsumerWorker;
+import com.gojek.beast.worker.CoolWorker;
 import com.gojek.beast.worker.StopEvent;
-import com.gojek.beast.worker.Worker;
 import com.gojek.de.stencil.StencilClientFactory;
 import com.gojek.de.stencil.client.StencilClient;
 import com.gojek.de.stencil.parser.ProtoParser;
@@ -93,19 +93,19 @@ public class Main {
         consumerThread.start();
 
 
-        List<Worker> workers = spinBqWorkers(appConfig, readQueue, retryBqSink, committer);
-        workers.add(committer);
+        List<CoolWorker> workers = spinBqWorkers(appConfig, readQueue, retryBqSink, committer);
 
         Thread committerThread = new Thread(committer, "committer");
         committerThread.start();
-
-        workers.add(consumerWorker);
 
         addShutDownHooks();
 
         try {
             consumerThread.join();
             committerThread.join();
+            for (CoolWorker worker : workers) {
+                worker.join();
+            }
         } catch (InterruptedException e) {
             e.printStackTrace();
             log.error("Exception::KafkaConsumer and committer join failed: {}", e.getMessage());
@@ -139,11 +139,11 @@ public class Main {
         }));
     }
 
-    private static List<Worker> spinBqWorkers(AppConfig appConfig, BlockingQueue<Records> queue, Sink retryBqSink, Committer committer) {
+    private static List<CoolWorker> spinBqWorkers(AppConfig appConfig, BlockingQueue<Records> queue, Sink retryBqSink, Committer committer) {
         Integer bqWorkerPoolSize = appConfig.getBqWorkerPoolSize();
-        List<Worker> threads = new ArrayList<>(bqWorkerPoolSize);
+        List<CoolWorker> threads = new ArrayList<>(bqWorkerPoolSize);
         for (int i = 0; i < bqWorkerPoolSize; i++) {
-            Worker bqQueueWorker = new BqQueueWorker(queue, retryBqSink, new QueueConfig(appConfig.getBqWorkerPollTimeoutMs()), committer);
+            CoolWorker bqQueueWorker = new BqQueueWorker(queue, retryBqSink, new QueueConfig(appConfig.getBqWorkerPollTimeoutMs()), committer);
             Thread bqWorkerThread = new Thread(bqQueueWorker, "bq-worker-" + i);
             bqWorkerThread.start();
             threads.add(bqQueueWorker);
