@@ -1,7 +1,6 @@
 package com.gojek.beast.worker;
 
 import com.gojek.beast.models.Status;
-import com.gojek.beast.stats.Stats;
 import lombok.extern.slf4j.Slf4j;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -14,9 +13,7 @@ public abstract class CoolWorker extends Thread implements Worker {
 
     public abstract void stop(String reason);
 
-    abstract Status job();
-
-    private final Stats statsClient = Stats.client();
+    public abstract Status job();
 
     @Override
     public void run() {

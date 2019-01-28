@@ -2,31 +2,45 @@ package com.gojek.beast.commiter;
 
 import com.gojek.beast.consumer.KafkaConsumer;
 import com.gojek.beast.models.Records;
+import com.gojek.beast.worker.StopEvent;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.ConcurrentModificationException;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import static com.gojek.beast.util.WorkerUtil.closeWorker;
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class OffsetCommitterTest {
@@ -75,13 +89,12 @@ public class OffsetCommitterTest {
         assertTrue(acknowledgements.contains(partition1Offset));
     }
 
-    @Ignore
     @Test
     public void shouldCommitFirstOffsetWhenAcknowledged() throws InterruptedException {
         when(records.getPartitionsCommitOffset()).thenReturn(commitPartitionsOffset);
         CopyOnWriteArraySet<Map<TopicPartition, OffsetAndMetadata>> ackSet = spy(new CopyOnWriteArraySet<>());
         Set<Map<TopicPartition, OffsetAndMetadata>> acks = Collections.synchronizedSet(ackSet);
-        BlockingQueue<Records> commitQueue = spy(new LinkedBlockingQueue<Records>());
+        BlockingQueue<Records> commitQueue = spy(new LinkedBlockingQueue<>());
         OffsetCommitter committer = new OffsetCommitter(commitQueue, acks, kafkaConsumer, offsetState);
         committer.setDefaultSleepMs(10);
         commitQueue.put(records);
@@ -90,8 +103,8 @@ public class OffsetCommitterTest {
         Thread commitThread = new Thread(committer);
         commitThread.start();
 
-        await().until(() -> commitQueue.isEmpty());
-        committer.close("job done");
+        await().until(commitQueue::isEmpty);
+        committer.onStopEvent(new StopEvent("job done"));
         commitThread.join();
 
         verify(commitQueue, atLeast(1)).peek();
@@ -127,7 +140,7 @@ public class OffsetCommitterTest {
 
         committerThread.start();
         await().until(() -> acknowledgements.isEmpty());
-        committer.close("done job");
+        committer.onStopEvent(new StopEvent("job done"));
         committerThread.join();
 
         InOrder inOrder = inOrder(kafkaConsumer, offsetState);
@@ -174,7 +187,7 @@ public class OffsetCommitterTest {
         acknowledgers.forEach(Thread::start);
 
         await().until(() -> commitQ.isEmpty());
-        offsetCommitter.close("job done");
+        offsetCommitter.onStopEvent(new StopEvent("job done"));
         commiterThread.join();
         InOrder inOrder = inOrder(kafkaConsumer);
         incomingRecords.forEach(rs -> inOrder.verify(kafkaConsumer).commitSync(rs.getPartitionsCommitOffset()));
@@ -192,7 +205,6 @@ public class OffsetCommitterTest {
         Thread commiterThread = new Thread(offsetCommitter);
         commiterThread.start();
 
-        closeWorker(offsetCommitter, 500).join();
         commiterThread.join();
 
         verify(kafkaConsumer).commitSync(anyMap());

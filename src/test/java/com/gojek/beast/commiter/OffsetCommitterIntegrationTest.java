@@ -3,6 +3,7 @@ package com.gojek.beast.commiter;
 import com.gojek.beast.consumer.KafkaConsumer;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.util.RecordsUtil;
+import com.gojek.beast.worker.StopEvent;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.Before;
@@ -76,7 +77,7 @@ public class OffsetCommitterIntegrationTest {
         }).start();
 
         await().atMost(30, TimeUnit.SECONDS).until(() -> commitQueue.isEmpty() && acknowledgements.isEmpty());
-        committer.close("job done");
+        committer.onStopEvent(new StopEvent("job done"));
         committerThread.join();
 
         InOrder inOrder = inOrder(kafkaConsumer);
