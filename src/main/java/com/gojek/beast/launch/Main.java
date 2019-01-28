@@ -3,8 +3,8 @@ package com.gojek.beast.launch;
 import com.gojek.beast.Clock;
 import com.gojek.beast.backoff.BackOff;
 import com.gojek.beast.backoff.ExponentialBackOffProvider;
-import com.gojek.beast.commiter.Committer;
-import com.gojek.beast.commiter.OffsetCommitter;
+import com.gojek.beast.commiter.Acknowledger;
+import com.gojek.beast.commiter.OffsetAcknowledger;
 import com.gojek.beast.commiter.OffsetState;
 import com.gojek.beast.config.AppConfig;
 import com.gojek.beast.config.BackOffConfig;
@@ -25,8 +25,9 @@ import com.gojek.beast.sink.bq.BqSink;
 import com.gojek.beast.stats.Stats;
 import com.gojek.beast.worker.BqQueueWorker;
 import com.gojek.beast.worker.ConsumerWorker;
-import com.gojek.beast.worker.CoolWorker;
+import com.gojek.beast.worker.OffsetCommitWorker;
 import com.gojek.beast.worker.StopEvent;
+import com.gojek.beast.worker.Worker;
 import com.gojek.de.stencil.StencilClientFactory;
 import com.gojek.de.stencil.client.StencilClient;
 import com.gojek.de.stencil.parser.ProtoParser;
@@ -78,7 +79,7 @@ public class Main {
 
         Set<Map<TopicPartition, OffsetAndMetadata>> partitionsAck = Collections.synchronizedSet(new CopyOnWriteArraySet<Map<TopicPartition, OffsetAndMetadata>>());
         KafkaConsumer consumer = new KafkaConsumer(kafkaConsumer);
-        OffsetCommitter committer = new OffsetCommitter(committerQueue, partitionsAck, consumer, new OffsetState(appConfig.getOffsetAckTimeoutMs()));
+        OffsetCommitWorker committer = new OffsetCommitWorker(committerQueue, partitionsAck, consumer, new OffsetState(appConfig.getOffsetAckTimeoutMs()));
         MultiSink multiSink = new MultiSink(Arrays.asList(readQueueSink, committerQueueSink));
 
 
@@ -93,7 +94,7 @@ public class Main {
         consumerThread.start();
 
 
-        List<CoolWorker> workers = spinBqWorkers(appConfig, readQueue, retryBqSink, committer);
+        List<Worker> workers = spinBqWorkers(appConfig, readQueue, retryBqSink, new OffsetAcknowledger(partitionsAck));
 
         Thread committerThread = new Thread(committer, "committer");
         committerThread.start();
@@ -103,7 +104,7 @@ public class Main {
         try {
             consumerThread.join();
             committerThread.join();
-            for (CoolWorker worker : workers) {
+            for (Worker worker : workers) {
                 worker.join();
             }
         } catch (InterruptedException e) {
@@ -139,11 +140,11 @@ public class Main {
         }));
     }
 
-    private static List<CoolWorker> spinBqWorkers(AppConfig appConfig, BlockingQueue<Records> queue, Sink retryBqSink, Committer committer) {
+    private static List<Worker> spinBqWorkers(AppConfig appConfig, BlockingQueue<Records> queue, Sink retryBqSink, Acknowledger acknowledger) {
         Integer bqWorkerPoolSize = appConfig.getBqWorkerPoolSize();
-        List<CoolWorker> threads = new ArrayList<>(bqWorkerPoolSize);
+        List<Worker> threads = new ArrayList<>(bqWorkerPoolSize);
         for (int i = 0; i < bqWorkerPoolSize; i++) {
-            CoolWorker bqQueueWorker = new BqQueueWorker(queue, retryBqSink, new QueueConfig(appConfig.getBqWorkerPollTimeoutMs()), committer);
+            Worker bqQueueWorker = new BqQueueWorker(queue, retryBqSink, new QueueConfig(appConfig.getBqWorkerPollTimeoutMs()), acknowledger);
             Thread bqWorkerThread = new Thread(bqQueueWorker, "bq-worker-" + i);
             bqWorkerThread.start();
             threads.add(bqQueueWorker);

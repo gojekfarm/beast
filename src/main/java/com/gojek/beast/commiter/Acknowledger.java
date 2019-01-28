@@ -5,7 +5,7 @@ import org.apache.kafka.common.TopicPartition;
 
 import java.util.Map;
 
-public interface Committer {
+public interface Acknowledger {
     boolean acknowledge(Map<TopicPartition, OffsetAndMetadata> offsets);
 
     void close(String reason);

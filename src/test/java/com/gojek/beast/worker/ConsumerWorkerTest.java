@@ -22,7 +22,7 @@ public class ConsumerWorkerTest {
 
     @Test
     public void shouldConsumeMessagesWhenNotStopped() throws InterruptedException {
-        CoolWorker worker = new ConsumerWorker(consumer);
+        Worker worker = new ConsumerWorker(consumer);
         when(consumer.consume()).thenReturn(new SuccessStatus());
         new Thread(worker).start();
 
@@ -33,7 +33,7 @@ public class ConsumerWorkerTest {
 
     @Test
     public void shouldConsumeOnlyOnceWhenStopped() throws InterruptedException {
-        CoolWorker worker = new ConsumerWorker(consumer);
+        Worker worker = new ConsumerWorker(consumer);
         worker.stop("some reason");
 
         new Thread(worker).start();
@@ -45,7 +45,7 @@ public class ConsumerWorkerTest {
 
     @Test
     public void shouldStopConsumptionWhenWakeupExceptionIsThrown() throws InterruptedException {
-        CoolWorker worker = new ConsumerWorker(consumer);
+        Worker worker = new ConsumerWorker(consumer);
         doThrow(new WakeupException()).when(consumer).consume();
 
         new Thread(worker).start();

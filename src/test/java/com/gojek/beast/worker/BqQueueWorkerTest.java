@@ -1,6 +1,6 @@
 package com.gojek.beast.worker;
 
-import com.gojek.beast.commiter.Committer;
+import com.gojek.beast.commiter.Acknowledger;
 import com.gojek.beast.config.QueueConfig;
 import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.models.Records;
@@ -40,7 +40,7 @@ public class BqQueueWorkerTest {
     private QueueConfig queueConfig;
     private int pollTimeout;
     @Mock
-    private Committer committer;
+    private Acknowledger committer;
     @Mock
     private Sink failureSink;
     @Mock
@@ -144,6 +144,6 @@ public class BqQueueWorkerTest {
 
         workerThread.start();
         workerThread.join();
-        //TODO: change CoolWorker run to callable and verify return value
+        //TODO: change Worker run to callable and verify return value
     }
 }

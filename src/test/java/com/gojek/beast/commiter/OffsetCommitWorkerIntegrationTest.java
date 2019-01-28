@@ -3,6 +3,7 @@ package com.gojek.beast.commiter;
 import com.gojek.beast.consumer.KafkaConsumer;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.util.RecordsUtil;
+import com.gojek.beast.worker.OffsetCommitWorker;
 import com.gojek.beast.worker.StopEvent;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -33,17 +34,18 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 
 @RunWith(MockitoJUnitRunner.class)
-public class OffsetCommitterIntegrationTest {
+public class OffsetCommitWorkerIntegrationTest {
     private Set<Map<TopicPartition, OffsetAndMetadata>> acknowledgements;
 
     @Mock
     private KafkaConsumer kafkaConsumer;
-    private OffsetCommitter offsetCommitter;
+    private OffsetCommitWorker offsetCommitWorker;
     private int acknowledgeTimeoutMs;
     private LinkedBlockingQueue<Records> commitQueue;
     private RecordsUtil recordsUtil;
-    private OffsetCommitter committer;
+    private OffsetCommitWorker committer;
     private OffsetState offsetState;
+    private Acknowledger offsetAcknowledger;
 
     @Before
     public void setUp() {
@@ -53,7 +55,8 @@ public class OffsetCommitterIntegrationTest {
         acknowledgeTimeoutMs = 3000;
         recordsUtil = new RecordsUtil();
         offsetState = new OffsetState(acknowledgeTimeoutMs);
-        committer = new OffsetCommitter(commitQueue, acknowledgements, kafkaConsumer, offsetState);
+        offsetAcknowledger = new OffsetAcknowledger(acknowledgements);
+        committer = new OffsetCommitWorker(commitQueue, acknowledgements, kafkaConsumer, offsetState);
     }
 
     @Test
@@ -71,7 +74,7 @@ public class OffsetCommitterIntegrationTest {
         new Thread(() -> {
             Arrays.asList(2, 1, 0).forEach(index -> {
                 Map<TopicPartition, OffsetAndMetadata> partitionsCommitOffset = recordsList.get(index).getPartitionsCommitOffset();
-                boolean acknowledge = committer.acknowledge(partitionsCommitOffset);
+                boolean acknowledge = offsetAcknowledger.acknowledge(partitionsCommitOffset);
                 assertTrue("Couldn't ack" + partitionsCommitOffset + " " + index, acknowledge);
             });
         }).start();
@@ -106,7 +109,7 @@ public class OffsetCommitterIntegrationTest {
             } catch (InterruptedException e) {
             }
             Map<TopicPartition, OffsetAndMetadata> partitionsCommitOffset = records.getPartitionsCommitOffset();
-            assertTrue("couldn't ack" + partitionsCommitOffset, committer.acknowledge(partitionsCommitOffset));
+            assertTrue("couldn't ack" + partitionsCommitOffset, offsetAcknowledger.acknowledge(partitionsCommitOffset));
         }));
 
         ackThread.start();

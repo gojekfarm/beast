@@ -7,7 +7,7 @@ import com.gojek.beast.stats.Stats;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class ConsumerWorker extends CoolWorker {
+public class ConsumerWorker extends Worker {
     private final MessageConsumer messageConsumer;
     private final Stats statsClient = Stats.client();
 

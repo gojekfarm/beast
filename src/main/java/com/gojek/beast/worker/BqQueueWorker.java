@@ -1,6 +1,6 @@
 package com.gojek.beast.worker;
 
-import com.gojek.beast.commiter.Committer;
+import com.gojek.beast.commiter.Acknowledger;
 import com.gojek.beast.config.QueueConfig;
 import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.models.Records;
@@ -15,20 +15,20 @@ import java.time.Instant;
 import java.util.concurrent.BlockingQueue;
 
 @Slf4j
-public class BqQueueWorker extends CoolWorker {
+public class BqQueueWorker extends Worker {
     // Should have separate instance of sink for this worker
     private final Sink sink;
     private final QueueConfig config;
     private final BlockingQueue<Records> queue;
-    private final Committer committer;
+    private final Acknowledger acknowledger;
     private final Stats statsClient = Stats.client();
     private volatile boolean stop;
 
-    public BqQueueWorker(BlockingQueue<Records> queue, Sink sink, QueueConfig config, Committer committer) {
+    public BqQueueWorker(BlockingQueue<Records> queue, Sink sink, QueueConfig config, Acknowledger acknowledger) {
         this.queue = queue;
         this.sink = sink;
         this.config = config;
-        this.committer = committer;
+        this.acknowledger = acknowledger;
     }
 
     @Override
@@ -60,7 +60,7 @@ public class BqQueueWorker extends CoolWorker {
             return false;
         }
         if (status.isSuccess()) {
-            return committer.acknowledge(poll.getPartitionsCommitOffset());
+            return acknowledger.acknowledge(poll.getPartitionsCommitOffset());
         } else {
             statsClient.increment("worker.queue.bq.push_failure");
             log.error("Failed to push records to sink {}", status.toString());

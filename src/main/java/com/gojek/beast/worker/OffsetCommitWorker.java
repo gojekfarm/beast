@@ -1,11 +1,12 @@
-package com.gojek.beast.commiter;
+package com.gojek.beast.worker;
 
+import com.gojek.beast.commiter.KafkaCommitter;
+import com.gojek.beast.commiter.OffsetState;
 import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
 import com.gojek.beast.models.SuccessStatus;
 import com.gojek.beast.stats.Stats;
-import com.gojek.beast.worker.CoolWorker;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -17,7 +18,7 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 
 @Slf4j
-public class OffsetCommitter extends CoolWorker implements Committer {
+public class OffsetCommitWorker extends Worker {
     private static final int DEFAULT_SLEEP_MS = 100;
     private final Stats statsClient = Stats.client();
     private BlockingQueue<Records> commitQueue;
@@ -29,7 +30,7 @@ public class OffsetCommitter extends CoolWorker implements Committer {
 
     private OffsetState offsetState;
 
-    public OffsetCommitter(BlockingQueue<Records> commitQueue, Set<Map<TopicPartition, OffsetAndMetadata>> partitionOffsetAck, KafkaCommitter kafkaCommitter, OffsetState offsetState) {
+    public OffsetCommitWorker(BlockingQueue<Records> commitQueue, Set<Map<TopicPartition, OffsetAndMetadata>> partitionOffsetAck, KafkaCommitter kafkaCommitter, OffsetState offsetState) {
         this.commitQueue = commitQueue;
         this.partitionOffsetAck = partitionOffsetAck;
         this.kafkaCommitter = kafkaCommitter;
@@ -38,22 +39,9 @@ public class OffsetCommitter extends CoolWorker implements Committer {
     }
 
     @Override
-    public void close(String reason) {
-        log.info("Closing committer: {}", reason);
-        kafkaCommitter.wakeup(reason);
-    }
-
-    @Override
     public void stop(String reason) {
         log.info("Closing committer: {}", reason);
         kafkaCommitter.wakeup(reason);
-    }
-
-    @Override
-    public boolean acknowledge(Map<TopicPartition, OffsetAndMetadata> offsets) {
-        boolean status = partitionOffsetAck.add(offsets);
-        statsClient.gauge("queue.elements,name=ack", partitionOffsetAck.size());
-        return status;
     }
 
     @Override
