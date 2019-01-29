@@ -11,7 +11,8 @@ public class ConsumerWorker extends Worker {
     private final MessageConsumer messageConsumer;
     private final Stats statsClient = Stats.client();
 
-    public ConsumerWorker(MessageConsumer messageConsumer) {
+    public ConsumerWorker(String name, MessageConsumer messageConsumer) {
+        super(name);
         this.messageConsumer = messageConsumer;
     }
 
@@ -28,7 +29,6 @@ public class ConsumerWorker extends Worker {
             log.error("Exception::Stop Message Consumption: {}", e.getMessage());
             return new FailureStatus(e);
         }
-        log.info("Stopped Message Consumer Successfully.");
         return status;
     }
 

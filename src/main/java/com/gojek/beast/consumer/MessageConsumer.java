@@ -57,7 +57,6 @@ public class MessageConsumer {
             log.error("Error while converting messages: {}", failure.toString());
             return failure;
         }
-
         return sink.push(new Records(records));
     }
 

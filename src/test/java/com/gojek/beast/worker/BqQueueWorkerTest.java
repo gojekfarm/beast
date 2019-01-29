@@ -57,7 +57,7 @@ public class BqQueueWorkerTest {
     @Test
     public void shouldReadFromQueueAndPushToSink() throws InterruptedException {
         BlockingQueue<Records> queue = new LinkedBlockingQueue<>();
-        BqQueueWorker worker = new BqQueueWorker(queue, successfulSink, queueConfig, committer);
+        BqQueueWorker worker = new BqQueueWorker("bq-worker", successfulSink, queueConfig, committer, queue);
         queue.put(messages);
 
         Thread thread = new Thread(worker);
@@ -71,7 +71,7 @@ public class BqQueueWorkerTest {
     @Test
     public void shouldReadFromQueueForeverAndPushToSink() throws InterruptedException {
         BlockingQueue<Records> queue = new LinkedBlockingQueue<>();
-        BqQueueWorker worker = new BqQueueWorker(queue, successfulSink, queueConfig, committer);
+        BqQueueWorker worker = new BqQueueWorker("bq-worker", successfulSink, queueConfig, committer, queue);
         Records messages2 = mock(Records.class);
         when(committer.acknowledge(any())).thenReturn(true);
         queue.put(messages);
@@ -90,7 +90,7 @@ public class BqQueueWorkerTest {
     @Test
     public void shouldAckAfterSuccessfulPush() throws InterruptedException {
         BlockingQueue<Records> queue = new LinkedBlockingQueue<>();
-        BqQueueWorker worker = new BqQueueWorker(queue, successfulSink, queueConfig, committer);
+        BqQueueWorker worker = new BqQueueWorker("bq-worker", successfulSink, queueConfig, committer, queue);
         queue.put(messages);
 
         Thread workerThread = new Thread(worker);
@@ -106,7 +106,7 @@ public class BqQueueWorkerTest {
     public void shouldNotAckAfterFailurePush() throws InterruptedException {
         when(failureSink.push(messages)).thenReturn(new FailureStatus(new Exception()));
         BlockingQueue<Records> queue = new LinkedBlockingQueue<>();
-        BqQueueWorker worker = new BqQueueWorker(queue, failureSink, queueConfig, committer);
+        BqQueueWorker worker = new BqQueueWorker("bq-worker", failureSink, queueConfig, committer, queue);
 
         queue.put(messages);
 
@@ -122,7 +122,7 @@ public class BqQueueWorkerTest {
     @Test
     public void shouldNotPushToSinkIfNoMessage() throws InterruptedException {
         BlockingQueue<Records> queue = new LinkedBlockingQueue<>();
-        BqQueueWorker worker = new BqQueueWorker(queue, successfulSink, queueConfig, committer);
+        BqQueueWorker worker = new BqQueueWorker("bq-worker", successfulSink, queueConfig, committer, queue);
         Thread workerThread = new Thread(worker);
 
         workerThread.start();
@@ -139,7 +139,7 @@ public class BqQueueWorkerTest {
         BlockingQueue<Records> queue = new LinkedBlockingQueue<>();
         queue.put(messages);
         doThrow(new BigQueryException(10, "Some Error")).when(failureSink).push(messages);
-        BqQueueWorker worker = new BqQueueWorker(queue, failureSink, queueConfig, committer);
+        BqQueueWorker worker = new BqQueueWorker("bq-worker", failureSink, queueConfig, committer, queue);
         Thread workerThread = new Thread(worker);
 
         workerThread.start();

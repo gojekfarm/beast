@@ -12,4 +12,8 @@ public class SuccessStatus implements Status {
     public Optional<Exception> getException() {
         return Optional.empty();
     }
+
+    public String toString() {
+        return "status=" + getException().toString();
+    }
 }

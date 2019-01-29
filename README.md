@@ -17,37 +17,16 @@ Note: Until not in production use `latest` tag for docker images. Also, we don't
 `export $(cat ./env/sample.properties | xargs -L1) && gradle clean runConsumer`
 
 ### Task List:
-* Fix tests - `shouldPushMessagesToBq`, `shouldCommitOffsetsInSequenceWhenAcknowledgedRandom` for CI
 * Resiliency
-* No data loss
 * Add integration test with BQ (separate stage in pipeline)
-* Rename committer to Acknowledger
-* offsetCommiter pull out Worker part
-* Remove Sink from OffsetCommitter
-* Introduce event library, close -> send event so subscribers can stop
-* Factories
+* Add tests for Factories
 * Fix Ignored Tests
-* Show error of bq sink push failure
 * Push stats: remaining queue size
-* Data loss
-    - verified in kafka messages (the lost message is available)
-        - by rerunning consumer
-        - also checking in log segments in data-logs of the specific partition
-    - verified the logs ,which shows that the partition,offset is committed (after BQ push)
-    - manually injected data with log-feeder and verified - no data loss (couldn't reproduce issue)
-    - setting up kibana for easy access of logs (WIP)
-    - ran consumer from earliest
-    
-    - Yet to do : chaos testing tool
-    - Bq Client lib load test
 
 ### Laundry List
 * Copy jacaco and checkstyle reports to test artifacts
 * Add tests for stats.java
 * Test for synchronised threads for kafka consumer
-* Explore `awaitility` for tests
-* Retry mechanism
-* DLQ
 
 ### Enhancements
 * Use java 10/11

@@ -56,7 +56,7 @@ public class OffsetCommitWorkerIntegrationTest {
         recordsUtil = new RecordsUtil();
         offsetState = new OffsetState(acknowledgeTimeoutMs);
         offsetAcknowledger = new OffsetAcknowledger(acknowledgements);
-        committer = new OffsetCommitWorker(commitQueue, acknowledgements, kafkaConsumer, offsetState);
+        committer = new OffsetCommitWorker("committer", acknowledgements, kafkaConsumer, offsetState, commitQueue);
     }
 
     @Test

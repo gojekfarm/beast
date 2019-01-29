@@ -30,7 +30,8 @@ public class OffsetCommitWorker extends Worker {
 
     private OffsetState offsetState;
 
-    public OffsetCommitWorker(BlockingQueue<Records> commitQueue, Set<Map<TopicPartition, OffsetAndMetadata>> partitionOffsetAck, KafkaCommitter kafkaCommitter, OffsetState offsetState) {
+    public OffsetCommitWorker(String name, Set<Map<TopicPartition, OffsetAndMetadata>> partitionOffsetAck, KafkaCommitter kafkaCommitter, OffsetState offsetState, BlockingQueue<Records> commitQueue) {
+        super(name);
         this.commitQueue = commitQueue;
         this.partitionOffsetAck = partitionOffsetAck;
         this.kafkaCommitter = kafkaCommitter;
@@ -61,14 +62,13 @@ public class OffsetCommitWorker extends Worker {
                     statsClient.increment("committer.ack.timeout");
                     return new FailureStatus(new RuntimeException("Acknowledgement Timeout exceeded: " + offsetState.getAcknowledgeTimeoutMs()));
                 }
+                log.debug("waiting for {} acknowledgement for offset {}", defaultSleepMs, currentOffset);
                 sleep(defaultSleepMs);
                 statsClient.gauge("committer.queue.wait.ms", defaultSleepMs);
             }
             statsClient.timeIt("committer.processing.time", start);
         } catch (InterruptedException | RuntimeException e) {
             return new FailureStatus(new RuntimeException("Exception in offset committer: " + e.getMessage()));
-        } finally {
-            log.info("Stopped Offset Committer Successfully.");
         }
         return new SuccessStatus();
     }

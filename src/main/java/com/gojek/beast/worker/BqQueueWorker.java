@@ -22,9 +22,9 @@ public class BqQueueWorker extends Worker {
     private final BlockingQueue<Records> queue;
     private final Acknowledger acknowledger;
     private final Stats statsClient = Stats.client();
-    private volatile boolean stop;
 
-    public BqQueueWorker(BlockingQueue<Records> queue, Sink sink, QueueConfig config, Acknowledger acknowledger) {
+    public BqQueueWorker(String name, Sink sink, QueueConfig config, Acknowledger acknowledger, BlockingQueue<Records> queue) {
+        super(name);
         this.queue = queue;
         this.sink = sink;
         this.config = config;
@@ -70,9 +70,7 @@ public class BqQueueWorker extends Worker {
 
     @Override
     public void stop(String reason) {
-        if (stop) return;
         log.debug("Stopping BqWorker: {}", reason);
         sink.close(reason);
-        stop = true;
     }
 }

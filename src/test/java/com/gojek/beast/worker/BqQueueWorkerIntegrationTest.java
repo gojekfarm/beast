@@ -43,7 +43,7 @@ public class BqQueueWorkerIntegrationTest {
         int totalWorkers = 5;
 
         for (int i = 0; i < totalWorkers; i++) {
-            workers.add(new BqQueueWorker(queue, sink, config, committer));
+            workers.add(new BqQueueWorker("bq-worker", sink, config, committer, queue));
         }
         failureStatus = new FailureStatus(new RuntimeException("BQ Push Failure"));
     }

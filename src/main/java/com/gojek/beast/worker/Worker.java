@@ -9,7 +9,13 @@ import org.greenrobot.eventbus.ThreadMode;
 @Slf4j
 public abstract class Worker extends Thread {
 
+    private final String name;
     private boolean stopWorker;
+
+    public Worker(String name) {
+        super(name);
+        this.name = name;
+    }
 
     public abstract void stop(String reason);
 
@@ -17,6 +23,7 @@ public abstract class Worker extends Thread {
 
     @Override
     public void run() {
+        log.info("Subscribing to class {}", getClass().getSimpleName());
         EventBus.getDefault().register(this);
         Status status;
         do {
@@ -27,7 +34,7 @@ public abstract class Worker extends Thread {
             EventBus.getDefault().post(new StopEvent(status.toString()));
         }
         EventBus.getDefault().unregister(this);
-        log.info("Stopped worker {} with status {}", getClass().getSimpleName(), status);
+        log.info("Stopped worker {} with status {} stop: {}", getClass().getSimpleName(), status, stopWorker);
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN_ORDERED)
