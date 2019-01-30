@@ -24,17 +24,21 @@ public class Main {
         List<Worker> workers = beastFactory.createBqWorkers();
         workers.forEach(Thread::start);
 
-        Thread committerThread = beastFactory.createOffsetCommitter();
+        Worker committerThread = beastFactory.createOffsetCommitter();
         committerThread.start();
 
         addShutDownHooks();
 
         try {
             consumerThread.join();
+            log.info("Joined on consumer thread");
             committerThread.join();
-            for (Thread worker : workers) {
+            log.info("Joined on committer thread");
+            for (Worker worker : workers) {
+                log.info("Joined on worker {} thread", worker.getName());
                 worker.join();
             }
+            log.info("Joined on all worker threads");
         } catch (InterruptedException e) {
             e.printStackTrace();
             log.error("Exception::KafkaConsumer and committer join failed: {}", e.getMessage());

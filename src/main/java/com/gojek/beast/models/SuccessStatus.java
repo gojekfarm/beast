@@ -14,6 +14,6 @@ public class SuccessStatus implements Status {
     }
 
     public String toString() {
-        return "status=" + getException().toString();
+        return getClass().getName() + " returned success status";
     }
 }

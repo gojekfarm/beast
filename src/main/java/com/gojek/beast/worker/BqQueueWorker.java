@@ -45,6 +45,7 @@ public class BqQueueWorker extends Worker {
         } catch (InterruptedException | RuntimeException e) {
             statsClient.increment("worker.queue.bq.errors");
             log.debug("Exception::Failed to poll records from read queue: " + e.getMessage());
+            return new FailureStatus(e);
         }
         statsClient.timeIt("worker.queue.bq.processing", start);
         return new SuccessStatus();
@@ -70,7 +71,7 @@ public class BqQueueWorker extends Worker {
 
     @Override
     public void stop(String reason) {
-        log.debug("Stopping BqWorker: {}", reason);
+        log.info("Stopping BqWorker: {}", reason);
         sink.close(reason);
     }
 }

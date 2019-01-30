@@ -34,7 +34,7 @@ public class ConsumerWorker extends Worker {
 
     @Override
     public void stop(String reason) {
-        log.info("Stopping consumer");
+        log.info("Stopping consumer worker with reason {}", reason);
         messageConsumer.close();
     }
 }
