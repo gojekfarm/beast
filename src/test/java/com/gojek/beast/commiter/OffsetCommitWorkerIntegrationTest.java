@@ -4,7 +4,7 @@ import com.gojek.beast.consumer.KafkaConsumer;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.util.RecordsUtil;
 import com.gojek.beast.worker.OffsetCommitWorker;
-import com.gojek.beast.worker.StopEvent;
+import com.gojek.beast.worker.WorkerState;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.Before;
@@ -46,6 +46,7 @@ public class OffsetCommitWorkerIntegrationTest {
     private OffsetCommitWorker committer;
     private OffsetState offsetState;
     private Acknowledger offsetAcknowledger;
+    private WorkerState workerState;
 
     @Before
     public void setUp() {
@@ -56,7 +57,8 @@ public class OffsetCommitWorkerIntegrationTest {
         recordsUtil = new RecordsUtil();
         offsetState = new OffsetState(acknowledgeTimeoutMs);
         offsetAcknowledger = new OffsetAcknowledger(acknowledgements);
-        committer = new OffsetCommitWorker("committer", acknowledgements, kafkaConsumer, offsetState, commitQueue);
+        workerState = new WorkerState();
+        committer = new OffsetCommitWorker("committer", acknowledgements, kafkaConsumer, offsetState, commitQueue, workerState);
     }
 
     @Test
@@ -80,7 +82,7 @@ public class OffsetCommitWorkerIntegrationTest {
         }).start();
 
         await().atMost(30, TimeUnit.SECONDS).until(() -> commitQueue.isEmpty() && acknowledgements.isEmpty());
-        committer.onStopEvent(new StopEvent("job done"));
+        workerState.closeWorker();
         committerThread.join();
 
         InOrder inOrder = inOrder(kafkaConsumer);

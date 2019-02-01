@@ -20,6 +20,9 @@ Note: Until not in production use `latest` tag for docker images. Also, we don't
 * Resiliency
 * Add integration test with BQ (separate stage in pipeline)
 * Add tests for Factories
+    - verify it shares queue
+    - verify it shares workerstate
+* Add WorkerTest (ensure other worker stops on singleton state change)
 * Fix Ignored Tests
 * Push stats: remaining queue size
 

@@ -27,6 +27,7 @@ import com.gojek.beast.worker.BqQueueWorker;
 import com.gojek.beast.worker.ConsumerWorker;
 import com.gojek.beast.worker.OffsetCommitWorker;
 import com.gojek.beast.worker.Worker;
+import com.gojek.beast.worker.WorkerState;
 import com.gojek.de.stencil.StencilClientFactory;
 import com.gojek.de.stencil.client.StencilClient;
 import com.gojek.de.stencil.parser.ProtoParser;
@@ -35,6 +36,7 @@ import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.BigQueryOptions;
 import com.google.cloud.bigquery.TableId;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 
@@ -52,8 +54,10 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.regex.Pattern;
 
+@Slf4j
 public class BeastFactory {
     private final BackOffConfig backOffConfig;
+    private final WorkerState workerState;
     private AppConfig appConfig;
     private KafkaConsumer kafkaConsumer;
     private OffsetCommitWorker committer;
@@ -63,12 +67,13 @@ public class BeastFactory {
     private MessageConsumer messageConsumer;
     private LinkedBlockingQueue<Records> commitQueue;
 
-    public BeastFactory(AppConfig appConfig, BackOffConfig backOffConfig) {
+    public BeastFactory(AppConfig appConfig, BackOffConfig backOffConfig, WorkerState workerState) {
         this.appConfig = appConfig;
         partitionsAck = Collections.synchronizedSet(new CopyOnWriteArraySet<>());
         readQueue = new LinkedBlockingQueue<>(appConfig.getReadQueueCapacity());
         commitQueue = new LinkedBlockingQueue<>(appConfig.getCommitQueueCapacity());
         this.backOffConfig = backOffConfig;
+        this.workerState = workerState;
     }
 
     public List<Worker> createBqWorkers() {
@@ -76,7 +81,7 @@ public class BeastFactory {
         List<Worker> threads = new ArrayList<>(bqWorkerPoolSize);
         Acknowledger acknowledger = createAcknowledger();
         for (int i = 0; i < bqWorkerPoolSize; i++) {
-            Worker bqQueueWorker = new BqQueueWorker("bq-worker-" + i, createBigQuerySink(), new QueueConfig(appConfig.getBqWorkerPollTimeoutMs()), acknowledger, readQueue);
+            Worker bqQueueWorker = new BqQueueWorker("bq-worker-" + i, createBigQuerySink(), new QueueConfig(appConfig.getBqWorkerPollTimeoutMs()), acknowledger, readQueue, workerState);
             threads.add(bqQueueWorker);
         }
         return threads;
@@ -107,7 +112,7 @@ public class BeastFactory {
             return committer;
         }
         OffsetState offsetState = new OffsetState(appConfig.getOffsetAckTimeoutMs());
-        committer = new OffsetCommitWorker("committer", partitionsAck, createKafkaConsumer(), offsetState, commitQueue);
+        committer = new OffsetCommitWorker("committer", partitionsAck, createKafkaConsumer(), offsetState, commitQueue, workerState);
         return committer;
     }
 
@@ -147,10 +152,13 @@ public class BeastFactory {
     }
 
     public Worker createConsumerWorker() {
-        return new ConsumerWorker("consumer", createMessageConsumer());
+        return new ConsumerWorker("consumer", createMessageConsumer(), workerState);
     }
 
     public void close() {
+        log.debug("Closing beast factory");
         readQueue.clear();
+        workerState.closeWorker();
+        Stats.stop();
     }
 }

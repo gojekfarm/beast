@@ -27,12 +27,18 @@ public final class Stats {
         defaultTags = getDefaultTags();
     }
 
-    public StatsDClient getStatsDClient() {
-        return statsDClient;
-    }
-
     public static Stats client() {
         return STATS_CLIENT;
+    }
+
+    public static void stop() {
+        if (STATS_CLIENT != null) {
+            STATS_CLIENT.statsDClient.stop();
+        }
+    }
+
+    public StatsDClient getStatsDClient() {
+        return statsDClient;
     }
 
     public void count(String metric, long delta) {

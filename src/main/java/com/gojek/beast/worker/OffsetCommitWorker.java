@@ -30,8 +30,8 @@ public class OffsetCommitWorker extends Worker {
 
     private OffsetState offsetState;
 
-    public OffsetCommitWorker(String name, Set<Map<TopicPartition, OffsetAndMetadata>> partitionOffsetAck, KafkaCommitter kafkaCommitter, OffsetState offsetState, BlockingQueue<Records> commitQueue) {
-        super(name);
+    public OffsetCommitWorker(String name, Set<Map<TopicPartition, OffsetAndMetadata>> partitionOffsetAck, KafkaCommitter kafkaCommitter, OffsetState offsetState, BlockingQueue<Records> commitQueue, WorkerState workerState) {
+        super(name, workerState);
         this.commitQueue = commitQueue;
         this.partitionOffsetAck = partitionOffsetAck;
         this.kafkaCommitter = kafkaCommitter;

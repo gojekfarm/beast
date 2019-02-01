@@ -11,8 +11,8 @@ public class ConsumerWorker extends Worker {
     private final MessageConsumer messageConsumer;
     private final Stats statsClient = Stats.client();
 
-    public ConsumerWorker(String name, MessageConsumer messageConsumer) {
-        super(name);
+    public ConsumerWorker(String name, MessageConsumer messageConsumer, WorkerState workerState) {
+        super(name, workerState);
         this.messageConsumer = messageConsumer;
     }
 

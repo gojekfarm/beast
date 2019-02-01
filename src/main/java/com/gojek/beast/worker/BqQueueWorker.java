@@ -23,8 +23,8 @@ public class BqQueueWorker extends Worker {
     private final Acknowledger acknowledger;
     private final Stats statsClient = Stats.client();
 
-    public BqQueueWorker(String name, Sink sink, QueueConfig config, Acknowledger acknowledger, BlockingQueue<Records> queue) {
-        super(name);
+    public BqQueueWorker(String name, Sink sink, QueueConfig config, Acknowledger acknowledger, BlockingQueue<Records> queue, WorkerState workerState) {
+        super(name, workerState);
         this.queue = queue;
         this.sink = sink;
         this.config = config;
