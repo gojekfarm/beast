@@ -39,7 +39,6 @@ public class KafkaConsumer implements KafkaCommitter {
     public void wakeup(String reason) {
         log.debug("kafka.consumer.wakeup::reason: {}", reason);
         kafkaConsumer.wakeup();
-        closed = true;
     }
 
     public void close() {
