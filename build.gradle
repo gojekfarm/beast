@@ -1,0 +1,130 @@
+buildscript {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        maven { url 'https://plugins.gradle.org/m2/' }
+    }
+}
+
+plugins {
+    id 'java'
+    id 'idea'
+    id 'application'
+    id 'checkstyle'
+    id 'jacoco'
+    id "com.google.protobuf" version "0.8.7"
+    id 'io.franzbecker.gradle-lombok' version '1.14'
+}
+
+group 'com.gojek.beast'
+mainClassName = "com.gojek.beast.launch.Main"
+
+task runConsumer(type: JavaExec) {
+    main = mainClassName
+    classpath = sourceSets.main.runtimeClasspath
+}
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+buildscript.repositories.each { repositories.add(it) }
+
+dependencies {
+    compile 'org.slf4j:slf4j-api:1.7.21'
+    compile 'ch.qos.logback:logback-classic:1.1.9'
+    compile 'ch.qos.logback:logback-core:1.1.9'
+    compile 'com.getsentry.raven:raven-logback:7.8.1'
+    compile group: 'io.sentry', name: 'sentry', version: '1.7.16'
+    compile 'io.sentry:sentry-logback:1.7.16'
+
+    compile(group: 'com.gojek.de', name: 'config', version: '0.2.2') {
+        exclude group: 'org.slf4j', module: 'slf4j-simple'
+    }
+
+
+    compile group: 'org.apache.kafka', name: 'kafka-clients', version: '0.10.2.0'
+    compile group: 'com.gojek.de', name: 'stencil-client', version: '2.0.2'
+    compile group: 'com.timgroup', name: 'java-statsd-client', version: '3.1.0'
+    compile group: 'com.getsentry.raven', name: 'raven', version: '8.0.3'
+    compile group: 'com.getsentry.raven', name: 'raven-logback', version: '7.8.0'
+
+
+    compile 'org.aeonbits.owner:owner:1.0.9'
+    compile 'com.google.cloud:google-cloud-bigquery:1.51.0'
+    compile 'com.google.protobuf:protobuf-java:3.1.0'
+    compile 'com.google.protobuf:protobuf-java-util:3.1.0'
+
+    testImplementation group: 'com.gojek.de', name: 'test-env', version: '0.0.1'
+    testCompile group: 'junit', name: 'junit', version: '4.13-beta-1'
+    testCompile group: 'org.mockito', name: 'mockito-core', version: '2.23.4'
+    testCompile 'org.awaitility:awaitility:3.1.5'
+
+    testCompile gradleTestKit()
+}
+
+protobuf {
+    generatedFilesBaseDir = "$projectDir/src/test/generated"
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.1.0"
+    }
+}
+
+jar {
+    from {
+        (configurations.runtime).collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+    manifest {
+        attributes 'Main-Class': mainClassName
+    }
+}
+
+idea {
+    module {
+        testSourceDirs += file("$projectDir/src/generated/test/java")
+    }
+}
+
+sourceSets {
+    main.java.srcDir "src/main/java"
+    main.resources.srcDir "src/main/resources"
+}
+
+test {
+    testLogging {
+        events "PASSED", "STARTED", "FAILED", "SKIPPED"
+    }
+}
+
+checkstyle {
+    toolVersion '7.6.1'
+    configFile file("config/checkstyle/checkstyle.xml")
+}
+checkstyleMain {
+    source = 'src/main/java'
+}
+checkstyleTest {
+    source = 'src/test/java'
+}
+tasks.withType(Checkstyle) {
+    exclude '**/test/generated/**'
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled false
+        csv.enabled false
+        html.enabled = true
+        html.destination file("${reportsDir}/jacoco/")
+    }
+    afterEvaluate {
+        classDirectories = files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: ['**/config/**', '**/factory/**', '**/exception/**', '**/serializer/**', '**/Clock**', '**/models/**', '**/launch/**', '**/stats/**'])
+        })
+    }
+}
+
+tasks.withType(Test) {
+    finalizedBy jacocoTestReport
+}
