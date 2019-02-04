@@ -66,6 +66,7 @@ public class BeastFactory {
     private MultiSink multiSink;
     private MessageConsumer messageConsumer;
     private LinkedBlockingQueue<Records> commitQueue;
+    private StencilClient stencilClient;
 
     public BeastFactory(AppConfig appConfig, BackOffConfig backOffConfig, WorkerState workerState) {
         this.appConfig = appConfig;
@@ -128,7 +129,7 @@ public class BeastFactory {
 
     private MessageConsumer createMessageConsumer() {
         if (messageConsumer != null) return messageConsumer;
-        StencilClient stencilClient = StencilClientFactory.getClient(appConfig.getStencilUrl(), System.getenv(), Stats.client().getStatsDClient());
+        stencilClient = StencilClientFactory.getClient(appConfig.getStencilUrl(), System.getenv(), Stats.client().getStatsDClient());
         ProtoParser protoParser = new ProtoParser(stencilClient, appConfig.getProtoSchema());
         ColumnMapping columnMapping = appConfig.getProtoColumnMapping();
         ConsumerRecordConverter parser = new ConsumerRecordConverter(new RowMapper(columnMapping), protoParser, new Clock());
@@ -155,10 +156,11 @@ public class BeastFactory {
         return new ConsumerWorker("consumer", createMessageConsumer(), workerState);
     }
 
-    public void close() {
+    public void close() throws IOException {
         log.debug("Closing beast factory");
         readQueue.clear();
         workerState.closeWorker();
+        stencilClient.close();
         Stats.stop();
     }
 }

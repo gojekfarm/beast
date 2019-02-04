@@ -8,11 +8,12 @@ import com.gojek.beast.worker.WorkerState;
 import lombok.extern.slf4j.Slf4j;
 import org.aeonbits.owner.ConfigFactory;
 
+import java.io.IOException;
 import java.util.List;
 
 @Slf4j
 public class Main {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         AppConfig appConfig = ConfigFactory.create(AppConfig.class, System.getenv());
         BackOffConfig backOffConfig = ConfigFactory.create(BackOffConfig.class, System.getenv());
         WorkerState workerState = new WorkerState();
