@@ -2,7 +2,27 @@
 
 Kafka to BigQuery Sink
 
-Note: Until not in production use `latest` tag for docker images. Also, we don't support Struct protobuf fields.
+## Architecture
+
+* Consumer - Consumes messages from kafka in batches, and pushes these batches to Read & Commit queues. These queues are blocking queues, i.e, no more messages will be consumed if the queue is full.
+* BigQuery Worker - Polls messages from the read queue, and pushes them to BigQuery. If the push operation was successful, BQ worker sends an acknowledgement to the Committer.
+* Committer - Committer receives the acknowledgements of successful push to BigQuery from BQ Workers. All these acknowledgements are stored in a set within the committer. Committer polls the commit queue for message batches. If that batch is present in the set, i.e., the batch has been successfully pushed to BQ, then it commits the max offset for that batch, back to Kafka, and pops it from the commit queue & set.
+
+<br><div style="text-align:center;width: 90%; margin:auto;"><img src="docs/images/architecture.png" alt=""></div><br>
+
+Note: Beast does not support Struct protobuf fields.
+
+## Deployment
+
+Beast is primarily deployed on kubernetes. An individual beast deployment is required for each topic in kafka, that needs to be pushed to BigQuery. A single pod consists of:
+* one kafka consumer
+* several BQ workers
+* one committer
+
+For deploying beast on kubernetes, we need:
+* Deployment
+* ConfigMap
+* Secret - containing credentials to BigQuery (can be shared by all deployments)
 
 ### Setup:
 * For Terminal - Run `cp env/sample.properties env/local.properties` and update the values
@@ -44,10 +64,7 @@ Note: Until not in production use `latest` tag for docker images. Also, we don't
 * Functions & Future
 * Queue Implementations and performance
 
-## Sample schema/configuration:
-Proto column mappings & BigQuery table schemas are available in `schema` directory
-
-## Commands:
+## BQ CLI Commands:
 - create new table
 ```
 bq mk --table <project_name>:<dataset_name>.<table_name> <path_to_schema_file>
