@@ -37,13 +37,12 @@ dependencies {
     compile group: 'io.sentry', name: 'sentry', version: '1.7.16'
     compile 'io.sentry:sentry-logback:1.7.16'
 
-    compile(group: 'com.gojek.de', name: 'config', version: '0.2.2') {
+    compile(group: 'com.gojek', name: 'config', version: '0.2.4') {
         exclude group: 'org.slf4j', module: 'slf4j-simple'
     }
 
-
     compile group: 'org.apache.kafka', name: 'kafka-clients', version: '0.10.2.0'
-    compile group: 'com.gojek.de', name: 'stencil-client', version: '2.0.2'
+    compile group: 'com.gojek', name: 'stencil', version: '2.0.4'
     compile group: 'com.timgroup', name: 'java-statsd-client', version: '3.1.0'
     compile group: 'com.getsentry.raven', name: 'raven', version: '8.0.3'
     compile group: 'com.getsentry.raven', name: 'raven-logback', version: '7.8.0'
@@ -54,7 +53,6 @@ dependencies {
     compile 'com.google.protobuf:protobuf-java:3.1.0'
     compile 'com.google.protobuf:protobuf-java-util:3.1.0'
 
-    testImplementation group: 'com.gojek.de', name: 'test-env', version: '0.0.1'
     testCompile group: 'junit', name: 'junit', version: '4.13-beta-1'
     testCompile group: 'org.mockito', name: 'mockito-core', version: '2.23.4'
     testCompile 'org.awaitility:awaitility:3.1.5'
