@@ -1,0 +1,4 @@
+language: java
+
+script:
+  - export $(cat env/sample.properties | xargs -L1) && gradle build

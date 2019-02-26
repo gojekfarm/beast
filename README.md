@@ -1,5 +1,7 @@
 # Beast
 
+[![Build Status](https://travis-ci.org/gojekfarm/beast.svg?branch=master)](https://travis-ci.org/gojekfarm/beast)
+
 Kafka to BigQuery Sink
 
 ## Architecture
@@ -36,14 +38,15 @@ For deploying beast on kubernetes, we need:
 * To run:
 `export $(cat ./env/sample.properties | xargs -L1) && gradle clean runConsumer`
 
+* To test:
+`export $(cat ./env/sample.properties | xargs -L1) && gradlew test`
+
 ### Task List:
-* Resiliency
 * Add integration test with BQ (separate stage in pipeline)
 * Add tests for Factories
     - verify it shares queue
     - verify it shares workerstate
 * Add WorkerTest (ensure other worker stops on singleton state change)
-* Fix Ignored Tests
 * Push stats: remaining queue size
 
 ### Laundry List
