@@ -1,4 +1,38 @@
+env:
+  global:
+    TRAVIS_DEBUG_MODE=true
+
 language: java
 
-script:
-  - export $(cat env/sample.properties | xargs -L1) && gradle build
+services:
+  - docker
+
+before_cache:
+  - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
+  - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
+cache:
+  directories:
+    - $HOME/.gradle/caches/
+    - $HOME/.gradle/wrapper/
+
+docker_login: &docker_login
+  before_script:
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
+install: echo "skip global installing."
+script: echo "skip global script."
+
+jobs:
+  include:
+    - stage: test
+      script:
+      - export $(cat env/sample.properties | xargs -L1) && gradle build
+    - stage: test
+      <<: *docker_login
+      name: build docker
+      script:
+      - docker version
+      - docker build -t gojektech/beast:latest .
+      - docker tag gojektech/beast:latest gojektech/beast:$TRAVIS_TAG
+      - docker images
+      - docker push gojektech/beast:latest && docker push gojektech/beast:$TRAVIS_TAG
