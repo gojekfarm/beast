@@ -1,38 +1,51 @@
-env:
-  global:
-    TRAVIS_DEBUG_MODE=true
-
 language: java
-
 services:
   - docker
 
 before_cache:
-  - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
-  - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
+- rm -rf  $HOME/.gradle/caches/modules-2/modules-2.lock
+- rm -rf $HOME/.gradle/caches/*/plugin-resolution/
+
 cache:
   directories:
-    - $HOME/.gradle/caches/
-    - $HOME/.gradle/wrapper/
+  - "$HOME/.gradle/caches/"
+  - "$HOME/.gradle/wrapper/"
 
-docker_login: &docker_login
-  before_script:
-    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+stages:
+  - test
+  - name: deploy
+    if: branch == master
+
+docker_login:
+  before_script: &docker_login
+  - |
+    docker version
+    [ -z $DOCKER_PASSWORD ] && echo "docker password not configured!"
+    [ -z $DOCKER_USERNAME ] && echo "docker username not configured!"
+    echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
 install: echo "skip global installing."
 script: echo "skip global script."
 
 jobs:
   include:
-    - stage: test
-      script:
-      - export $(cat env/sample.properties | xargs -L1) && gradle build
-    - stage: test
-      <<: *docker_login
-      name: build docker
-      script:
-      - docker version
-      - docker build -t gojektech/beast:latest .
-      - docker tag gojektech/beast:latest gojektech/beast:$TRAVIS_TAG
-      - docker images
-      - docker push gojektech/beast:latest && docker push gojektech/beast:$TRAVIS_TAG
+  - stage: test
+    script:
+    - gradle --version && echo $TRAVIS_COMMIT
+    - export $(cat env/sample.properties | xargs -L1) && gradle build
+  - stage: test
+    before_script: *docker_login
+    name: build docker
+    script:
+    - gradle assemble
+    - docker build -t gojektech/beast:latest .
+    - docker images
+    - docker push gojektech/beast:latest
+    - |
+      ([ ! -z "$TRAVIS_TAG" ] && \
+      docker tag gojektech/beast:latest gojektech/beast:$TRAVIS_TAG  && \ 
+      docker push gojektech/beast:$TRAVIS_TAG) || true
+    - |
+      [ ! -z "$TRAVIS_COMMIT" ] && \
+      docker tag gojektech/beast:latest gojektech/beast:$TRAVIS_COMMIT && \
+      docker push gojektech/beast:$TRAVIS_COMMIT
