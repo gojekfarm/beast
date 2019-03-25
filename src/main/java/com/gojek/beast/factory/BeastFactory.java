@@ -1,21 +1,21 @@
 package com.gojek.beast.factory;
 
-import com.gojek.beast.Clock;
 import com.gojek.beast.backoff.BackOff;
 import com.gojek.beast.backoff.ExponentialBackOffProvider;
+import com.gojek.beast.com.gojek.beast.protomapping.ProtoUpdateListener;
+import com.gojek.beast.com.gojek.beast.protomapping.UpdateTableService;
 import com.gojek.beast.commiter.Acknowledger;
 import com.gojek.beast.commiter.OffsetAcknowledger;
 import com.gojek.beast.commiter.OffsetState;
 import com.gojek.beast.config.AppConfig;
 import com.gojek.beast.config.BackOffConfig;
-import com.gojek.beast.config.ColumnMapping;
 import com.gojek.beast.config.KafkaConfig;
+import com.gojek.beast.config.ProtoMappingConfig;
 import com.gojek.beast.config.QueueConfig;
 import com.gojek.beast.consumer.KafkaConsumer;
 import com.gojek.beast.consumer.MessageConsumer;
 import com.gojek.beast.consumer.RebalanceListener;
-import com.gojek.beast.converter.ConsumerRecordConverter;
-import com.gojek.beast.converter.RowMapper;
+import com.gojek.beast.models.ExternalCallException;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.sink.MultiSink;
 import com.gojek.beast.sink.QueueSink;
@@ -28,9 +28,6 @@ import com.gojek.beast.worker.ConsumerWorker;
 import com.gojek.beast.worker.OffsetCommitWorker;
 import com.gojek.beast.worker.Worker;
 import com.gojek.beast.worker.WorkerState;
-import com.gojek.de.stencil.StencilClientFactory;
-import com.gojek.de.stencil.client.StencilClient;
-import com.gojek.de.stencil.parser.ProtoParser;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.bigquery.BigQuery;
@@ -58,7 +55,9 @@ import java.util.regex.Pattern;
 public class BeastFactory {
     private final BackOffConfig backOffConfig;
     private final WorkerState workerState;
+    private final ProtoUpdateListener protoUpdateListener;
     private AppConfig appConfig;
+    private ProtoMappingConfig protoMappingConfig;
     private KafkaConsumer kafkaConsumer;
     private OffsetCommitWorker committer;
     private Set<Map<TopicPartition, OffsetAndMetadata>> partitionsAck;
@@ -66,15 +65,15 @@ public class BeastFactory {
     private MultiSink multiSink;
     private MessageConsumer messageConsumer;
     private LinkedBlockingQueue<Records> commitQueue;
-    private StencilClient stencilClient;
 
-    public BeastFactory(AppConfig appConfig, BackOffConfig backOffConfig, WorkerState workerState) {
+    public BeastFactory(AppConfig appConfig, BackOffConfig backOffConfig, ProtoMappingConfig protoMappingConfig, WorkerState workerState) throws ExternalCallException {
         this.appConfig = appConfig;
-        partitionsAck = Collections.synchronizedSet(new CopyOnWriteArraySet<>());
-        readQueue = new LinkedBlockingQueue<>(appConfig.getReadQueueCapacity());
-        commitQueue = new LinkedBlockingQueue<>(appConfig.getCommitQueueCapacity());
+        this.partitionsAck = Collections.synchronizedSet(new CopyOnWriteArraySet<>());
+        this.readQueue = new LinkedBlockingQueue<>(appConfig.getReadQueueCapacity());
+        this.commitQueue = new LinkedBlockingQueue<>(appConfig.getCommitQueueCapacity());
         this.backOffConfig = backOffConfig;
         this.workerState = workerState;
+        this.protoUpdateListener = new ProtoUpdateListener(protoMappingConfig, appConfig, new UpdateTableService());
     }
 
     public List<Worker> createBqWorkers() {
@@ -129,11 +128,7 @@ public class BeastFactory {
 
     private MessageConsumer createMessageConsumer() {
         if (messageConsumer != null) return messageConsumer;
-        stencilClient = StencilClientFactory.getClient(appConfig.getStencilUrl(), System.getenv(), Stats.client().getStatsDClient());
-        ProtoParser protoParser = new ProtoParser(stencilClient, appConfig.getProtoSchema());
-        ColumnMapping columnMapping = appConfig.getProtoColumnMapping();
-        ConsumerRecordConverter parser = new ConsumerRecordConverter(new RowMapper(columnMapping), protoParser, new Clock());
-        messageConsumer = new MessageConsumer(createKafkaConsumer(), createMultiSink(), parser, appConfig.getConsumerPollTimeoutMs());
+        messageConsumer = new MessageConsumer(createKafkaConsumer(), createMultiSink(), protoUpdateListener, appConfig.getConsumerPollTimeoutMs());
         return messageConsumer;
     }
 
@@ -160,7 +155,7 @@ public class BeastFactory {
         log.debug("Closing beast factory");
         readQueue.clear();
         workerState.closeWorker();
-        stencilClient.close();
+        protoUpdateListener.close();
         Stats.stop();
     }
 }

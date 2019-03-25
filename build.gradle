@@ -42,11 +42,13 @@ dependencies {
     }
 
     compile group: 'org.apache.kafka', name: 'kafka-clients', version: '0.10.2.0'
-    compile group: 'com.gojek', name: 'stencil', version: '2.0.12'
+    compile group: 'com.gojek', name: 'stencil', version: '2.0.13'
     compile group: 'com.timgroup', name: 'java-statsd-client', version: '3.1.0'
     compile group: 'com.getsentry.raven', name: 'raven', version: '8.0.3'
     compile group: 'com.getsentry.raven', name: 'raven-logback', version: '7.8.0'
-
+    compile group: 'org.glassfish.jersey.core', name: 'jersey-client', version: '2.28'
+    compile group: 'org.glassfish.jersey.inject', name: 'jersey-hk2', version: '2.28'
+    compile group: 'org.glassfish.jersey.media', name: 'jersey-media-json-jackson', version: '2.28'
 
     compile 'org.aeonbits.owner:owner:1.0.9'
     compile 'com.google.cloud:google-cloud-bigquery:1.51.0'

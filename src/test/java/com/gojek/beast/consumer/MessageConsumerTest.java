@@ -1,7 +1,11 @@
 package com.gojek.beast.consumer;
 
+import com.gojek.beast.com.gojek.beast.protomapping.ProtoUpdateListener;
 import com.gojek.beast.converter.ConsumerRecordConverter;
-import com.gojek.beast.models.*;
+import com.gojek.beast.models.Record;
+import com.gojek.beast.models.Records;
+import com.gojek.beast.models.Status;
+import com.gojek.beast.models.SuccessStatus;
 import com.gojek.beast.sink.Sink;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -17,9 +21,13 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MessageConsumerTest {
@@ -35,24 +43,28 @@ public class MessageConsumerTest {
     @Mock
     private ConsumerRecordConverter converter;
     @Mock
+    private ProtoUpdateListener protoUpdateListener;
+    @Mock
     private List<Record> records;
     private MessageConsumer consumer;
     private Status success = new SuccessStatus();
 
     @Before
     public void setUp() {
-        consumer = new MessageConsumer(new KafkaConsumer(kafkaConsumer), sink, converter, timeout);
+        consumer = new MessageConsumer(new KafkaConsumer(kafkaConsumer), sink, protoUpdateListener, timeout);
         when(kafkaConsumer.poll(timeout)).thenReturn(messages);
     }
 
     @Test
     public void shouldConsumeMessagesAndPushToSink() throws InvalidProtocolBufferException {
+        when(protoUpdateListener.getProtoParser()).thenReturn(converter);
         when(converter.convert(messages)).thenReturn(records);
         when(sink.push(any())).thenReturn(success);
-        InOrder callOrder = inOrder(converter, sink);
+        InOrder callOrder = inOrder(protoUpdateListener, converter, sink);
 
         Status status = consumer.consume();
 
+        callOrder.verify(protoUpdateListener).getProtoParser();
         callOrder.verify(converter).convert(messages);
         callOrder.verify(sink).push(recordsCaptor.capture());
         assertEquals(records, recordsCaptor.getValue().getRecords());
@@ -61,6 +73,7 @@ public class MessageConsumerTest {
 
     @Test
     public void shouldReturnFailureStatusWhenParsingFails() throws InvalidProtocolBufferException {
+        when(protoUpdateListener.getProtoParser()).thenReturn(converter);
         when(converter.convert(any())).thenThrow(new InvalidProtocolBufferException("test reason", null));
         Status status = consumer.consume();
 
