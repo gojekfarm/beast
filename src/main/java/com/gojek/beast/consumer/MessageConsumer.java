@@ -1,6 +1,7 @@
 package com.gojek.beast.consumer;
 
-import com.gojek.beast.converter.Converter;
+import com.gojek.beast.com.gojek.beast.protomapping.ProtoUpdateListener;
+import com.gojek.beast.converter.ConsumerRecordConverter;
 import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.models.Record;
 import com.gojek.beast.models.Records;
@@ -21,14 +22,14 @@ public class MessageConsumer {
 
     private final KafkaConsumer kafkaConsumer;
     private final Sink sink;
-    private final Converter recordConverter;
+    private final ProtoUpdateListener protoUpdateListener;
     private final long timeoutMillis;
     private final Stats statsClient = Stats.client();
 
-    public MessageConsumer(KafkaConsumer kafkaConsumer, Sink sink, Converter recordConverter, long timeoutMillis) {
+    public MessageConsumer(KafkaConsumer kafkaConsumer, Sink sink, ProtoUpdateListener protoUpdateListener, long timeoutMillis) {
         this.kafkaConsumer = kafkaConsumer;
         this.sink = sink;
-        this.recordConverter = recordConverter;
+        this.protoUpdateListener = protoUpdateListener;
         this.timeoutMillis = timeoutMillis;
     }
 
@@ -51,6 +52,7 @@ public class MessageConsumer {
     private Status pushToSink(ConsumerRecords<byte[], byte[]> messages) {
         List<Record> records;
         try {
+            ConsumerRecordConverter recordConverter = this.protoUpdateListener.getProtoParser();
             records = recordConverter.convert(messages);
         } catch (InvalidProtocolBufferException e) {
             Status failure = new FailureStatus(e);

@@ -22,6 +22,5 @@ public class AppConfigTest {
     public void shouldReadApplicationConfiguration() {
         assertEquals("test-table", config.getTable());
         assertEquals("test-dataset", config.getDataset());
-        assertEquals("test-column", config.getProtoColumnMapping().get("1"));
     }
 }

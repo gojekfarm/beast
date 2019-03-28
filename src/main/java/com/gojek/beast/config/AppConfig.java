@@ -7,10 +7,6 @@ public interface AppConfig extends Config {
     @DefaultValue("9223372036854775807")
     Long getConsumerPollTimeoutMs();
 
-    @Key("PROTO_COLUMN_MAPPING")
-    @ConverterClass(ProtoIndexToFieldMapConverter.class)
-    ColumnMapping getProtoColumnMapping();
-
     @Key("STENCIL_URL")
     String getStencilUrl();
 
@@ -35,6 +31,9 @@ public interface AppConfig extends Config {
 
     @Key("BQ_TABLE_NAME")
     String getTable();
+
+    @Key("BQ_PROJECT_NAME")
+    String getGCPProject();
 
     @Key("BQ_DATASET_NAME")
     String getDataset();
