@@ -73,6 +73,9 @@ public class RowMapper {
     }
 
     private void addRepeatedFields(Map<String, Object> row, String key, Object value, List<Object> fieldValue) {
+        if (fieldValue.isEmpty()) {
+            return;
+        }
         List<Object> repeatedNestedFields = new ArrayList<>();
         String columnName = null;
         for (Object f : fieldValue) {

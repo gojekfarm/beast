@@ -156,6 +156,27 @@ public class RowMapperTest {
     }
 
     @Test
+    public void shouldParseRepeatedNestedMessagesIfRepeatedFieldsAreMissing() throws InvalidProtocolBufferException {
+        int number = 1234;
+        TestMessage nested1 = ProtoUtil.generateTestMessage(now);
+        TestMessage nested2 = ProtoUtil.generateTestMessage(now);
+        TestNestedRepeatedMessage message = TestNestedRepeatedMessage.newBuilder()
+                .setNumberField(number)
+                .build();
+
+
+        ColumnMapping fieldMappings = new ColumnMapping();
+        fieldMappings.put("3", "number_field");
+        fieldMappings.put("2", getTestMessageColumnMapping());
+
+        ProtoParser protoParser = new ProtoParser(StencilClientFactory.getClient(), TestNestedRepeatedMessage.class.getName());
+        Map<String, Object> fields = new RowMapper(fieldMappings).map(protoParser.parse(message.toByteArray()));
+
+        assertEquals(number, fields.get("number_field"));
+        assertEquals(1, fields.size());
+    }
+
+    @Test
     public void shouldParseMapFields() throws InvalidProtocolBufferException {
         TestMessage message = TestMessage.newBuilder()
                 .setOrderNumber("order-1")
