@@ -24,4 +24,17 @@ public class InsertStatus implements Status {
     public Optional<Exception> getException() {
         return Optional.of(cause);
     }
+
+    @Override
+    public String toString() {
+        String errString = "InsertStatus:";
+        for (List<BigQueryError> valueList : this.cause.getErrors().values()) {
+            for (BigQueryError err : valueList) {
+                if (err.getMessage() != "") {
+                    errString += err.getMessage() + ",";
+                }
+            }
+        }
+        return errString;
+    }
 }
