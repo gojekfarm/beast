@@ -3,6 +3,7 @@ package com.gojek.beast.worker;
 import com.gojek.beast.commiter.Acknowledger;
 import com.gojek.beast.config.QueueConfig;
 import com.gojek.beast.models.FailureStatus;
+import com.gojek.beast.models.OffsetAcknowledgementException;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
 import com.gojek.beast.models.SuccessStatus;
@@ -37,10 +38,10 @@ public class BqQueueWorker extends Worker {
         try {
             Records poll = queue.poll(config.getTimeout(), config.getTimeoutUnit());
             if (poll == null || poll.isEmpty()) return new SuccessStatus();
-            boolean success = pushToSink(poll);
-            if (!success) {
+            Status status = pushToSink(poll);
+            if (!status.isSuccess()) {
                 queue.offer(poll, config.getTimeout(), config.getTimeoutUnit());
-                return new FailureStatus(new RuntimeException("Push failed"));
+                return status;
             }
         } catch (InterruptedException | RuntimeException e) {
             statsClient.increment("worker.queue.bq.errors");
@@ -51,22 +52,27 @@ public class BqQueueWorker extends Worker {
         return new SuccessStatus();
     }
 
-    private boolean pushToSink(Records poll) {
+    private Status pushToSink(Records poll) {
         Status status;
         try {
             status = sink.push(poll);
         } catch (BigQueryException e) {
             statsClient.increment("worker.queue.bq.errors");
             log.error("Exception::Failed to write to BQ: {}", e.getMessage());
-            return false;
+            return new FailureStatus(e);
         }
         if (status.isSuccess()) {
-            return acknowledger.acknowledge(poll.getPartitionsCommitOffset());
+            boolean ackStatus = acknowledger.acknowledge(poll.getPartitionsCommitOffset());
+            if (ackStatus) {
+                return new SuccessStatus();
+            } else {
+                return new FailureStatus(new OffsetAcknowledgementException("offset acknowledgement failed"));
+            }
         } else {
             statsClient.increment("worker.queue.bq.push_failure");
             log.error("Failed to push records to sink {}", status.toString());
+            return status;
         }
-        return false;
     }
 
     @Override
