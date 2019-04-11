@@ -104,6 +104,7 @@ public class BeastFactory {
 
         return BigQueryOptions.newBuilder()
                 .setCredentials(credentials)
+                .setProjectId(appConfig.getGCPProject())
                 .build().getService();
     }
 
