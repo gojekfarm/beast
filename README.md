@@ -42,33 +42,18 @@ For deploying beast on kubernetes, we need:
 * To test:
 `export $(cat ./env/sample.properties | xargs -L1) && gradlew test`
 
-### Task List:
-* Add integration test with BQ (separate stage in pipeline)
-* Add tests for Factories
-    - verify it shares queue
-    - verify it shares workerstate
-* Add WorkerTest (ensure other worker stops on singleton state change)
-* Push stats: remaining queue size
+## Run with Docker
+The image is available in [gojektech](https://hub.docker.com/r/gojektech/beast) dockerhub.
 
-### Laundry List
-* Copy jacaco and checkstyle reports to test artifacts
-* Add tests for stats.java
-* Test for synchronised threads for kafka consumer
+```
+export TAG=80076c77dc8504e7c758865602aca1b05259e5d3
+docker run --env-file beast.env -v ./local_dir/project-secret.json:/var/bq-secret.json -it gojektech/beast:$TAG
+```
 
-### Enhancements
-* Use java 10/11
-* Find package like factorybot, and make factories
-* Refactor KafkaConsumerUtil
-* Add Draft for development
-* Add option to disable sending stats
+* `-v` mounts local secret file `project-sercret.json` to the docker mentioned location, and `GOOGLE_CREDENTIALS` should match the same `/var/bq-secret.json` which is used for BQ authentication.
+* `TAG`You could update the tag if you want the latest image, the mentioned tag is tested well.
 
-### Reading List
-* Kafka Consumer Offset overflow?
-* Custom Mappers
-* Functions & Future
-* Queue Implementations and performance
-
-## BQ CLI Commands:
+## BQ Setup:
 - create new table
 ```
 bq mk --table <project_name>:<dataset_name>.<table_name> <path_to_schema_file>
