@@ -1,0 +1,77 @@
+[
+  {
+    "mode": "NULLABLE",
+    "name": "order_number",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "order_url",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "order_details",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "status",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "created_at",
+    "type": "TIMESTAMP"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "user_token",
+    "type": "BYTES"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "discounted_value",
+    "type": "NUMERIC"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "success",
+    "type": "BOOLEAN"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "order_price",
+    "type": "FLOAT"
+  },
+  {
+    "mode": "REPEATED",
+    "name": "aliases",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "message_partition",
+    "type": "String"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "message_offset",
+    "type": "String"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "message_topic",
+    "type": "String"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "message_timestamp",
+    "type": "String"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "load_time",
+    "type": "String"
+  }
+]
