@@ -49,7 +49,7 @@ public class ProtoUpdateListenerTest {
 
         protoUpdateListener.onProtoUpdate();
 
-        verify(updateTableService, Mockito.times(2)).getProtoMappingFromRemoteURL(protoMappingConfig.getProtoColumnMappingURL(), appConfig.getProtoSchema());
+        verify(updateTableService, Mockito.times(3)).getProtoMappingFromRemoteURL(protoMappingConfig.getProtoColumnMappingURL(), appConfig.getProtoSchema());
         verify(updateTableService).updateBigQuerySchema(eq(protoMappingConfig.getUpdateBQTableURL()), eq(updateBQTableRequestArgumentCaptor.getValue()));
         ColumnMapping actualNewProtoMapping = protoMappingConfig.getProtoColumnMapping();
         Assert.assertEquals("test-1", actualNewProtoMapping.getProperty("1"));
@@ -74,7 +74,7 @@ public class ProtoUpdateListenerTest {
         when(updateTableService.updateBigQuerySchema(eq(protoMappingConfig.getUpdateBQTableURL()), updateBQTableRequestArgumentCaptor.capture())).thenThrow(new ExternalCallException("update bq table call exception"));
 
         protoUpdateListener.onProtoUpdate();
-        verify(updateTableService, Mockito.times(2)).getProtoMappingFromRemoteURL(protoMappingConfig.getProtoColumnMappingURL(), appConfig.getProtoSchema());
+        verify(updateTableService, Mockito.times(3)).getProtoMappingFromRemoteURL(protoMappingConfig.getProtoColumnMappingURL(), appConfig.getProtoSchema());
         verify(updateTableService).updateBigQuerySchema(eq(protoMappingConfig.getUpdateBQTableURL()), eq(updateBQTableRequestArgumentCaptor.getValue()));
         ColumnMapping actualNewProtoMapping = protoMappingConfig.getProtoColumnMapping();
         Assert.assertEquals(expectedProtoMapping, actualNewProtoMapping);
