@@ -38,6 +38,13 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
     private void createStencilClient() {
         if (protoMappingConfig.isAutoSchemaUpdateEnabled()) {
             stencilClient = StencilClientFactory.getClient(appConfig.getStencilUrl(), System.getenv(), Stats.client().getStatsDClient(), this);
+
+            log.info("updating bq table at startup", getProto());
+            try {
+                updateProtoParser();
+            } catch (ExternalCallException e) {
+                log.warn("Error while updating bigquery table:" + e.getMessage());
+            }
         } else {
             stencilClient = StencilClientFactory.getClient(appConfig.getStencilUrl(), System.getenv(), Stats.client().getStatsDClient());
         }
