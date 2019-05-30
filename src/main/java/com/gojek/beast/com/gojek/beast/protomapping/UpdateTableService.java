@@ -3,6 +3,8 @@ package com.gojek.beast.com.gojek.beast.protomapping;
 import com.gojek.beast.models.ExternalCallException;
 import com.gojek.beast.models.UpdateBQTableRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.glassfish.jersey.client.ClientConfig;
+import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJsonProvider;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -13,7 +15,9 @@ import javax.ws.rs.core.UriBuilder;
 @Slf4j
 public class UpdateTableService {
     public String updateBigQuerySchema(String updateTableURL, UpdateBQTableRequest request) throws ExternalCallException {
-        Client client = ClientBuilder.newClient();
+        ClientConfig config = new ClientConfig();
+        config.register(JacksonJsonProvider.class);
+        Client client = ClientBuilder.newClient(config);
         Response updateTableResponse = client.target(updateTableURL).request().post(Entity.json(request), Response.class);
         if (updateTableResponse.getStatus() != Response.Status.OK.getStatusCode()) {
             throw new ExternalCallException("Get ProtoMapping URL returned: " + updateTableResponse.getStatus() + "error: " + updateTableResponse.readEntity(String.class));
