@@ -1,6 +1,6 @@
 # Beast
 
-[![Build Status](https://travis-ci.org/gojekfarm/beast.svg?branch=master)](https://travis-ci.org/gojekfarm/beast)
+[![Build Status](https://travis-ci.org/gojek/beast.svg?branch=master)](https://travis-ci.org/gojek/beast)
 [![Maintainability](https://api.codeclimate.com/v1/badges/6e6cd8a9d75346b3e9e2/maintainability)](https://codeclimate.com/github/gojekfarm/beast/maintainability)
 
 Kafka to BigQuery Sink
