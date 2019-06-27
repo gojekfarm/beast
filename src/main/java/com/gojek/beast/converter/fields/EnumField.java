@@ -13,10 +13,10 @@ public class EnumField implements ProtoField {
 
     @Override
     public Object getValue() {
-        if(descriptor.isRepeated()) {
-            List<Descriptors.EnumValueDescriptor> enumValues = ((List<Descriptors.EnumValueDescriptor>)(fieldValue));
+        if (descriptor.isRepeated()) {
+            List<Descriptors.EnumValueDescriptor> enumValues = ((List<Descriptors.EnumValueDescriptor>) (fieldValue));
             List<String> enumStrValues = new ArrayList<>();
-            for(Descriptors.EnumValueDescriptor enumVal: enumValues) {
+            for (Descriptors.EnumValueDescriptor enumVal : enumValues) {
                 enumStrValues.add(enumVal.toString());
             }
             return enumStrValues;
