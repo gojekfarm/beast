@@ -3,6 +3,9 @@ package com.gojek.beast.converter.fields;
 import com.google.protobuf.Descriptors;
 import lombok.AllArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @AllArgsConstructor
 public class EnumField implements ProtoField {
     private final Descriptors.FieldDescriptor descriptor;
@@ -10,6 +13,14 @@ public class EnumField implements ProtoField {
 
     @Override
     public Object getValue() {
+        if(descriptor.isRepeated()) {
+            List<Descriptors.EnumValueDescriptor> enumValues = ((List<Descriptors.EnumValueDescriptor>)(fieldValue));
+            List<String> enumStrValues = new ArrayList<>();
+            for(Descriptors.EnumValueDescriptor enumVal: enumValues) {
+                enumStrValues.add(enumVal.toString());
+            }
+            return enumStrValues;
+        }
         return fieldValue.toString();
     }
 
