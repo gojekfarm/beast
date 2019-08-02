@@ -71,6 +71,11 @@ bq show --schema --format=prettyjson <project_name>:dataset_name.test_messages >
 ## Produce messages to Kafka
 You can generate messages with TestMessage.proto with [sample-kafka-producer](https://github.com/gojekfarm/sample-kafka-producer), which pushes N messages
 
+## Running Stencil Server
+* run shell script `./run_descriptor_server.sh` to build descriptor in `build` directory, and python server on `:8000`
+* stencil url can be configured to `curl http://localhost:8000/messages.desc`
+
+
 # Contribution
 
 * You could raise issues or clarify the questions
