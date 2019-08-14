@@ -1,6 +1,6 @@
 package com.gojek.beast.consumer;
 
-import com.gojek.beast.com.gojek.beast.protomapping.ProtoUpdateListener;
+import com.gojek.beast.protomapping.ProtoUpdateListener;
 import com.gojek.beast.converter.ConsumerRecordConverter;
 import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.models.Record;

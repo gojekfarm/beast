@@ -1,4 +1,4 @@
-package com.gojek.beast.com.gojek.beast.protomapping;
+package com.gojek.beast.protomapping;
 
 import com.gojek.beast.models.ExternalCallException;
 import com.gojek.beast.models.UpdateBQTableRequest;
