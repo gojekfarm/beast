@@ -2,8 +2,8 @@ package com.gojek.beast.factory;
 
 import com.gojek.beast.backoff.BackOff;
 import com.gojek.beast.backoff.ExponentialBackOffProvider;
-import com.gojek.beast.com.gojek.beast.protomapping.ProtoUpdateListener;
-import com.gojek.beast.com.gojek.beast.protomapping.UpdateTableService;
+import com.gojek.beast.protomapping.ProtoUpdateListener;
+import com.gojek.beast.protomapping.UpdateTableService;
 import com.gojek.beast.commiter.Acknowledger;
 import com.gojek.beast.commiter.OffsetAcknowledger;
 import com.gojek.beast.commiter.OffsetState;
