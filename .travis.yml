@@ -33,6 +33,8 @@ jobs:
     script:
     - ./gradlew --version && echo $TRAVIS_COMMIT
     - export $(cat env/sample.properties | xargs -L1) && ./gradlew build
+    - ./gradlew jacocoTestReport
+    -  bash <(curl -s https://codecov.io/bash)
   - stage: deploy
     before_script: *docker_login
     name: build docker
