@@ -7,6 +7,7 @@ import com.gojek.beast.converter.fields.NestedField;
 import com.gojek.beast.converter.fields.ProtoField;
 import com.gojek.beast.converter.fields.StructField;
 import com.gojek.beast.converter.fields.TimestampField;
+import com.gojek.beast.converter.fields.DateField;
 import com.google.protobuf.Descriptors;
 
 import java.util.Arrays;
@@ -18,6 +19,7 @@ public class FieldFactory {
     public static ProtoField getField(Descriptors.FieldDescriptor descriptor, Object fieldValue) {
         List<ProtoField> protoFields = Arrays.asList(
                 new TimestampField(descriptor, fieldValue),
+                new DateField(descriptor, fieldValue),
                 new EnumField(descriptor, fieldValue),
                 new ByteField(descriptor, fieldValue),
                 new StructField(descriptor, fieldValue),
