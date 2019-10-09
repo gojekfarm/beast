@@ -10,6 +10,7 @@ import com.gojek.beast.util.ProtoUtil;
 import com.gojek.de.stencil.StencilClientFactory;
 import com.gojek.de.stencil.parser.ProtoParser;
 import com.google.api.client.util.DateTime;
+import com.google.cloud.Date;
 import com.google.protobuf.*;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,6 +43,7 @@ public class RowMapperTest {
                 .setOrderDetails("order-details")
                 .setCreatedAt(createdAt)
                 .setStatus(Status.COMPLETED)
+                .setOrderDate(com.google.type.Date.newBuilder().setYear(1996).setMonth(11).setDay(21))
                 .build();
         dynamicMessage = protoParser.parse(testMessage.toByteArray());
         nowMillis = Instant.ofEpochSecond(now.getEpochSecond(), now.getNano()).toEpochMilli();
@@ -55,6 +57,7 @@ public class RowMapperTest {
         fieldMappings.put("3", "order_details_field");
         fieldMappings.put("4", "created_at");
         fieldMappings.put("5", "order_status");
+        fieldMappings.put("14", "order_date_field");
 
         Map<String, Object> fields = new RowMapper(fieldMappings).map(dynamicMessage);
 
@@ -63,6 +66,7 @@ public class RowMapperTest {
         assertEquals("order-details", fields.get("order_details_field"));
         assertEquals(new DateTime(nowMillis), fields.get("created_at"));
         assertEquals("COMPLETED", fields.get("order_status"));
+        assertEquals(Date.fromYearMonthDay(1996, 11, 21), fields.get("order_date_field"));
         assertEquals(fieldMappings.size(), fields.size());
     }
 
