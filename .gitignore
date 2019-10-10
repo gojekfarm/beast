@@ -61,3 +61,8 @@ env/local.properties
 *.env
 
 **/*.jar
+
+.classpath
+.project
+.settings/
+.vscode/
