@@ -286,4 +286,31 @@ public class RowMapperTest {
 
         new RowMapper(null).map(dynamicMessage);
     }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldThrowIllegalArgumentExceptionOnInvalidDate() throws InvalidProtocolBufferException {
+        TestMessage testMessage = TestMessage.newBuilder()
+                .setOrderDate(com.google.type.Date.newBuilder().setYear(1996).setMonth(13).setDay(21))
+                .build();
+        ProtoParser protoParser = new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName());
+        dynamicMessage = protoParser.parse(testMessage.toByteArray());
+        ColumnMapping fieldMappings = new ColumnMapping();
+        fieldMappings.put("14", "order_date_field");
+
+        Map<String, Object> fields = new RowMapper(fieldMappings).map(dynamicMessage);
+    }
+
+    @Test
+    public void shouldReturnNullWhenNoDateFieldIsProvided() throws InvalidProtocolBufferException {
+        TestMessage testMessage = TestMessage.newBuilder()
+                .build();
+        ProtoParser protoParser = new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName());
+        dynamicMessage = protoParser.parse(testMessage.toByteArray());
+        ColumnMapping fieldMappings = new ColumnMapping();
+        fieldMappings.put("14", "order_date_field");
+
+        Map<String, Object> fields = new RowMapper(fieldMappings).map(dynamicMessage);
+
+        assertNull(fields.get("order_date_field"));
+    }
 }
