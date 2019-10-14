@@ -1,8 +1,8 @@
 package com.gojek.beast.converter.fields;
 
-import com.google.cloud.Date;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.DynamicMessage;
+import com.google.type.Date;
 import lombok.AllArgsConstructor;
 
 import java.util.ArrayList;
@@ -22,7 +22,7 @@ public class DateField implements ProtoField {
         Integer year = (Integer) dateFields.get(0);
         Integer month = (Integer) dateFields.get(1);
         Integer day = (Integer) dateFields.get(2);
-        return Date.fromYearMonthDay(year, month, day);
+        return com.google.cloud.Date.fromYearMonthDay(year, month, day).toString();
     }
 
     @Override

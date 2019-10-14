@@ -66,7 +66,7 @@ public class RowMapperTest {
         assertEquals("order-details", fields.get("order_details_field"));
         assertEquals(new DateTime(nowMillis), fields.get("created_at"));
         assertEquals("COMPLETED", fields.get("order_status"));
-        assertEquals(Date.fromYearMonthDay(1996, 11, 21), fields.get("order_date_field"));
+        assertEquals("1996-11-21", fields.get("order_date_field"));
         assertEquals(fieldMappings.size(), fields.size());
     }
 
