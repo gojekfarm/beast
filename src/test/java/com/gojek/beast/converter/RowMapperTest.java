@@ -10,7 +10,6 @@ import com.gojek.beast.util.ProtoUtil;
 import com.gojek.de.stencil.StencilClientFactory;
 import com.gojek.de.stencil.parser.ProtoParser;
 import com.google.api.client.util.DateTime;
-import com.google.cloud.Date;
 import com.google.protobuf.*;
 import org.junit.Before;
 import org.junit.Test;
