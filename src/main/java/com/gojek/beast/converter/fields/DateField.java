@@ -2,7 +2,6 @@ package com.gojek.beast.converter.fields;
 
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.DynamicMessage;
-import com.google.type.Date;
 import lombok.AllArgsConstructor;
 
 import java.util.ArrayList;
