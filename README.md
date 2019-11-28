@@ -81,10 +81,11 @@ You can generate messages with TestMessage.proto with [sample-kafka-producer](ht
 
 * You could raise issues or clarify the questions
 * You could raise a PR for any feature/issues
- To run and test locally:
+* You could help us with documentation
+
+To run and test locally:
 ```
 git clone https://github.com/gojekfarm/beast
 export $(cat ./env/sample.properties | xargs -L1) && gradlew test
 ```
-* You could help us with documentation
 
