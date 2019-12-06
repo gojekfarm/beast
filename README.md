@@ -17,6 +17,17 @@ Kafka to BigQuery Sink
 
 <br><div style="text-align:center;width: 90%; margin:auto;"><img src="docs/images/architecture.png" alt=""></div><br>
 
+* **Dead Letters**:
+    Beast provides a plugable GCS (Google Cloud Storage) component to store invalid out of bounds messages that are rejected by BigQuery. Primarily all messages that are partitioned on a timestamp field and those that contain out of ranges timestamps (year old data or 6 months in future) on the partition key are considered as invalid. Without an handler for these messages, Beast stops processing. The default behaviour is to stop processing on these out of range data. GCS component can be turned on by supplying an environment field as below.
+    ```
+    ENABLE_GCS_ERROR_SINK=true
+    GCS_BUCKET=<google cloud store bucket name>
+    GCS_PATH_PREFIX=<prefix path under the bucket>
+    ```
+    The handler partitions the invalid messages on GCS based on the message arrival date in the format `<dt=yyyy-MM-dd>`. The location of invalid messages on GCS would ideally be `<GCS_BUCKET>/<GCS_PATH_PREFIX>/<dt=yyyy-MM-dd>/<topicName>/<random-uuid>`
+    - where <topicName> - is the topic that has the invalid messages
+    - <random-uuid> - name of the file
+
 ## Building & Running
 
 ### Prerequisite

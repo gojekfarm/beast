@@ -22,6 +22,12 @@ import com.gojek.beast.sink.QueueSink;
 import com.gojek.beast.sink.RetrySink;
 import com.gojek.beast.sink.Sink;
 import com.gojek.beast.sink.bq.BqSink;
+import com.gojek.beast.sink.bq.handler.DefaultLogWriter;
+import com.gojek.beast.sink.bq.handler.gcs.GCSErrorWriter;
+import com.gojek.beast.sink.bq.handler.BQErrorHandler;
+import com.gojek.beast.sink.bq.handler.BQResponseParser;
+import com.gojek.beast.sink.bq.handler.ErrorWriter;
+import com.gojek.beast.sink.bq.handler.impl.OOBErrorHandler;
 import com.gojek.beast.stats.Stats;
 import com.gojek.beast.worker.BqQueueWorker;
 import com.gojek.beast.worker.ConsumerWorker;
@@ -33,6 +39,8 @@ import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.BigQueryOptions;
 import com.google.cloud.bigquery.TableId;
+import com.google.cloud.storage.StorageOptions;
+import com.google.cloud.storage.Storage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -89,11 +97,38 @@ public class BeastFactory {
 
     public Sink createBigQuerySink() {
         BigQuery bq = getBigQueryInstance();
-        Sink bqSink = new BqSink(bq, TableId.of(appConfig.getDataset(), appConfig.getTable()));
+        BQResponseParser responseParser = new BQResponseParser();
+        BQErrorHandler bqErrorHandler = createOOBErrorHandler();
+        Sink bqSink = new BqSink(bq, TableId.of(appConfig.getDataset(), appConfig.getTable()), responseParser, bqErrorHandler);
         return new RetrySink(bqSink, new ExponentialBackOffProvider(backOffConfig.getExponentialBackoffInitialTimeInMs(), backOffConfig.getExponentialBackoffMaximumTimeInMs(), backOffConfig.getExponentialBackoffRate(), new BackOff()), appConfig.getMaxPushAttempts());
     }
 
+    public BQErrorHandler createOOBErrorHandler() {
+        final Storage gcsStore = getGCStorageInstance();
+        ErrorWriter errorWriter = new DefaultLogWriter();
+        if (appConfig.isGCSErrorSinkEnabled()) {
+            final String bucketName = appConfig.getGcsBucket();
+            final String basePathPrefix = bucketName + "/" + appConfig.getGcsPathPrefix();
+            errorWriter = new GCSErrorWriter(gcsStore, bucketName, basePathPrefix);
+        }
+        return new OOBErrorHandler(errorWriter);
+    }
+
     private BigQuery getBigQueryInstance() {
+        return BigQueryOptions.newBuilder()
+                .setCredentials(getGoogleCredentials())
+                .setProjectId(appConfig.getGCPProject())
+                .build().getService();
+    }
+
+    private Storage getGCStorageInstance() {
+        return StorageOptions.newBuilder()
+                .setCredentials(getGoogleCredentials())
+                .setProjectId(appConfig.getGCPProject())
+                .build().getService();
+    }
+
+    private GoogleCredentials getGoogleCredentials() {
         GoogleCredentials credentials = null;
         File credentialsPath = new File(appConfig.getGoogleCredentials());
         try (FileInputStream serviceAccountStream = new FileInputStream(credentialsPath)) {
@@ -101,11 +136,7 @@ public class BeastFactory {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        return BigQueryOptions.newBuilder()
-                .setCredentials(credentials)
-                .setProjectId(appConfig.getGCPProject())
-                .build().getService();
+        return credentials;
     }
 
     public OffsetCommitWorker createOffsetCommitter() {

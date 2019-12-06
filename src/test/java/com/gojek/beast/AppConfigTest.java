@@ -22,5 +22,7 @@ public class AppConfigTest {
     public void shouldReadApplicationConfiguration() {
         assertEquals("test-table", config.getTable());
         assertEquals("test-dataset", config.getDataset());
+        assertEquals("true", config.isGCSErrorSinkEnabled());
+        assertEquals("beast/test", config.getGcsPathPrefix());
     }
 }

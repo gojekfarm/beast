@@ -2,6 +2,7 @@ package com.gojek.beast.worker;
 
 import com.gojek.beast.commiter.Acknowledger;
 import com.gojek.beast.config.QueueConfig;
+import com.gojek.beast.sink.bq.handler.impl.BQErrorHandlerException;
 import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.models.OffsetAcknowledgementException;
 import com.gojek.beast.models.Records;
@@ -60,6 +61,10 @@ public class BqQueueWorker extends Worker {
             statsClient.increment("worker.queue.bq.errors");
             log.error("Exception::Failed to write to BQ: {}", e.getMessage());
             return new FailureStatus(e);
+        } catch (BQErrorHandlerException bqhe) {
+            statsClient.increment("worker.queue.handler.errors");
+            log.error("Exception::Could not process the errors with handler sink: {}", bqhe.getMessage());
+            return new FailureStatus(bqhe);
         }
         if (status.isSuccess()) {
             boolean ackStatus = acknowledger.acknowledge(poll.getPartitionsCommitOffset());
