@@ -1,11 +1,15 @@
 package com.gojek.beast.sink;
 
+import com.gojek.beast.sink.bq.handler.DefaultLogWriter;
+import com.gojek.beast.sink.bq.handler.BQErrorHandler;
+import com.gojek.beast.sink.bq.handler.BQResponseParser;
 import com.gojek.beast.models.OffsetInfo;
 import com.gojek.beast.models.Record;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
 import com.gojek.beast.sink.bq.BqInsertErrors;
 import com.gojek.beast.sink.bq.BqSink;
+import com.gojek.beast.sink.bq.handler.impl.OOBErrorHandler;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.BigQueryError;
 import com.google.cloud.bigquery.InsertAllRequest;
@@ -47,7 +51,8 @@ public class BqSinkTest {
     public void setUp() {
         tableId = TableId.of("test-dataset", "test-table");
         builder = InsertAllRequest.newBuilder(tableId);
-        sink = new BqSink(bigquery, tableId);
+        BQErrorHandler errorHandlerInstance = new OOBErrorHandler(new DefaultLogWriter());
+        sink = new BqSink(bigquery, tableId, new BQResponseParser(), errorHandlerInstance);
         when(successfulResponse.hasErrors()).thenReturn(false);
         when(bigquery.insertAll(any())).thenReturn(successfulResponse);
         when(failureResponse.hasErrors()).thenReturn(true);

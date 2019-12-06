@@ -1,35 +1,31 @@
 package com.gojek.beast.sink;
 
-import com.gojek.beast.Clock;
-import com.gojek.beast.TestKey;
-import com.gojek.beast.TestMessage;
-import com.gojek.beast.TestNestedMessage;
-import com.gojek.beast.TestNestedRepeatedMessage;
+import com.gojek.beast.*;
 import com.gojek.beast.config.ColumnMapping;
 import com.gojek.beast.converter.ConsumerRecordConverter;
 import com.gojek.beast.converter.Converter;
 import com.gojek.beast.converter.RowMapper;
+import com.gojek.beast.sink.bq.BaseBQTest;
+import com.gojek.beast.sink.bq.handler.gcs.GCSErrorWriter;
+import com.gojek.beast.sink.bq.handler.BQErrorHandler;
 import com.gojek.beast.models.OffsetInfo;
 import com.gojek.beast.models.Record;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
 import com.gojek.beast.sink.bq.BqSink;
-import com.gojek.beast.sink.bq.InsertStatus;
+import com.gojek.beast.sink.bq.handler.BQResponseParser;
+import com.gojek.beast.sink.bq.handler.ErrorWriter;
+import com.gojek.beast.sink.bq.handler.impl.OOBErrorHandler;
 import com.gojek.beast.util.ProtoUtil;
 import com.gojek.de.stencil.StencilClientFactory;
 import com.gojek.de.stencil.parser.ProtoParser;
-import com.google.api.client.http.LowLevelHttpResponse;
-import com.google.api.client.testing.http.MockHttpTransport;
-import com.google.api.client.testing.http.MockLowLevelHttpRequest;
 import com.google.api.client.testing.http.MockLowLevelHttpResponse;
 import com.google.api.client.util.DateTime;
-import com.google.auth.oauth2.GoogleCredentials;
-import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.bigquery.BigQuery;
-import com.google.cloud.bigquery.BigQueryOptions;
 import com.google.cloud.bigquery.InsertAllRequest;
 import com.google.cloud.bigquery.InsertAllResponse;
 import com.google.cloud.bigquery.TableId;
+import com.google.cloud.storage.*;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Timestamp;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -43,23 +39,16 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class BqIntegrationTest {
+public class BqIntegrationTest extends BaseBQTest {
     @Captor
     private ArgumentCaptor<InsertAllRequest> insertRequestCaptor;
     @Mock
@@ -71,40 +60,24 @@ public class BqIntegrationTest {
     private InsertAllResponse successfulResponse;
     @Mock
     private BigQuery bigQueryMock;
-    private long nowMillis;
     @Mock
     private Clock clock;
+    @Mock
+    private Storage gcsStoreMock;
+    @Mock
+    private Blob blobMock;
+    private long nowMillis;
+    private BQErrorHandler gcsSinkHandler;
+    private String gcsBucket = "test-integ-godata-dlq-beast";
 
     @Before
     public void setUp() throws Exception {
         nowMillis = Instant.now().toEpochMilli();
         when(clock.currentEpochMillis()).thenReturn(nowMillis);
-    }
-
-    public BigQuery authenticatedBQ() {
-        GoogleCredentials credentials = null;
-        File credentialsPath = new File(System.getenv("GOOGLE_CREDENTIALS"));
-        try (FileInputStream serviceAccountStream = new FileInputStream(credentialsPath)) {
-            credentials = ServiceAccountCredentials.fromStream(serviceAccountStream);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return BigQueryOptions.newBuilder()
-                .setCredentials(credentials)
-                .build().getService();
-    }
-
-    public MockHttpTransport getTransporter(final MockLowLevelHttpResponse httpResponse) {
-        return new MockHttpTransport.Builder()
-                .setLowLevelHttpRequest(
-                        new MockLowLevelHttpRequest() {
-                            @Override
-                            public LowLevelHttpResponse execute() throws IOException {
-                                return httpResponse;
-                            }
-                        })
-                .build();
+        ErrorWriter errorWriter = new GCSErrorWriter(gcsStoreMock, "test-integ-godata", "test-integ-godata-dlq/beast");
+        gcsSinkHandler = new OOBErrorHandler(errorWriter);
+        final BlobId blobId = BlobId.of("test-integ-godata", "test-integ-godata-dlq/beast/testfile");
+        final BlobInfo objectInfo = BlobInfo.newBuilder(blobId).setContentType("text/plain").build();
     }
 
     @Ignore
@@ -127,7 +100,7 @@ public class BqIntegrationTest {
                 .setNestedId("nested-id")
                 .build();
         TableId tableId = TableId.of("bqsinktest", "test_nested_messages");
-        BqSink bqSink = new BqSink(authenticatedBQ(), tableId);
+        BqSink bqSink = new BqSink(authenticatedBQ(), tableId, new BQResponseParser(), gcsSinkHandler);
 
 
         OffsetInfo offsetInfo = new OffsetInfo("topic", 1, 1, Instant.now().toEpochMilli());
@@ -139,9 +112,7 @@ public class BqIntegrationTest {
         columns.put("id", nestedMsg.getNestedId());
         columns.put("msg", nested);
 
-
-        InsertStatus push = bqSink.push(new Records(Arrays.asList(new Record(offsetInfo, columns))));
-
+        Status push = bqSink.push(new Records(Arrays.asList(new Record(offsetInfo, columns))));
         assertTrue(push.isSuccess());
     }
 
@@ -157,7 +128,7 @@ public class BqIntegrationTest {
                 .build();
 
         TableId tableId = TableId.of("bqsinktest", "nested_messages");
-        BqSink bqSink = new BqSink(authenticatedBQ(), tableId);
+        BqSink bqSink = new BqSink(authenticatedBQ(), tableId, new BQResponseParser(), gcsSinkHandler);
 
         ColumnMapping columnMapping = new ColumnMapping();
         ColumnMapping nested = new ColumnMapping();
@@ -172,8 +143,7 @@ public class BqIntegrationTest {
                 0, 0, 1, null, protoMessage.toByteArray());
 
         List<Record> records = customConverter.convert(Collections.singleton(consumerRecord));
-        InsertStatus push = bqSink.push(new Records(records));
-
+        Status push = bqSink.push(new Records(records));
         assertTrue(push.isSuccess());
     }
 
@@ -181,7 +151,7 @@ public class BqIntegrationTest {
     @Test
     public void shouldPushMessagesToBqActual() {
         TableId tableId = TableId.of("bqsinktest", "users");
-        BqSink bqSink = new BqSink(authenticatedBQ(), tableId);
+        BqSink bqSink = new BqSink(authenticatedBQ(), tableId, new BQResponseParser(), gcsSinkHandler);
 
         HashMap<String, Object> columns = new HashMap<>();
         columns.put("name", "someone_else");
@@ -203,10 +173,72 @@ public class BqIntegrationTest {
         assertTrue(push.isSuccess());
     }
 
+    @Ignore
+    @Test
+    public void testBQErrorsAreStoredInGCS() throws InvalidProtocolBufferException {
+        Instant validNow = Instant.now();
+        TestMessage validMessage1 = getTestMessage("VALID-11-testValidMessageInBQ", validNow);
+        TestMessage validMessage2 = getTestMessage("VALID-12-testValidMessageInBQ", validNow);
+
+        Instant inValidLater = Instant.now().plus(Duration.ofDays(185));
+        Instant inValidBefore = Instant.now().minus(Duration.ofDays(365));
+        TestMessage inValidMessage1 = getTestMessage("INVALID-21-testBQErrorsAreStoredInGCS", inValidLater);
+        TestMessage inValidMessage2 = getTestMessage("INVALID-21-testBQErrorsAreStoredInGCS", inValidLater);
+
+        ColumnMapping columnMapping = new ColumnMapping();
+        columnMapping.put("1", "order_number");
+        columnMapping.put("2", "order_url");
+        columnMapping.put("3", "order_details");
+        columnMapping.put("4", "created_at");
+
+        List<Record> validRecords = getKafkaConsumerRecords(columnMapping, validNow, "testBQErrorsAreStoredInGCS-valid", 1,
+                1L, clock, validMessage1, validMessage2);
+        List<Record> inValidRecords = getKafkaConsumerRecords(columnMapping, validNow, "testBQErrorsAreStoredInGCS-valid", 2,
+                10L, clock, inValidMessage1, inValidMessage2);
+
+        List<Record> allRecords = new ArrayList<>();
+        allRecords.addAll(validRecords);
+        allRecords.addAll(inValidRecords);
+
+        final Storage gcsStore = authenticatedGCStorageInstance();
+
+        //Insert into BQ
+        TableId tableId = TableId.of("playground", "test_nested_messages");
+        BQErrorHandler errorHandler = new OOBErrorHandler(new GCSErrorWriter(gcsStore, gcsBucket, "test-integ-beast"));
+        BqSink bqSink = new BqSink(authenticatedBQ(), tableId, new BQResponseParser(), errorHandler);
+        Status push = bqSink.push(new Records(allRecords));
+        assertTrue("Invalid Message should have been inserted into GCS Sink and success status should be true", push.isSuccess());
+    }
+
+    @Ignore
+    @Test
+    public void testBQValidOnlyMessagesAreStoredInBQ() throws InvalidProtocolBufferException {
+        Instant validNow = Instant.now();
+        TestMessage validMessage = getTestMessage("testBQValidOnlyMessagesAreStoredInBQ-valid-" + System.currentTimeMillis(), validNow);
+
+        ColumnMapping columnMapping = new ColumnMapping();
+        columnMapping.put("1", "order_number");
+        columnMapping.put("2", "order_url");
+        columnMapping.put("3", "order_details");
+        columnMapping.put("4", "created_at");
+
+        List<Record> validRecords = getKafkaConsumerRecords(columnMapping, validNow, "testBQErrorsAreStoredInGCS-valid", 1,
+                1L, clock, validMessage);
+
+        final Storage gcsStore = authenticatedGCStorageInstance();
+
+        //Insert into BQ
+        TableId tableId = TableId.of("playground", "test_nested_messages");
+        BQErrorHandler errorHandler = new OOBErrorHandler(new GCSErrorWriter(gcsStore, gcsBucket, "test-integ-beast"));
+        BqSink bqSink = new BqSink(authenticatedBQ(), tableId, new BQResponseParser(), errorHandler);
+        Status push = bqSink.push(new Records(validRecords));
+        assertTrue("Invalid Message should have been inserted into GCS Sink and success status should be true", push.isSuccess());
+    }
+
     @Test
     public void shouldParseAndPushMessagesToBq() throws Exception {
         TableId tableId = TableId.of("bqsinktest", "test_messages");
-        BqSink bqSink = new BqSink(bigQueryMock, tableId);
+        BqSink bqSink = new BqSink(bigQueryMock, tableId, new BQResponseParser(), gcsSinkHandler);
         String orderNumber = "order-1";
         String orderUrl = "order_url";
         String orderDetails = "order_details";
@@ -260,7 +292,7 @@ public class BqIntegrationTest {
         when(bigQueryMock.insertAll(insertRequestCaptor.capture())).thenReturn(successfulResponse);
 
         List<Record> records = converter.convert(messages);
-        InsertStatus status = bqSink.push(new Records(records));
+        Status status = bqSink.push(new Records(records));
         assertTrue(status.isSuccess());
 
         List<InsertAllRequest.RowToInsert> bqRows = insertRequestCaptor.getValue().getRows();

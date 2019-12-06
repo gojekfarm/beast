@@ -76,4 +76,14 @@ public interface AppConfig extends Config {
     @DefaultValue("5")
     @Key("MAX_BQ_PUSH_ATTEMPTS")
     Integer getMaxPushAttempts();
+
+    @DefaultValue("false")
+    @Key("ENABLE_GCS_ERROR_SINK")
+    Boolean isGCSErrorSinkEnabled();
+
+    @Key("GCS_BUCKET")
+    String getGcsBucket();
+
+    @Key("GCS_PATH_PREFIX")
+    String getGcsPathPrefix();
 }

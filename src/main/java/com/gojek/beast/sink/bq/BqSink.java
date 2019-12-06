@@ -1,7 +1,11 @@
 package com.gojek.beast.sink.bq;
 
+import com.gojek.beast.sink.bq.handler.BQInsertionRecordsErrorType;
+import com.gojek.beast.sink.bq.handler.BQResponseParser;
+import com.gojek.beast.sink.bq.handler.BQErrorHandler;
 import com.gojek.beast.models.Record;
 import com.gojek.beast.models.Records;
+import com.gojek.beast.models.Status;
 import com.gojek.beast.sink.Sink;
 import com.gojek.beast.stats.Stats;
 import com.google.cloud.bigquery.BigQuery;
@@ -12,6 +16,8 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 
 import static com.google.cloud.bigquery.InsertAllRequest.*;
 
@@ -21,11 +27,36 @@ public class BqSink implements Sink {
 
     private final BigQuery bigquery;
     private final TableId tableId;
+    private final BQResponseParser responseParser;
+    private final BQErrorHandler errorHandler; // handler instance for BQ related errors
 
     private final Stats statsClient = Stats.client();
 
     @Override
-    public InsertStatus push(Records records) {
+    public Status push(Records records) {
+        InsertAllResponse response = insertIntoBQ(records);
+        InsertStatus status = new InsertStatus(!response.hasErrors(), response.getInsertErrors());
+        //if bq has errors
+        if (response.hasErrors()) {
+            //parse the error records
+            Map<Record, List<BQInsertionRecordsErrorType>> parsedRecords = responseParser.parseBQResponse(records, response);
+            //sink error records
+            boolean isTheSinkSuccessful = errorHandler.handleErrorRecords(parsedRecords).isSuccess();
+            if (!isTheSinkSuccessful) {
+                return new InsertStatus(isTheSinkSuccessful, response.getInsertErrors());
+            }
+            Records bqValidRecords = errorHandler.getBQValidRecords(parsedRecords);
+            if (!bqValidRecords.getRecords().isEmpty()) { // there are valid records
+                //insert the valid records into bq
+                isTheSinkSuccessful &= !insertIntoBQ(bqValidRecords).hasErrors();
+            }
+            return new InsertStatus(isTheSinkSuccessful, response.getInsertErrors());
+        }
+        // return the original response
+        return new InsertStatus(!response.hasErrors(), response.getInsertErrors());
+    }
+
+    private InsertAllResponse insertIntoBQ(Records records) {
         Instant start = Instant.now();
         Builder builder = newBuilder(tableId);
         records.forEach((Record m) -> builder.addRow(RowToInsert.of(m.getId(), m.getColumns())));
@@ -34,7 +65,7 @@ public class BqSink implements Sink {
         log.info("Pushing {} records to BQ success?: {}", records.size(), !response.hasErrors());
         statsClient.gauge("sink.bq.push.records", records.size());
         statsClient.timeIt("sink.bq.push.time", start);
-        return new InsertStatus(!response.hasErrors(), response.getInsertErrors());
+        return response;
     }
 
     @Override
