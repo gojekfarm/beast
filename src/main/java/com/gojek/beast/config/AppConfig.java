@@ -86,4 +86,7 @@ public interface AppConfig extends Config {
 
     @Key("GCS_PATH_PREFIX")
     String getGcsPathPrefix();
+
+    @Key("GCS_WRITER_PROJECT_NAME")
+    String getGcsWriterProject();
 }

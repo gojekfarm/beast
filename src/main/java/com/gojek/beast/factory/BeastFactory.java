@@ -124,7 +124,7 @@ public class BeastFactory {
     private Storage getGCStorageInstance() {
         return StorageOptions.newBuilder()
                 .setCredentials(getGoogleCredentials())
-                .setProjectId(appConfig.getGCPProject())
+                .setProjectId(appConfig.getGcsWriterProject())
                 .build().getService();
     }
 
