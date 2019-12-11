@@ -28,6 +28,9 @@ public class InsertStatus implements Status {
     @Override
     public String toString() {
         String errString = "InsertStatus:";
+        if (cause.getErrors().isEmpty()) {
+            return  errString + " NO_ERRORS";
+        }
         for (List<BigQueryError> valueList : this.cause.getErrors().values()) {
             for (BigQueryError err : valueList) {
                 if (err.getMessage() != "") {
