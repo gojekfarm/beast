@@ -108,7 +108,7 @@ public class BeastFactory {
         ErrorWriter errorWriter = new DefaultLogWriter();
         if (appConfig.isGCSErrorSinkEnabled()) {
             final String bucketName = appConfig.getGcsBucket();
-            final String basePathPrefix = bucketName + "/" + appConfig.getGcsPathPrefix();
+            final String basePathPrefix = appConfig.getGcsPathPrefix();
             errorWriter = new GCSErrorWriter(gcsStore, bucketName, basePathPrefix);
         }
         return new OOBErrorHandler(errorWriter);
