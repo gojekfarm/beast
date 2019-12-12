@@ -25,9 +25,9 @@ Kafka to BigQuery Sink
     GCS_PATH_PREFIX=<prefix path under the bucket>
     GCS_WRITER_PROJECT_NAME=<google project having bucket>
     ```
-    The handler partitions the invalid messages on GCS based on the message arrival date in the format `<dt=yyyy-MM-dd>`. The location of invalid messages on GCS would ideally be `<GCS_WRITER_PROJECT_NAME>/<GCS_BUCKET>/<GCS_PATH_PREFIX>/<dt=yyyy-MM-dd>/<topicName>/<random-uuid>`
-    - where <topicName> - is the topic that has the invalid messages
-    - <random-uuid> - name of the file
+    The handler partitions the invalid messages on GCS based on the message arrival date in the format `<dt=yyyy-MM-dd>`. The location of invalid messages on GCS would ideally be `<GCS_WRITER_PROJECT_NAME>/<GCS_BUCKET>/<GCS_PATH_PREFIX>/<dt=yyyy-MM-dd>/<topicName>/<random-uuid>` where
+    - `<topicName>` - is the topic that has the invalid messages
+    - `<random-uuid>` - name of the file
 
 ## Building & Running
 
