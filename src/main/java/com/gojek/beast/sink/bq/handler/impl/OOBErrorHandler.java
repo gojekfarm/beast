@@ -38,6 +38,8 @@ public class OOBErrorHandler implements BQErrorHandler {
                         break;
                     case INVALID: recordHasInvalidData = true;
                         break;
+                    case UNKNOWN: shouldBatchFail = true;
+                        break;
                     default:
                 }
             } //end of for each row
