@@ -5,6 +5,7 @@ import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
 import com.gojek.beast.sink.Sink;
+import com.gojek.beast.stats.Stats;
 
 public class RetryExecutor implements Executor {
 
@@ -12,6 +13,7 @@ public class RetryExecutor implements Executor {
     private Records records;
     private int maxAttempts;
     private BackOffProvider backOffProvider;
+    private final Stats statsClient = Stats.client(); // metrics client
 
     private Status status;
     private int attemptCount = 0;
@@ -25,6 +27,7 @@ public class RetryExecutor implements Executor {
 
     @Override
     public Status status() {
+        statsClient.gauge("RetrySink.queue.push.attempts", attemptCount);
         return status;
     }
 

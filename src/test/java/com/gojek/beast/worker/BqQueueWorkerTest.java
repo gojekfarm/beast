@@ -16,6 +16,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -52,6 +53,7 @@ public class BqQueueWorkerTest {
         queueConfig = new QueueConfig(pollTimeout);
         when(successfulSink.push(any())).thenReturn(new SuccessStatus());
         when(messages.getPartitionsCommitOffset()).thenReturn(offsetInfos);
+        when(messages.getPolledTime()).thenReturn(Instant.now());
         workerState = new WorkerState();
     }
 
