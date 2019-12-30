@@ -43,7 +43,7 @@ jobs:
     name: build docker
     script:
     - ./gradlew assemble
-    - curl http://search.maven.org/remotecontent?filepath=org/jolokia/jolokia-jvm/1.6.0/jolokia-jvm-1.6.0-agent.jar -o ./build/libs/jolokia-jvm-agent.jar
+    - curl -L http://search.maven.org/remotecontent?filepath=org/jolokia/jolokia-jvm/1.6.0/jolokia-jvm-1.6.0-agent.jar -o ./build/libs/jolokia-jvm-agent.jar
     - docker build -t gojektech/beast:latest .
     - docker images
     - docker push gojektech/beast:latest
