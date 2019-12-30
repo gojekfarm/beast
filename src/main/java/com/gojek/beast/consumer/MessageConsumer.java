@@ -44,22 +44,24 @@ public class MessageConsumer {
             return new SuccessStatus();
         }
         log.info("Pulled {} messages", messages.count());
-        Status status = pushToSink(messages);
+        Status status = pushToSink(messages, startTime);
         statsClient.timeIt("kafkaConsumer.consumption.time", startTime);
         return status;
     }
 
-    private Status pushToSink(ConsumerRecords<byte[], byte[]> messages) {
+    private Status pushToSink(ConsumerRecords<byte[], byte[]> messages, Instant pollTime) {
         List<Record> records;
         try {
+            final Instant deSerTime = Instant.now();
             ConsumerRecordConverter recordConverter = this.protoUpdateListener.getProtoParser();
             records = recordConverter.convert(messages);
+            statsClient.timeIt("kafkaConsumer.batch.deserialization.time,size=" + records.size(), deSerTime);
         } catch (InvalidProtocolBufferException e) {
             Status failure = new FailureStatus(e);
             log.error("Error while converting messages: {}", failure.toString());
             return failure;
         }
-        return sink.push(new Records(records));
+        return sink.push(new Records(records, pollTime));
     }
 
     public void close() {

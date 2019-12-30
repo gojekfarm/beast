@@ -46,7 +46,6 @@ public class GCSwriterTest extends BaseBQTest {
     @Before
     public void setUp() {
         nowMillis = Instant.now().toEpochMilli();
-        when(clock.currentEpochMillis()).thenReturn(nowMillis);
         errorWriter = new GCSErrorWriter(gcsStoreMock, "test-bucket", "test-integ-beast");
     }
 

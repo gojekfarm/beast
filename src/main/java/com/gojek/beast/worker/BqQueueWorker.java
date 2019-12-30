@@ -69,6 +69,7 @@ public class BqQueueWorker extends Worker {
         if (status.isSuccess()) {
             boolean ackStatus = acknowledger.acknowledge(poll.getPartitionsCommitOffset());
             if (ackStatus) {
+                statsClient.timeIt("batch.processing.latency.time,size=" + poll.getRecords().size(), poll.getPolledTime());
                 return new SuccessStatus();
             } else {
                 return new FailureStatus(new OffsetAcknowledgementException("offset acknowledgement failed"));

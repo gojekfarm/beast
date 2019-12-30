@@ -8,9 +8,11 @@ import org.aeonbits.owner.ConfigFactory;
 import org.apache.commons.lang3.StringUtils;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public final class Stats {
     private static final Stats STATS_CLIENT = new Stats();
@@ -46,11 +48,20 @@ public final class Stats {
     }
 
     public void increment(String metric) {
-        this.statsDClient.increment(metric + getDefaultTags());
+        this.statsDClient.increment(metric + defaultTags);
     }
 
     public void gauge(String metric, long delta) {
         this.statsDClient.gauge(metric + defaultTags, delta);
+    }
+
+    List<String> getStatsdDefaultTags(String envTags) {
+        if (envTags == null || envTags.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return Stream.of(envTags.split(","))
+                .filter((str) -> str.split("=").length == 2)
+                .collect(Collectors.toList());
     }
 
     private String getDefaultTags() {
@@ -66,6 +77,7 @@ public final class Stats {
             }
             return "";
         }).filter(s -> !s.isEmpty()).collect(Collectors.toList());
+        tags.addAll(getStatsdDefaultTags(System.getenv("STATSD_TAGS"))); //add statsd default tags supplied
         return "," + StringUtils.join(tags, ",");
     }
 

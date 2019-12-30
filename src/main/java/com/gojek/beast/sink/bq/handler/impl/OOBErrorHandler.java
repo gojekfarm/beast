@@ -7,6 +7,7 @@ import com.gojek.beast.sink.bq.handler.BQInsertionRecordsErrorType;
 import com.gojek.beast.sink.bq.handler.BQErrorHandler;
 import com.gojek.beast.sink.bq.handler.ErrorWriter;
 import com.gojek.beast.sink.bq.handler.WriteStatus;
+import com.gojek.beast.stats.Stats;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -20,6 +21,7 @@ import java.util.Optional;
 public class OOBErrorHandler implements BQErrorHandler {
 
     private final ErrorWriter errorWriter;
+    private final Stats statsClient = Stats.client(); // metrics client
 
     @Override
     public Status handleErrorRecords(Map<Record, List<BQInsertionRecordsErrorType>> records) {
@@ -28,17 +30,22 @@ public class OOBErrorHandler implements BQErrorHandler {
         }
         boolean shouldBatchFail = false;
         final List<Record> recordsToWrite = new ArrayList<>();
+        int invalidRecordsCount = 0;
+        int unKnownErrorRecordsCount = 0;
         for (Record record : records.keySet()) {
             final List<BQInsertionRecordsErrorType> errorTypesForRecord = records.get(record);
             boolean recordHasOutOfBoundsData = false;
-            boolean recordHasInvalidData = false;
             for (final BQInsertionRecordsErrorType errorType : errorTypesForRecord) {
                 switch (errorType) {
                     case OOB: recordHasOutOfBoundsData = true;
                         break;
-                    case INVALID: recordHasInvalidData = true;
+                    case INVALID:
+                        shouldBatchFail = true;
+                        invalidRecordsCount++;
                         break;
-                    case UNKNOWN: shouldBatchFail = true;
+                    case UNKNOWN:
+                        shouldBatchFail = true;
+                        unKnownErrorRecordsCount++;
                         break;
                     default:
                 }
@@ -47,13 +54,12 @@ public class OOBErrorHandler implements BQErrorHandler {
                 //add the record into write list
                 recordsToWrite.add(record);
             }
-            if (recordHasInvalidData) {
-                shouldBatchFail = true;
-            }
         }
         if (shouldBatchFail) {
             //lets not store OOB records as well as the batch contains invalid/schema related errors
             log.info("Batch with records size: {} contains invalid records, marking this batch to fail", records.size());
+            statsClient.gauge("sink.unprocessed.invalid.err.records", invalidRecordsCount);
+            statsClient.gauge("sink.unprocessed.unknown.err.records", unKnownErrorRecordsCount);
             return new WriteStatus(false, Optional.ofNullable(null));
         }
         log.info("Error handler parsed OOB records size {}, handoff to the writer {}", recordsToWrite.size(), errorWriter.getClass().getSimpleName());

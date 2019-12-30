@@ -5,19 +5,26 @@ import lombok.experimental.Delegate;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 
 public class Records implements Iterable<Record> {
     @Delegate
     @Getter
     private final List<Record> records;
+    @Getter
+    private final Instant polledTime; // time when this batch were fetched or created
     private Map<TopicPartition, OffsetAndMetadata> partitionsCommitOffset = new HashMap<>();
 
     public Records(List<Record> records) {
+        this(records, Instant.now());
+    }
+
+    public Records(List<Record> records, Instant polledTime) {
         this.records = records;
+        this.polledTime = polledTime;
     }
 
     public Map<TopicPartition, OffsetAndMetadata> getPartitionsCommitOffset() {
