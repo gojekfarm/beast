@@ -4,7 +4,6 @@ import com.gojek.beast.config.AppConfig;
 import com.gojek.beast.config.BackOffConfig;
 import com.gojek.beast.config.ProtoMappingConfig;
 import com.gojek.beast.factory.BeastFactory;
-import com.gojek.beast.models.ExternalCallException;
 import com.gojek.beast.worker.Worker;
 import com.gojek.beast.worker.WorkerState;
 import lombok.extern.slf4j.Slf4j;
@@ -46,8 +45,6 @@ public class Main {
             log.debug("Joined on all worker threads");
         } catch (InterruptedException e) {
             log.error("Exception::KafkaConsumer and committer join failed: {}", e.getMessage());
-        } catch (ExternalCallException e) {
-            log.error("Exception::BeastFactory creation failed: {}", e.getMessage());
         } finally {
             if (beastFactory != null) {
                 beastFactory.close();

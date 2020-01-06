@@ -6,12 +6,18 @@ import com.gojek.beast.config.ColumnMapping;
 import com.gojek.beast.config.ProtoMappingConfig;
 import com.gojek.beast.converter.ConsumerRecordConverter;
 import com.gojek.beast.converter.RowMapper;
-import com.gojek.beast.models.ExternalCallException;
-import com.gojek.beast.models.UpdateBQTableRequest;
+import com.gojek.beast.exception.BQTableUpdateFailure;
+import com.gojek.beast.exception.BigquerySchemaMappingException;
+import com.gojek.beast.exception.ProtoMappingException;
+import com.gojek.beast.exception.ProtoNotFoundException;
+import com.gojek.beast.models.ProtoField;
 import com.gojek.beast.stats.Stats;
 import com.gojek.de.stencil.StencilClientFactory;
 import com.gojek.de.stencil.client.StencilClient;
 import com.gojek.de.stencil.parser.ProtoParser;
+import com.google.cloud.bigquery.BigQuery;
+import com.google.cloud.bigquery.TableId;
+import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -23,14 +29,18 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
     private final AppConfig appConfig;
     private ConsumerRecordConverter recordConverter;
     private StencilClient stencilClient;
-    private UpdateTableService updateTableService;
+    private Converter protoMappingConverter;
+    private Parser protoMappingParser;
+    private BQClient bqClient;
 
-    public ProtoUpdateListener(ProtoMappingConfig protoMappingConfig, AppConfig appConfig, UpdateTableService updateTableService) throws ExternalCallException {
+    public ProtoUpdateListener(ProtoMappingConfig protoMappingConfig, AppConfig appConfig, Converter protoMappingCoverter, Parser protoMappingParser, BigQuery bqInstance, TableId tableId) {
         super(appConfig.getProtoSchema());
         this.proto = appConfig.getProtoSchema();
         this.protoMappingConfig = protoMappingConfig;
         this.appConfig = appConfig;
-        this.updateTableService = updateTableService;
+        this.protoMappingConverter = protoMappingCoverter;
+        this.protoMappingParser = protoMappingParser;
+        this.bqClient = new BQClient(protoMappingCoverter, protoMappingParser, bqInstance, proto, stencilClient, tableId);
         this.createStencilClient();
         this.setProtoParser(getProtoMapping());
     }
@@ -39,12 +49,16 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
         if (protoMappingConfig.isAutoSchemaUpdateEnabled()) {
             stencilClient = StencilClientFactory.getClient(appConfig.getStencilUrl(), System.getenv(), Stats.client().getStatsDClient(), this);
 
-            log.info("updating bq table at startup", getProto());
+            log.info("updating bq table at startup for proto schema {}", getProto());
             try {
                 updateProtoParser();
-            } catch (ExternalCallException e) {
-                log.warn("Error while updating bigquery table:" + e.getMessage());
+            } catch (ProtoNotFoundException | BigquerySchemaMappingException e) {
+                String errMsg = "Error while updating bigquery table:" + e.getMessage();
+                log.error(errMsg);
+                e.printStackTrace();
+                throw new BQTableUpdateFailure(errMsg);
             }
+
         } else {
             stencilClient = StencilClientFactory.getClient(appConfig.getStencilUrl(), System.getenv(), Stats.client().getStatsDClient());
         }
@@ -55,24 +69,39 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
         log.info("updating bq table as {} proto was updated", getProto());
         try {
             updateProtoParser();
-        } catch (ExternalCallException e) {
-            log.warn("Error while updating bigquery table:" + e.getMessage());
+        } catch (ProtoNotFoundException | BigquerySchemaMappingException e) {
+            String errMsg = "Error while updating bigquery table:" + e.getMessage();
+            log.error(errMsg);
+            e.printStackTrace();
+            throw new BQTableUpdateFailure(errMsg);
         }
     }
 
     // First get latest protomapping, update bq schema, and if all goes fine
     // then only update beast's proto mapping config
-    private void updateProtoParser() throws ExternalCallException {
-        UpdateBQTableRequest request = new UpdateBQTableRequest(appConfig.getGCPProject(), proto, appConfig.getTable(), appConfig.getDataset());
-        String protoMapping = updateTableService.getProtoMappingFromRemoteURL(protoMappingConfig.getProtoColumnMappingURL(), proto);
-        updateTableService.updateBigQuerySchema(protoMappingConfig.getUpdateBQTableURL(), request);
-        protoMappingConfig.setProperty("PROTO_COLUMN_MAPPING", protoMapping);
+    private void updateProtoParser() throws ProtoNotFoundException, BigquerySchemaMappingException {
+        ProtoField protoField = new ProtoField();
+        protoField = protoMappingParser.parseFields(protoField, proto, stencilClient);
+        JsonObject protoMappingJson = protoMappingConverter.generateColumnMappings(protoField.getFields());
+
+        bqClient.upsertTable();
+        protoMappingConfig.setProperty("PROTO_COLUMN_MAPPING", protoMappingJson.toString());
         setProtoParser(protoMappingConfig.getProtoColumnMapping());
     }
 
-    private ColumnMapping getProtoMapping() throws ExternalCallException {
+    private ColumnMapping getProtoMapping() {
         if (protoMappingConfig.getProtoColumnMappingURL() != null) {
-            String protoMapping = updateTableService.getProtoMappingFromRemoteURL(protoMappingConfig.getProtoColumnMappingURL(), proto);
+            ProtoField protoField = new ProtoField();
+            try {
+                protoField = protoMappingParser.parseFields(protoField, proto, stencilClient);
+            } catch (ProtoNotFoundException e) {
+                String errMsg = "Error while generating proto to column mapping:" + e.getMessage();
+                log.error(errMsg);
+                e.printStackTrace();
+                throw new ProtoMappingException(errMsg);
+            }
+            JsonObject protoMappingJson = protoMappingConverter.generateColumnMappings(protoField.getFields());
+            String protoMapping = protoMappingJson.toString();
             protoMappingConfig.setProperty("PROTO_COLUMN_MAPPING", protoMapping);
         }
         return protoMappingConfig.getProtoColumnMapping();

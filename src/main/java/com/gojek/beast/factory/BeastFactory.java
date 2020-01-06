@@ -2,8 +2,9 @@ package com.gojek.beast.factory;
 
 import com.gojek.beast.backoff.BackOff;
 import com.gojek.beast.backoff.ExponentialBackOffProvider;
+import com.gojek.beast.protomapping.Converter;
+import com.gojek.beast.protomapping.Parser;
 import com.gojek.beast.protomapping.ProtoUpdateListener;
-import com.gojek.beast.protomapping.UpdateTableService;
 import com.gojek.beast.commiter.Acknowledger;
 import com.gojek.beast.commiter.OffsetAcknowledger;
 import com.gojek.beast.commiter.OffsetState;
@@ -15,7 +16,6 @@ import com.gojek.beast.config.QueueConfig;
 import com.gojek.beast.consumer.KafkaConsumer;
 import com.gojek.beast.consumer.MessageConsumer;
 import com.gojek.beast.consumer.RebalanceListener;
-import com.gojek.beast.models.ExternalCallException;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.sink.MultiSink;
 import com.gojek.beast.sink.QueueSink;
@@ -74,14 +74,15 @@ public class BeastFactory {
     private MessageConsumer messageConsumer;
     private LinkedBlockingQueue<Records> commitQueue;
 
-    public BeastFactory(AppConfig appConfig, BackOffConfig backOffConfig, ProtoMappingConfig protoMappingConfig, WorkerState workerState) throws ExternalCallException {
+    public BeastFactory(AppConfig appConfig, BackOffConfig backOffConfig, ProtoMappingConfig protoMappingConfig, WorkerState workerState) {
         this.appConfig = appConfig;
         this.partitionsAck = Collections.synchronizedSet(new CopyOnWriteArraySet<>());
         this.readQueue = new LinkedBlockingQueue<>(appConfig.getReadQueueCapacity());
         this.commitQueue = new LinkedBlockingQueue<>(appConfig.getCommitQueueCapacity());
         this.backOffConfig = backOffConfig;
         this.workerState = workerState;
-        this.protoUpdateListener = new ProtoUpdateListener(protoMappingConfig, appConfig, new UpdateTableService());
+        TableId tableId = TableId.of(appConfig.getDataset(), appConfig.getTable());
+        this.protoUpdateListener = new ProtoUpdateListener(protoMappingConfig, appConfig, new Converter(), new Parser(), getBigQueryInstance(), tableId);
     }
 
     public List<Worker> createBqWorkers() {
