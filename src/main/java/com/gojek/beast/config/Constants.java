@@ -13,4 +13,11 @@ public class Constants {
         public static final String COLUMN_MAPPING_CHECK_DUPLICATES = "COLUMN_MAPPING_CHECK_DUPLICATES";
         public static final String RECORD_NAME = "record_name";
     }
+
+    public class ProtobufTypeName {
+        public static final String TIMESTAMP_PROTOBUF_TYPE_NAME = ".google.protobuf.Timestamp";
+        public static final String STRUCT_PROTOBUF_TYPE_NAME = ".google.protobuf.Struct";
+        public static final String DURATION_PROTOBUF_TYPE_NAME = ".google.protobuf.Duration";
+        public static final String DATE_PROTOBUF_TYPE_NAME = ".google.type.Date";
+    }
 }
