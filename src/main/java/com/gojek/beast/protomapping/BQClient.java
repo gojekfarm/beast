@@ -41,7 +41,7 @@ public class BQClient {
         this.protoFieldFactory = protoFieldFactory;
     }
 
-    public void upsertTable() throws ProtoNotFoundException, BigquerySchemaMappingException {
+    public void upsertTable() throws ProtoNotFoundException, BigquerySchemaMappingException, BigQueryException {
         log.info("Upserting Bigquery table");
 
         ProtoField protoField = protoFieldFactory.getProtoField();

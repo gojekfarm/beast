@@ -1,6 +1,7 @@
 package com.gojek.beast.protomapping;
 
 import com.gojek.beast.config.AppConfig;
+import com.gojek.beast.exception.BQTableUpdateFailure;
 import com.gojek.beast.exception.BigquerySchemaMappingException;
 import com.gojek.beast.exception.ProtoNotFoundException;
 import com.gojek.beast.models.BQField;
@@ -91,6 +92,62 @@ public class BQClientTest {
         TableDefinition tableDefinition = getNonPartitionedTableDefinition(bqSchemaFields);
         TableInfo tableInfo = TableInfo.newBuilder(tableId, tableDefinition).build();
         verify(bigquery).create(tableInfo);
+    }
+
+    @Test
+    public void shouldUpdateTableIfTableAlreadyExists() throws ProtoNotFoundException, BigquerySchemaMappingException {
+        System.setProperty("ENABLE_BQ_TABLE_PARTITIONING", "false");
+        appConfig = ConfigFactory.create(AppConfig.class, System.getProperties());
+
+        bqClient = new BQClient(converter, parser, bigquery, protoSchema, tableId, appConfig, protoFieldFactory);
+        bqClient.setStencilClient(stencilClient);
+
+        ProtoField returnedProtoField = new ProtoField();
+        when(protoFieldFactory.getProtoField()).thenReturn(returnedProtoField);
+        returnedProtoField.addField(new ProtoField("test-1", DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT32, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL));
+        returnedProtoField.addField(new ProtoField("test-2", DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL));
+
+        when(parser.parseFields(returnedProtoField, protoSchema, stencilClient)).thenReturn(returnedProtoField);
+        ArrayList<Field> bqSchemaFields = new ArrayList<Field>() {{
+            add(Field.newBuilder("test-1", LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder("test-2", LegacySQLTypeName.STRING).setMode(Field.Mode.NULLABLE).build());
+        }};
+        when(converter.generateBigquerySchema(returnedProtoField)).thenReturn(bqSchemaFields);
+
+        TableDefinition tableDefinition = getNonPartitionedTableDefinition(bqSchemaFields);
+        TableInfo tableInfo = TableInfo.newBuilder(tableId, tableDefinition).build();
+        when(bigquery.create(tableInfo)).thenThrow(new BigQueryException(404, "Table Already Exists"));
+
+        bqClient.upsertTable();
+        verify(bigquery).update(tableInfo);
+    }
+
+    @Test(expected = BigQueryException.class)
+    public void shouldThrowExceptionIfUpdateTableFails() throws ProtoNotFoundException, BigquerySchemaMappingException {
+        System.setProperty("ENABLE_BQ_TABLE_PARTITIONING", "false");
+        appConfig = ConfigFactory.create(AppConfig.class, System.getProperties());
+
+        bqClient = new BQClient(converter, parser, bigquery, protoSchema, tableId, appConfig, protoFieldFactory);
+        bqClient.setStencilClient(stencilClient);
+
+        ProtoField returnedProtoField = new ProtoField();
+        when(protoFieldFactory.getProtoField()).thenReturn(returnedProtoField);
+        returnedProtoField.addField(new ProtoField("test-1", DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT32, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL));
+        returnedProtoField.addField(new ProtoField("test-2", DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL));
+
+        when(parser.parseFields(returnedProtoField, protoSchema, stencilClient)).thenReturn(returnedProtoField);
+        ArrayList<Field> bqSchemaFields = new ArrayList<Field>() {{
+            add(Field.newBuilder("test-1", LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder("test-2", LegacySQLTypeName.STRING).setMode(Field.Mode.NULLABLE).build());
+        }};
+        when(converter.generateBigquerySchema(returnedProtoField)).thenReturn(bqSchemaFields);
+
+        TableDefinition tableDefinition = getNonPartitionedTableDefinition(bqSchemaFields);
+        TableInfo tableInfo = TableInfo.newBuilder(tableId, tableDefinition).build();
+        when(bigquery.create(tableInfo)).thenThrow(new BigQueryException(404, "Table Already Exists"));
+        when(bigquery.update(tableInfo)).thenThrow(new BigQueryException(404, "Failed to update"));
+
+        bqClient.upsertTable();
     }
 
     private TableDefinition getPartitionedTableDefinition(ArrayList<Field> bqSchemaFields) {
