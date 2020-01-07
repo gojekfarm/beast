@@ -26,12 +26,11 @@ public class BQClient {
     private StencilClient stencilClient;
     private TableId tableId;
 
-    public BQClient(Converter converter, Parser parser, BigQuery bigquery, String protoSchema, StencilClient stencilClient, TableId tableId) {
+    public BQClient(Converter converter, Parser parser, BigQuery bigquery, String protoSchema, TableId tableId) {
         this.converter = converter;
         this.parser = parser;
         this.bigquery = bigquery;
         this.protoSchema = protoSchema;
-        this.stencilClient = stencilClient;
         this.tableId = tableId;
     }
 
@@ -58,5 +57,9 @@ public class BQClient {
             }
         }
         log.info("Successfully upserted bigquery table");
+    }
+
+    public void setStencilClient(StencilClient stencilClient) {
+        this.stencilClient = stencilClient;
     }
 }

@@ -43,8 +43,8 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
         this.appConfig = appConfig;
         this.protoMappingConverter = protoMappingConverter;
         this.protoMappingParser = protoMappingParser;
-        this.bqClient = new BQClient(protoMappingConverter, protoMappingParser, bqInstance, proto, stencilClient, tableId);
         this.protoFieldFactory = new ProtoFieldFactory();
+        this.bqClient = new BQClient(protoMappingConverter, protoMappingParser, bqInstance, proto, tableId);
         this.createStencilClient();
         this.setProtoParser(getProtoMapping());
     }
@@ -65,7 +65,7 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
     private void createStencilClient() {
         if (protoMappingConfig.isAutoSchemaUpdateEnabled()) {
             stencilClient = StencilClientFactory.getClient(appConfig.getStencilUrl(), System.getenv(), Stats.client().getStatsDClient(), this);
-
+            this.bqClient.setStencilClient(stencilClient);
             log.info("updating bq table at startup for proto schema {}", getProto());
             try {
                 updateProtoParser();
