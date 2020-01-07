@@ -81,7 +81,8 @@ public class ProtoField {
     }
 
     public boolean isNested() {
-        return fieldProto != null && fieldProto.getAllFields().size() != 0
+        return this.fields != null && fieldProto == null ? this.fields.size() != 0
+                : fieldProto != null && fieldProto.getAllFields().size() != 0
                 &&
                 (
                         type == DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE
