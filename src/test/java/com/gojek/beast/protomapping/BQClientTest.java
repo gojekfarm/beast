@@ -1,7 +1,6 @@
 package com.gojek.beast.protomapping;
 
 import com.gojek.beast.config.AppConfig;
-import com.gojek.beast.exception.BQTableUpdateFailure;
 import com.gojek.beast.exception.BigquerySchemaMappingException;
 import com.gojek.beast.exception.ProtoNotFoundException;
 import com.gojek.beast.models.BQField;
