@@ -89,4 +89,11 @@ public interface AppConfig extends Config {
 
     @Key("GCS_WRITER_PROJECT_NAME")
     String getGcsWriterProject();
+
+    @Key("ENABLE_BQ_TABLE_PARTITIONING")
+    @DefaultValue("false")
+    Boolean isBQTablePartitioningEnabled();
+
+    @Key("BQ_TABLE_PARTITION_KEY")
+    String getBQTablePartitionKey();
 }

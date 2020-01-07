@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class ConverterTest {
 
@@ -277,6 +278,13 @@ public class ConverterTest {
         assertEquals(2, fields.get(2).getSubFields().size());
         assertBqField("duration_seconds", LegacySQLTypeName.INTEGER, Field.Mode.NULLABLE, fields.get(2).getSubFields().get(0));
         assertBqField("duration_nanos", LegacySQLTypeName.INTEGER, Field.Mode.NULLABLE, fields.get(2).getSubFields().get(1));
+    }
+
+
+    @Test
+    public void shouldTestConverterToSchemaForNullFields() throws BigquerySchemaMappingException {
+        List<Field> fields = converter.generateBigquerySchema(null);
+        assertNull(fields);
     }
 
     @Test

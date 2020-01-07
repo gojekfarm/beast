@@ -57,13 +57,6 @@ public class BQField {
         this.subFields = new ArrayList<>();
     }
 
-    private BQField(String name, Field.Mode mode, LegacySQLTypeName type) {
-        this.name = name;
-        this.mode = mode;
-        this.type = type;
-        this.subFields = new ArrayList<>();
-    }
-
     private LegacySQLTypeName getType(ProtoField protoField) throws BigquerySchemaMappingException {
         LegacySQLTypeName typeFromFieldName = FIELD_NAME_TO_BQ_TYPE_MAP.get(protoField.getTypeName());
         if (typeFromFieldName == null) {

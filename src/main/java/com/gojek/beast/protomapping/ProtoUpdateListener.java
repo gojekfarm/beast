@@ -44,7 +44,7 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
         this.protoMappingConverter = protoMappingConverter;
         this.protoMappingParser = protoMappingParser;
         this.protoFieldFactory = new ProtoFieldFactory();
-        this.bqClient = new BQClient(protoMappingConverter, protoMappingParser, bqInstance, proto, tableId);
+        this.bqClient = new BQClient(protoMappingConverter, protoMappingParser, bqInstance, proto, tableId, appConfig, protoFieldFactory);
         this.createStencilClient();
         this.setProtoParser(getProtoMapping());
     }
