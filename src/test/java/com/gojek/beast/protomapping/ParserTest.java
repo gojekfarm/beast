@@ -48,7 +48,7 @@ public class ParserTest {
         }};
         when(stencilClient.getAll()).thenReturn(descriptorMap);
         ProtoField protoField = new ProtoField();
-        protoMappingParser.parseFields(protoField, "com.gojek.beast.TestMessage", stencilClient);
+        protoMappingParser.parseFields(protoField, "com.gojek.beast.TestNestedMessage", stencilClient);
     }
 
     @Test

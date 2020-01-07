@@ -33,7 +33,7 @@ public class ConverterTest {
     }};
 
     @Test
-    public void TestShouldCreateFirstLevelColumnMappingSuccessfully() {
+    public void shouldTestShouldCreateFirstLevelColumnMappingSuccessfully() {
         ProtoField protoField = new ProtoField(new ArrayList<ProtoField>() {{
             add(new ProtoField("order_number", 1));
             add(new ProtoField("order_url", 2));
@@ -55,7 +55,7 @@ public class ConverterTest {
     }
 
     @Test
-    public void TestShouldCreateNestedMapping() {
+    public void shouldTestShouldCreateNestedMapping() {
         ProtoField protoField = new ProtoField(new ArrayList<ProtoField>() {{
             add(new ProtoField("order_number", 1));
             add(new ProtoField("order_url", 2, new ArrayList<ProtoField>() {{
@@ -88,7 +88,7 @@ public class ConverterTest {
     }
 
     @Test
-    public void TestConvertToSchemaSuccessful() throws BigquerySchemaMappingException {
+    public void shouldTestConvertToSchemaSuccessful() throws BigquerySchemaMappingException {
         List<ProtoField> nestedBQFields = new ArrayList<>();
         nestedBQFields.add(new ProtoField("field0_bytes", DescriptorProtos.FieldDescriptorProto.Type.TYPE_BYTES, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL));
         nestedBQFields.add(new ProtoField("field1_string", DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL));
@@ -110,7 +110,7 @@ public class ConverterTest {
     }
 
     @Test
-    public void TestShouldConvertIntegerDataTypes() throws BigquerySchemaMappingException {
+    public void shouldTestShouldConvertIntegerDataTypes() throws BigquerySchemaMappingException {
         List<DescriptorProtos.FieldDescriptorProto.Type> allIntTypes = new ArrayList<DescriptorProtos.FieldDescriptorProto.Type>() {{
             add(DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT64);
             add(DescriptorProtos.FieldDescriptorProto.Type.TYPE_UINT64);
@@ -140,7 +140,7 @@ public class ConverterTest {
     }
 
     @Test
-    public void TestShouldConvertNestedField() throws BigquerySchemaMappingException {
+    public void shouldTestShouldConvertNestedField() throws BigquerySchemaMappingException {
         List<ProtoField> nestedBQFields = new ArrayList<>();
         nestedBQFields.add(new ProtoField("field1_level2_nested", DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL));
         nestedBQFields.add(new ProtoField("field2_level2_nested", DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL));
@@ -169,7 +169,7 @@ public class ConverterTest {
     }
 
     @Test
-    public void TestShouldConvertMultiNestedFields() throws BigquerySchemaMappingException {
+    public void shouldTestShouldConvertMultiNestedFields() throws BigquerySchemaMappingException {
         List<ProtoField> nestedBQFields = new ArrayList<ProtoField>() {{
             add(new ProtoField("field1_level3_nested",
                     DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING,
@@ -223,7 +223,7 @@ public class ConverterTest {
     }
 
     @Test
-    public void TestConvertToSchemaForTimestamp() throws BigquerySchemaMappingException {
+    public void shouldTestConvertToSchemaForTimestamp() throws BigquerySchemaMappingException {
         ProtoField protoField = new ProtoField(new ArrayList<ProtoField>() {{
             add(new ProtoField("field1_timestamp",
                     ".google.protobuf.Timestamp",
@@ -239,7 +239,7 @@ public class ConverterTest {
     }
 
     @Test
-    public void TestConvertToSchemaForSpecialFields() throws BigquerySchemaMappingException {
+    public void shouldTestConvertToSchemaForSpecialFields() throws BigquerySchemaMappingException {
         ProtoField protoField = new ProtoField(new ArrayList<ProtoField>() {{
             add(new ProtoField("field1_struct",
                     ".google.protobuf.Struct",
@@ -280,7 +280,7 @@ public class ConverterTest {
     }
 
     @Test
-    public void TestConvertToSchemaForRepeatedFields() throws BigquerySchemaMappingException {
+    public void shouldTestConvertToSchemaForRepeatedFields() throws BigquerySchemaMappingException {
         ProtoField protoField = new ProtoField(new ArrayList<ProtoField>() {{
             add(new ProtoField("field1_map",
                     DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT32,

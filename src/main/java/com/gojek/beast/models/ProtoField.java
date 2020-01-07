@@ -81,13 +81,13 @@ public class ProtoField {
     }
 
     public boolean isNested() {
-        return this.fields != null ? this.fields.size() != 0
-                : fieldProto != null && fieldProto.getAllFields().size() != 0 &&
+        return fieldProto != null && fieldProto.getAllFields().size() != 0
+                &&
                 (
-                        type == DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE &&
-                                !fieldProto.getTypeName().equals(".google.protobuf.Timestamp") &&
-                                !fieldProto.getTypeName().equals(".google.protobuf.Struct") &&
-                                !fieldProto.getTypeName().equals(".google.type.Date")
+                        type == DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE
+                                && !fieldProto.getTypeName().equals(".google.protobuf.Timestamp")
+                                && !fieldProto.getTypeName().equals(".google.protobuf.Struct")
+                                && !fieldProto.getTypeName().equals(".google.type.Date")
                 );
     }
 
@@ -97,12 +97,12 @@ public class ProtoField {
 
     @Override
     public String toString() {
-        return "{" +
-                "name='" + name + '\'' +
-                ", type=" + type +
-                ", len=" + fields.size() +
-                ", nested=" + Arrays.toString(fields.toArray()) +
-                '}';
+        return "{"
+                + "name='" + name + '\''
+                + ", type=" + type
+                + ", len=" + fields.size()
+                + ", nested=" + Arrays.toString(fields.toArray())
+                + '}';
     }
 
     public List<ProtoField> getFields() {

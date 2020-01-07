@@ -11,12 +11,14 @@ import com.gojek.beast.exception.BigquerySchemaMappingException;
 import com.gojek.beast.exception.ProtoMappingException;
 import com.gojek.beast.exception.ProtoNotFoundException;
 import com.gojek.beast.models.ProtoField;
+import com.gojek.beast.models.ProtoFieldFactory;
 import com.gojek.beast.stats.Stats;
 import com.gojek.de.stencil.StencilClientFactory;
 import com.gojek.de.stencil.client.StencilClient;
 import com.gojek.de.stencil.parser.ProtoParser;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.TableId;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,17 +34,32 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
     private Converter protoMappingConverter;
     private Parser protoMappingParser;
     private BQClient bqClient;
+    private ProtoFieldFactory protoFieldFactory;
 
-    public ProtoUpdateListener(ProtoMappingConfig protoMappingConfig, AppConfig appConfig, Converter protoMappingCoverter, Parser protoMappingParser, BigQuery bqInstance, TableId tableId) {
+    public ProtoUpdateListener(ProtoMappingConfig protoMappingConfig, AppConfig appConfig, Converter protoMappingConverter, Parser protoMappingParser, BigQuery bqInstance, TableId tableId) {
         super(appConfig.getProtoSchema());
         this.proto = appConfig.getProtoSchema();
         this.protoMappingConfig = protoMappingConfig;
         this.appConfig = appConfig;
-        this.protoMappingConverter = protoMappingCoverter;
+        this.protoMappingConverter = protoMappingConverter;
         this.protoMappingParser = protoMappingParser;
-        this.bqClient = new BQClient(protoMappingCoverter, protoMappingParser, bqInstance, proto, stencilClient, tableId);
+        this.bqClient = new BQClient(protoMappingConverter, protoMappingParser, bqInstance, proto, stencilClient, tableId);
+        this.protoFieldFactory = new ProtoFieldFactory();
         this.createStencilClient();
         this.setProtoParser(getProtoMapping());
+    }
+
+    @VisibleForTesting
+    public ProtoUpdateListener(ProtoMappingConfig protoMappingConfig, AppConfig appConfig, StencilClient stencilClient, Converter protoMappingConverter, Parser protoMappingParser, BQClient bqClient, ProtoFieldFactory protoFieldFactory) {
+        super(appConfig.getProtoSchema());
+        this.proto = appConfig.getProtoSchema();
+        this.protoMappingConfig = protoMappingConfig;
+        this.appConfig = appConfig;
+        this.stencilClient = stencilClient;
+        this.protoMappingConverter = protoMappingConverter;
+        this.protoMappingParser = protoMappingParser;
+        this.bqClient = bqClient;
+        this.protoFieldFactory = protoFieldFactory;
     }
 
     private void createStencilClient() {
@@ -80,7 +97,7 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
     // First get latest protomapping, update bq schema, and if all goes fine
     // then only update beast's proto mapping config
     private void updateProtoParser() throws ProtoNotFoundException, BigquerySchemaMappingException {
-        ProtoField protoField = new ProtoField();
+        ProtoField protoField = protoFieldFactory.getProtoField();
         protoField = protoMappingParser.parseFields(protoField, proto, stencilClient);
         JsonObject protoMappingJson = protoMappingConverter.generateColumnMappings(protoField.getFields());
 

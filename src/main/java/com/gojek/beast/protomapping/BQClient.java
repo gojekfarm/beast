@@ -5,7 +5,14 @@ import com.gojek.beast.exception.ProtoNotFoundException;
 import com.gojek.beast.models.BQField;
 import com.gojek.beast.models.ProtoField;
 import com.gojek.de.stencil.client.StencilClient;
-import com.google.cloud.bigquery.*;
+import com.google.cloud.bigquery.BigQuery;
+import com.google.cloud.bigquery.BigQueryException;
+import com.google.cloud.bigquery.Schema;
+import com.google.cloud.bigquery.Field;
+import com.google.cloud.bigquery.TableId;
+import com.google.cloud.bigquery.TableDefinition;
+import com.google.cloud.bigquery.StandardTableDefinition;
+import com.google.cloud.bigquery.TableInfo;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
