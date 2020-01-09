@@ -69,18 +69,18 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
     private void createStencilClient() {
         if (protoMappingConfig.isAutoSchemaUpdateEnabled()) {
             stencilClient = StencilClientFactory.getClient(stencilConfig.getStencilUrl(), System.getenv(), Stats.client().getStatsDClient(), this);
-            log.info("updating bq table at startup for proto schema {}", getProto());
-            try {
-                updateProtoParser();
-            } catch (ProtoNotFoundException | BQSchemaMappingException e) {
-                String errMsg = "Error while updating bigquery table:" + e.getMessage();
-                log.error(errMsg);
-                e.printStackTrace();
-                throw new BQTableUpdateFailure(errMsg);
-            }
-
         } else {
             stencilClient = StencilClientFactory.getClient(stencilConfig.getStencilUrl(), System.getenv(), Stats.client().getStatsDClient());
+        }
+
+        log.info("updating bq table at startup for proto schema {}", getProto());
+        try {
+            updateProtoParser();
+        } catch (ProtoNotFoundException | BQSchemaMappingException e) {
+            String errMsg = "Error while updating bigquery table:" + e.getMessage();
+            log.error(errMsg);
+            e.printStackTrace();
+            throw new BQTableUpdateFailure(errMsg);
         }
     }
 

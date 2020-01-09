@@ -96,10 +96,6 @@ public class BQField {
         return name;
     }
 
-    public Field.Mode getMode() {
-        return mode;
-    }
-
     public LegacySQLTypeName getType() {
         return type;
     }
