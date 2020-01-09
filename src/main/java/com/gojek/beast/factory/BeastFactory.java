@@ -2,17 +2,19 @@ package com.gojek.beast.factory;
 
 import com.gojek.beast.backoff.BackOff;
 import com.gojek.beast.backoff.ExponentialBackOffProvider;
+import com.gojek.beast.config.AppConfig;
+import com.gojek.beast.config.BQConfig;
+import com.gojek.beast.config.BackOffConfig;
+import com.gojek.beast.config.StencilConfig;
+import com.gojek.beast.config.ProtoMappingConfig;
+import com.gojek.beast.config.QueueConfig;
+import com.gojek.beast.config.KafkaConfig;
 import com.gojek.beast.protomapping.Converter;
 import com.gojek.beast.protomapping.Parser;
 import com.gojek.beast.protomapping.ProtoUpdateListener;
 import com.gojek.beast.commiter.Acknowledger;
 import com.gojek.beast.commiter.OffsetAcknowledger;
 import com.gojek.beast.commiter.OffsetState;
-import com.gojek.beast.config.AppConfig;
-import com.gojek.beast.config.BackOffConfig;
-import com.gojek.beast.config.KafkaConfig;
-import com.gojek.beast.config.ProtoMappingConfig;
-import com.gojek.beast.config.QueueConfig;
 import com.gojek.beast.consumer.KafkaConsumer;
 import com.gojek.beast.consumer.MessageConsumer;
 import com.gojek.beast.consumer.RebalanceListener;
@@ -65,7 +67,6 @@ public class BeastFactory {
     private final WorkerState workerState;
     private final ProtoUpdateListener protoUpdateListener;
     private AppConfig appConfig;
-    private ProtoMappingConfig protoMappingConfig;
     private KafkaConsumer kafkaConsumer;
     private OffsetCommitWorker committer;
     private Set<Map<TopicPartition, OffsetAndMetadata>> partitionsAck;
@@ -73,16 +74,17 @@ public class BeastFactory {
     private MultiSink multiSink;
     private MessageConsumer messageConsumer;
     private LinkedBlockingQueue<Records> commitQueue;
+    private BQConfig bqConfig;
 
-    public BeastFactory(AppConfig appConfig, BackOffConfig backOffConfig, ProtoMappingConfig protoMappingConfig, WorkerState workerState) {
+    public BeastFactory(AppConfig appConfig, BackOffConfig backOffConfig, StencilConfig stencilConfig, BQConfig bqConfig, ProtoMappingConfig protoMappingConfig, WorkerState workerState) {
         this.appConfig = appConfig;
         this.partitionsAck = Collections.synchronizedSet(new CopyOnWriteArraySet<>());
         this.readQueue = new LinkedBlockingQueue<>(appConfig.getReadQueueCapacity());
         this.commitQueue = new LinkedBlockingQueue<>(appConfig.getCommitQueueCapacity());
         this.backOffConfig = backOffConfig;
         this.workerState = workerState;
-        TableId tableId = TableId.of(appConfig.getDataset(), appConfig.getTable());
-        this.protoUpdateListener = new ProtoUpdateListener(protoMappingConfig, appConfig, new Converter(), new Parser(), getBigQueryInstance(), tableId);
+        this.protoUpdateListener = new ProtoUpdateListener(protoMappingConfig, stencilConfig, bqConfig, new Converter(), new Parser(), getBigQueryInstance());
+        this.bqConfig = bqConfig;
     }
 
     public List<Worker> createBqWorkers() {
@@ -100,7 +102,7 @@ public class BeastFactory {
         BigQuery bq = getBigQueryInstance();
         BQResponseParser responseParser = new BQResponseParser();
         BQErrorHandler bqErrorHandler = createOOBErrorHandler();
-        Sink bqSink = new BqSink(bq, TableId.of(appConfig.getDataset(), appConfig.getTable()), responseParser, bqErrorHandler);
+        Sink bqSink = new BqSink(bq, TableId.of(bqConfig.getDataset(), bqConfig.getTable()), responseParser, bqErrorHandler);
         return new RetrySink(bqSink, new ExponentialBackOffProvider(backOffConfig.getExponentialBackoffInitialTimeInMs(), backOffConfig.getExponentialBackoffMaximumTimeInMs(), backOffConfig.getExponentialBackoffRate(), new BackOff()), appConfig.getMaxPushAttempts());
     }
 
@@ -118,7 +120,7 @@ public class BeastFactory {
     private BigQuery getBigQueryInstance() {
         return BigQueryOptions.newBuilder()
                 .setCredentials(getGoogleCredentials())
-                .setProjectId(appConfig.getGCPProject())
+                .setProjectId(bqConfig.getGCPProject())
                 .build().getService();
     }
 
@@ -131,7 +133,7 @@ public class BeastFactory {
 
     private GoogleCredentials getGoogleCredentials() {
         GoogleCredentials credentials = null;
-        File credentialsPath = new File(appConfig.getGoogleCredentials());
+        File credentialsPath = new File(bqConfig.getGoogleCredentials());
         try (FileInputStream serviceAccountStream = new FileInputStream(credentialsPath)) {
             credentials = ServiceAccountCredentials.fromStream(serviceAccountStream);
         } catch (IOException e) {

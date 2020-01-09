@@ -1,5 +1,6 @@
 package com.gojek.beast.models;
 
+import com.gojek.beast.config.Constants;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.DescriptorProtos;
 
@@ -74,22 +75,22 @@ public class ProtoField {
     }
 
     @VisibleForTesting
-    public ProtoField(String name, int index, List<ProtoField> fields) {
+    public ProtoField(String name, String typeName, DescriptorProtos.FieldDescriptorProto.Type type, int index, List<ProtoField> fields) {
         this.name = name;
+        this.typeName = typeName;
+        this.type = type;
         this.fields = fields;
         this.index = index;
     }
 
     public boolean isNested() {
-        return this.fields != null && fieldProto == null ? this.fields.size() != 0
-                : fieldProto != null && fieldProto.getAllFields().size() != 0
-                &&
-                (
-                        type == DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE
-                                && !fieldProto.getTypeName().equals(".google.protobuf.Timestamp")
-                                && !fieldProto.getTypeName().equals(".google.protobuf.Struct")
-                                && !fieldProto.getTypeName().equals(".google.type.Date")
-                );
+        if (this.typeName != null && !this.typeName.equals("")) {
+            return !typeName.equals(Constants.ProtobufTypeName.TIMESTAMP_PROTOBUF_TYPE_NAME)
+                    && !typeName.equals(Constants.ProtobufTypeName.STRUCT_PROTOBUF_TYPE_NAME)
+                    && !typeName.equals(Constants.ProtobufTypeName.DATE_PROTOBUF_TYPE_NAME)
+                    && type == DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE;
+        }
+        return type == DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE;
     }
 
     public void addField(ProtoField field) {

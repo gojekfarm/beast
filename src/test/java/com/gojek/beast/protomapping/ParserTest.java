@@ -5,10 +5,7 @@ import com.gojek.beast.TestNestedMessage;
 import com.gojek.beast.exception.ProtoNotFoundException;
 import com.gojek.beast.models.ProtoField;
 import com.gojek.de.stencil.client.StencilClient;
-import com.google.protobuf.DescriptorProtos;
-import com.google.protobuf.Descriptors;
-import com.google.protobuf.Duration;
-import com.google.protobuf.Struct;
+import com.google.protobuf.*;
 import com.google.type.Date;
 import org.junit.Before;
 import org.junit.Test;
@@ -59,6 +56,7 @@ public class ParserTest {
         fileDescriptors.add(Duration.getDescriptor().getFile());
         fileDescriptors.add(Date.getDescriptor().getFile());
         fileDescriptors.add(Struct.getDescriptor().getFile());
+        fileDescriptors.add(Timestamp.getDescriptor().getFile());
 
         Map<String, Descriptors.Descriptor> descriptorMap = getDescriptors(fileDescriptors);
 
@@ -122,7 +120,7 @@ public class ParserTest {
         assertField(fields.get(12), "properties", DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL, 13);
         assertField(fields.get(13), "order_date", DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL, 14);
 
-        assertEquals(".google.protobuf.Duration", fields.get(10).getTypeName());
+        assertEquals(String.format(".%s", Duration.getDescriptor().getFullName()), fields.get(10).getTypeName());
         assertEquals(2, fields.get(10).getFields().size());
         assertField(fields.get(10).getFields().get(0), "seconds", DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT64, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL, 1);
         assertField(fields.get(10).getFields().get(1), "nanos", DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT32, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL, 2);

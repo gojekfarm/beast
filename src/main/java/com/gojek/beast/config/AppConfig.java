@@ -7,9 +7,6 @@ public interface AppConfig extends Config {
     @DefaultValue("9223372036854775807")
     Long getConsumerPollTimeoutMs();
 
-    @Key("STENCIL_URL")
-    String getStencilUrl();
-
     @Key("READ_QUEUE_CAPACITY")
     @DefaultValue("20")
     Integer getReadQueueCapacity();
@@ -25,21 +22,6 @@ public interface AppConfig extends Config {
     @Key("BQ_WORKER_POOL_SIZE")
     @DefaultValue("5")
     Integer getBqWorkerPoolSize();
-
-    @Key("PROTO_SCHEMA")
-    String getProtoSchema();
-
-    @Key("BQ_TABLE_NAME")
-    String getTable();
-
-    @Key("BQ_PROJECT_NAME")
-    String getGCPProject();
-
-    @Key("BQ_DATASET_NAME")
-    String getDataset();
-
-    @Key("GOOGLE_CREDENTIALS")
-    String getGoogleCredentials();
 
     @Key("KAFKA_CONSUMER_CONFIG_PREFIX")
     @DefaultValue("KAFKA_CONSUMER")
@@ -89,11 +71,4 @@ public interface AppConfig extends Config {
 
     @Key("GCS_WRITER_PROJECT_NAME")
     String getGcsWriterProject();
-
-    @Key("ENABLE_BQ_TABLE_PARTITIONING")
-    @DefaultValue("false")
-    Boolean isBQTablePartitioningEnabled();
-
-    @Key("BQ_TABLE_PARTITION_KEY")
-    String getBQTablePartitionKey();
 }

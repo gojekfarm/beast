@@ -2,7 +2,10 @@ package com.gojek.beast.config;
 
 import org.aeonbits.owner.Config;
 
-public interface BqConfig extends Config {
+public interface BQConfig extends Config {
+    @Key("BQ_PROJECT_NAME")
+    String getGCPProject();
+
     @Key("BQ_TABLE_NAME")
     String getTable();
 
@@ -11,4 +14,11 @@ public interface BqConfig extends Config {
 
     @Key("GOOGLE_CREDENTIALS")
     String getGoogleCredentials();
+
+    @Key("ENABLE_BQ_TABLE_PARTITIONING")
+    @DefaultValue("false")
+    Boolean isBQTablePartitioningEnabled();
+
+    @Key("BQ_TABLE_PARTITION_KEY")
+    String getBQTablePartitionKey();
 }

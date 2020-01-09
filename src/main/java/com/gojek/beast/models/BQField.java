@@ -1,6 +1,7 @@
 package com.gojek.beast.models;
 
-import com.gojek.beast.exception.BigquerySchemaMappingException;
+import com.gojek.beast.config.Constants;
+import com.gojek.beast.exception.BQSchemaMappingException;
 import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.FieldList;
 import com.google.cloud.bigquery.LegacySQLTypeName;
@@ -45,24 +46,25 @@ public class BQField {
     }};
 
     private static final Map<String, LegacySQLTypeName> FIELD_NAME_TO_BQ_TYPE_MAP = new HashMap<String, LegacySQLTypeName>() {{
-        put(".google.protobuf.Timestamp", LegacySQLTypeName.TIMESTAMP);
-        put(".google.protobuf.Struct", LegacySQLTypeName.STRING);
-        put(".google.protobuf.Duration", LegacySQLTypeName.RECORD);
+        put(Constants.ProtobufTypeName.TIMESTAMP_PROTOBUF_TYPE_NAME, LegacySQLTypeName.TIMESTAMP);
+        put(Constants.ProtobufTypeName.STRUCT_PROTOBUF_TYPE_NAME, LegacySQLTypeName.STRING);
+        put(Constants.ProtobufTypeName.DURATION_PROTOBUF_TYPE_NAME, LegacySQLTypeName.RECORD);
+        put(Constants.ProtobufTypeName.DATE_PROTOBUF_TYPE_NAME, LegacySQLTypeName.STRING);
     }};
 
-    public BQField(ProtoField protoField) throws BigquerySchemaMappingException {
+    public BQField(ProtoField protoField) throws BQSchemaMappingException {
         this.name = protoField.getName();
         this.mode = FIELD_LABEL_TO_BQ_MODE_MAP.get(protoField.getLabel());
         this.type = getType(protoField);
         this.subFields = new ArrayList<>();
     }
 
-    private LegacySQLTypeName getType(ProtoField protoField) throws BigquerySchemaMappingException {
+    private LegacySQLTypeName getType(ProtoField protoField) throws BQSchemaMappingException {
         LegacySQLTypeName typeFromFieldName = FIELD_NAME_TO_BQ_TYPE_MAP.get(protoField.getTypeName());
         if (typeFromFieldName == null) {
             LegacySQLTypeName typeFromFieldType = FIELD_TYPE_TO_BQ_TYPE_MAP.get(protoField.getType());
             if (typeFromFieldType == null) {
-                throw new BigquerySchemaMappingException(String.format("No type mapping found for field: %s, fieldType: %s, typeName: %s", protoField.getName(), protoField.getType(), protoField.getTypeName()));
+                throw new BQSchemaMappingException(String.format("No type mapping found for field: %s, fieldType: %s, typeName: %s", protoField.getName(), protoField.getType(), protoField.getTypeName()));
             }
             return typeFromFieldType;
         }
@@ -71,11 +73,11 @@ public class BQField {
 
     public static final List<Field> getMetadataFields() {
         return new ArrayList<Field>() {{
-            Field.newBuilder("message_offset", LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build();
-            Field.newBuilder("message_topic", LegacySQLTypeName.STRING).setMode(Field.Mode.NULLABLE).build();
-            Field.newBuilder("load_time", LegacySQLTypeName.TIMESTAMP).setMode(Field.Mode.NULLABLE).build();
-            Field.newBuilder("message_timestamp", LegacySQLTypeName.TIMESTAMP).setMode(Field.Mode.NULLABLE).build();
-            Field.newBuilder("message_partition", LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build();
+            add(Field.newBuilder(Constants.OFFSET_COLUMN_NAME, LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder(Constants.TOPIC_COLUMN_NAME, LegacySQLTypeName.STRING).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder(Constants.LOAD_TIME_COLUMN_NAME, LegacySQLTypeName.TIMESTAMP).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder(Constants.TIMESTAMP_COLUMN_NAME, LegacySQLTypeName.TIMESTAMP).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder(Constants.PARTITION_COLUMN_NAME, LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
         }};
     }
 

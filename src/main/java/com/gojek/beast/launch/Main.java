@@ -3,6 +3,8 @@ package com.gojek.beast.launch;
 import com.gojek.beast.config.AppConfig;
 import com.gojek.beast.config.BackOffConfig;
 import com.gojek.beast.config.ProtoMappingConfig;
+import com.gojek.beast.config.StencilConfig;
+import com.gojek.beast.config.BQConfig;
 import com.gojek.beast.factory.BeastFactory;
 import com.gojek.beast.worker.Worker;
 import com.gojek.beast.worker.WorkerState;
@@ -18,11 +20,13 @@ public class Main {
         AppConfig appConfig = ConfigFactory.create(AppConfig.class, System.getenv());
         ProtoMappingConfig protoMappingConfig = ConfigFactory.create(ProtoMappingConfig.class, System.getenv());
         BackOffConfig backOffConfig = ConfigFactory.create(BackOffConfig.class, System.getenv());
+        StencilConfig stencilConfig = ConfigFactory.create(StencilConfig.class, System.getenv());
+        BQConfig bqConfig = ConfigFactory.create(BQConfig.class, System.getenv());
         WorkerState workerState = new WorkerState();
 
         BeastFactory beastFactory = null;
         try {
-            beastFactory = new BeastFactory(appConfig, backOffConfig, protoMappingConfig, workerState);
+            beastFactory = new BeastFactory(appConfig, backOffConfig, stencilConfig, bqConfig, protoMappingConfig, workerState);
 
             Worker consumerThread = beastFactory.createConsumerWorker();
             consumerThread.start();

@@ -1,6 +1,7 @@
 package com.gojek.beast.protomapping;
 
-import com.gojek.beast.exception.BigquerySchemaMappingException;
+import com.gojek.beast.config.Constants;
+import com.gojek.beast.exception.BQSchemaMappingException;
 import com.gojek.beast.models.BQField;
 import com.gojek.beast.models.ProtoField;
 import com.google.cloud.bigquery.Field;
@@ -20,7 +21,7 @@ public class Converter {
         fields.stream().forEach(field -> {
             if (field.isNested()) {
                 JsonObject innerJSONValue = generateColumnMappings(field.getFields());
-                innerJSONValue.addProperty("record_name", field.getName());
+                innerJSONValue.addProperty(Constants.Config.RECORD_NAME, field.getName());
 
                 Gson gson = new Gson();
                 json.add(String.valueOf(field.getIndex()), gson.fromJson(innerJSONValue.toString(), JsonElement.class));
@@ -31,7 +32,7 @@ public class Converter {
         return json;
     }
 
-    public List<Field> generateBigquerySchema(ProtoField protoField) throws BigquerySchemaMappingException {
+    public List<Field> generateBigquerySchema(ProtoField protoField) throws BQSchemaMappingException {
         if (protoField == null) {
             return null;
         }
