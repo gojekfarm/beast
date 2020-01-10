@@ -2,22 +2,24 @@ package com.gojek.beast.protomapping;
 
 import com.gojek.beast.config.BQConfig;
 import com.gojek.beast.config.Constants;
-import com.gojek.beast.exception.BQSchemaMappingException;
-import com.gojek.beast.exception.ProtoNotFoundException;
-import com.gojek.beast.models.BQField;
-import com.gojek.beast.models.ProtoField;
-import com.gojek.beast.models.ProtoFieldFactory;
-import com.gojek.de.stencil.client.StencilClient;
-import com.google.cloud.bigquery.*;
-import com.google.protobuf.DescriptorProtos;
-import org.aeonbits.owner.ConfigFactory;
+import com.gojek.beast.sink.bq.BQClient;
+import com.google.cloud.bigquery.BigQuery;
+import com.google.cloud.bigquery.Field;
+import com.google.cloud.bigquery.LegacySQLTypeName;
+import com.google.cloud.bigquery.TableDefinition;
+import com.google.cloud.bigquery.TableId;
+import com.google.cloud.bigquery.TableInfo;
+import com.google.cloud.bigquery.BigQueryException;
+import com.google.cloud.bigquery.DatasetInfo;
+import com.google.cloud.bigquery.TimePartitioning;
+import com.google.cloud.bigquery.Schema;
+import com.google.cloud.bigquery.StandardTableDefinition;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -31,7 +33,7 @@ public class BQClientTest {
     private BQClient bqClient;
 
     @Test
-    public void shouldCreateBigqueryTableWithPartition() throws ProtoNotFoundException, BQSchemaMappingException {
+    public void shouldIgnoreExceptionIfDatasetAlreadyExists() {
         when(bqConfig.isBQTablePartitioningEnabled()).thenReturn(true);
         when(bqConfig.getBQTablePartitionKey()).thenReturn("partition_column");
         when(bqConfig.getTable()).thenReturn("bq-table");
@@ -40,7 +42,36 @@ public class BQClientTest {
 
         ArrayList<Field> bqSchemaFields = new ArrayList<Field>() {{
             add(Field.newBuilder("test-1", LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
-            add(Field.newBuilder("test-2", LegacySQLTypeName.STRING).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder("partition_column", LegacySQLTypeName.TIMESTAMP).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder(Constants.OFFSET_COLUMN_NAME, LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder(Constants.TOPIC_COLUMN_NAME, LegacySQLTypeName.STRING).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder(Constants.LOAD_TIME_COLUMN_NAME, LegacySQLTypeName.TIMESTAMP).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder(Constants.TIMESTAMP_COLUMN_NAME, LegacySQLTypeName.TIMESTAMP).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder(Constants.PARTITION_COLUMN_NAME, LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
+        }};
+
+        TableDefinition tableDefinition = getPartitionedTableDefinition(bqSchemaFields);
+        TableId tableId = TableId.of(bqConfig.getDataset(), bqConfig.getTable());
+        TableInfo tableInfo = TableInfo.newBuilder(tableId, tableDefinition).build();
+
+        when(bigquery.create(DatasetInfo.of(tableId.getDataset()))).thenThrow(new BigQueryException(404, "Dataset Already Exists"));
+
+        bqClient.upsertTable(bqSchemaFields);
+
+        verify(bigquery).create(tableInfo);
+    }
+
+    @Test
+    public void shouldCreateBigqueryTableWithPartition() {
+        when(bqConfig.isBQTablePartitioningEnabled()).thenReturn(true);
+        when(bqConfig.getBQTablePartitionKey()).thenReturn("partition_column");
+        when(bqConfig.getTable()).thenReturn("bq-table");
+        when(bqConfig.getDataset()).thenReturn("bq-proto");
+        bqClient = new BQClient(bigquery, bqConfig);
+
+        ArrayList<Field> bqSchemaFields = new ArrayList<Field>() {{
+            add(Field.newBuilder("test-1", LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder("partition_column", LegacySQLTypeName.TIMESTAMP).setMode(Field.Mode.NULLABLE).build());
             add(Field.newBuilder(Constants.OFFSET_COLUMN_NAME, LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
             add(Field.newBuilder(Constants.TOPIC_COLUMN_NAME, LegacySQLTypeName.STRING).setMode(Field.Mode.NULLABLE).build());
             add(Field.newBuilder(Constants.LOAD_TIME_COLUMN_NAME, LegacySQLTypeName.TIMESTAMP).setMode(Field.Mode.NULLABLE).build());
@@ -54,11 +85,12 @@ public class BQClientTest {
 
         TableId tableId = TableId.of(bqConfig.getDataset(), bqConfig.getTable());
         TableInfo tableInfo = TableInfo.newBuilder(tableId, tableDefinition).build();
+        verify(bigquery).create(DatasetInfo.of(tableId.getDataset()));
         verify(bigquery).create(tableInfo);
     }
 
     @Test
-    public void shouldCreateBigqueryTableWithoutPartition() throws ProtoNotFoundException, BQSchemaMappingException {
+    public void shouldCreateBigqueryTableWithoutPartition() {
         when(bqConfig.isBQTablePartitioningEnabled()).thenReturn(false);
         when(bqConfig.getTable()).thenReturn("bq-table");
         when(bqConfig.getDataset()).thenReturn("bq-proto");
@@ -74,17 +106,18 @@ public class BQClientTest {
             add(Field.newBuilder(Constants.PARTITION_COLUMN_NAME, LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
         }};
 
-        bqClient.upsertTable(bqSchemaFields);
-
         TableDefinition tableDefinition = getNonPartitionedTableDefinition(bqSchemaFields);
-
         TableId tableId = TableId.of(bqConfig.getDataset(), bqConfig.getTable());
         TableInfo tableInfo = TableInfo.newBuilder(tableId, tableDefinition).build();
+
+        bqClient.upsertTable(bqSchemaFields);
+
+        verify(bigquery).create(DatasetInfo.of(tableId.getDataset()));
         verify(bigquery).create(tableInfo);
     }
 
     @Test
-    public void shouldUpdateTableIfTableAlreadyExists() throws ProtoNotFoundException, BQSchemaMappingException {
+    public void shouldUpdateTableIfTableAlreadyExists() {
         when(bqConfig.isBQTablePartitioningEnabled()).thenReturn(false);
         when(bqConfig.getTable()).thenReturn("bq-table");
         when(bqConfig.getDataset()).thenReturn("bq-proto");
@@ -107,11 +140,12 @@ public class BQClientTest {
         when(bigquery.create(tableInfo)).thenThrow(new BigQueryException(404, "Table Already Exists"));
 
         bqClient.upsertTable(bqSchemaFields);
+        verify(bigquery).create(DatasetInfo.of(tableId.getDataset()));
         verify(bigquery).update(tableInfo);
     }
 
     @Test(expected = BigQueryException.class)
-    public void shouldThrowExceptionIfUpdateTableFails() throws ProtoNotFoundException, BQSchemaMappingException {
+    public void shouldThrowExceptionIfUpdateTableFails() {
         when(bqConfig.isBQTablePartitioningEnabled()).thenReturn(false);
         when(bqConfig.getTable()).thenReturn("bq-table");
         when(bqConfig.getDataset()).thenReturn("bq-proto");
@@ -135,6 +169,7 @@ public class BQClientTest {
         when(bigquery.update(tableInfo)).thenThrow(new BigQueryException(404, "Failed to update"));
 
         bqClient.upsertTable(bqSchemaFields);
+        verify(bigquery).create(DatasetInfo.of(tableId.getDataset()));
     }
 
     private TableDefinition getPartitionedTableDefinition(ArrayList<Field> bqSchemaFields) {

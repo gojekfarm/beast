@@ -2,6 +2,7 @@ package com.gojek.beast.models;
 
 import com.gojek.beast.config.Constants;
 import com.gojek.beast.exception.BQSchemaMappingException;
+import com.gojek.beast.stats.Stats;
 import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.FieldList;
 import com.google.cloud.bigquery.LegacySQLTypeName;
@@ -17,6 +18,7 @@ public class BQField {
     private Field.Mode mode;
     private LegacySQLTypeName type;
     private List<Field> subFields;
+    private Stats statsClient = Stats.client();
 
     private static final Map<DescriptorProtos.FieldDescriptorProto.Label, Field.Mode> FIELD_LABEL_TO_BQ_MODE_MAP = new HashMap<DescriptorProtos.FieldDescriptorProto.Label, Field.Mode>() {{
         put(DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL, Field.Mode.NULLABLE);
@@ -52,18 +54,19 @@ public class BQField {
         put(Constants.ProtobufTypeName.DATE_PROTOBUF_TYPE_NAME, LegacySQLTypeName.STRING);
     }};
 
-    public BQField(ProtoField protoField) throws BQSchemaMappingException {
+    public BQField(ProtoField protoField) {
         this.name = protoField.getName();
         this.mode = FIELD_LABEL_TO_BQ_MODE_MAP.get(protoField.getLabel());
         this.type = getType(protoField);
         this.subFields = new ArrayList<>();
     }
 
-    private LegacySQLTypeName getType(ProtoField protoField) throws BQSchemaMappingException {
+    private LegacySQLTypeName getType(ProtoField protoField) {
         LegacySQLTypeName typeFromFieldName = FIELD_NAME_TO_BQ_TYPE_MAP.get(protoField.getTypeName());
         if (typeFromFieldName == null) {
             LegacySQLTypeName typeFromFieldType = FIELD_TYPE_TO_BQ_TYPE_MAP.get(protoField.getType());
             if (typeFromFieldType == null) {
+                statsClient.increment(String.format("proto.bq.typemapping.notfound.errors,field=%s,type=%s,typeName=%s", protoField.getName(), protoField.getType(), protoField.getTypeName()));
                 throw new BQSchemaMappingException(String.format("No type mapping found for field: %s, fieldType: %s, typeName: %s", protoField.getName(), protoField.getType(), protoField.getTypeName()));
             }
             return typeFromFieldType;

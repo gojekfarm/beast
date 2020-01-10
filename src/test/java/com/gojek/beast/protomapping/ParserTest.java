@@ -33,13 +33,13 @@ public class ParserTest {
     }
 
     @Test(expected = ProtoNotFoundException.class)
-    public void shouldThrowExceptionIfProtoNotFound() throws ProtoNotFoundException {
+    public void shouldThrowExceptionIfProtoNotFound() {
         when(stencilClient.getAll()).thenReturn(new HashMap<>());
         protoMappingParser.parseFields(null, "beast.proto.shema", stencilClient);
     }
 
     @Test(expected = ProtoNotFoundException.class)
-    public void shouldThrowExceptionIfNestedProtoNotFound() throws ProtoNotFoundException {
+    public void shouldThrowExceptionIfNestedProtoNotFound() {
         Map<String, Descriptors.Descriptor> descriptorMap = new HashMap<String, Descriptors.Descriptor>() {{
             put("com.gojek.beast.TestMessage", TestMessage.getDescriptor());
         }};
@@ -49,7 +49,7 @@ public class ParserTest {
     }
 
     @Test
-    public void shouldParseProtoSchemaForNonNestedFields() throws ProtoNotFoundException {
+    public void shouldParseProtoSchemaForNonNestedFields() {
         ArrayList<Descriptors.FileDescriptor> fileDescriptors = new ArrayList<>();
 
         fileDescriptors.add(TestMessage.getDescriptor().getFile());
@@ -67,7 +67,7 @@ public class ParserTest {
     }
 
     @Test
-    public void shouldParseProtoSchemaForNestedFields() throws ProtoNotFoundException {
+    public void shouldParseProtoSchemaForNestedFields() {
         ArrayList<Descriptors.FileDescriptor> fileDescriptors = new ArrayList<>();
 
         fileDescriptors.add(TestMessage.getDescriptor().getFile());

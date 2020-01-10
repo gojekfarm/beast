@@ -2,10 +2,10 @@ package com.gojek.beast.protomapping;
 
 import com.gojek.beast.config.*;
 import com.gojek.beast.exception.BQTableUpdateFailure;
-import com.gojek.beast.exception.BQSchemaMappingException;
 import com.gojek.beast.exception.ProtoNotFoundException;
 import com.gojek.beast.models.ProtoField;
 import com.gojek.beast.models.ProtoFieldFactory;
+import com.gojek.beast.sink.bq.BQClient;
 import com.gojek.de.stencil.client.StencilClient;
 import com.google.cloud.bigquery.BigQueryException;
 import com.google.cloud.bigquery.Field;
@@ -50,7 +50,7 @@ public class ProtoUpdateListenerTest {
     }
 
     @Test
-    public void shouldUseNewSchemaIfProtoChanges() throws ProtoNotFoundException, BQSchemaMappingException {
+    public void shouldUseNewSchemaIfProtoChanges() {
         ProtoField returnedProtoField = new ProtoField();
         when(protoFieldFactory.getProtoField()).thenReturn(returnedProtoField);
         returnedProtoField.addField(new ProtoField("test-1", 1));
@@ -87,7 +87,7 @@ public class ProtoUpdateListenerTest {
     }
 
     @Test(expected = BQTableUpdateFailure.class)
-    public void shouldThrowExceptionIfParserFails() throws ProtoNotFoundException {
+    public void shouldThrowExceptionIfParserFails() {
         ProtoField returnedProtoField = new ProtoField();
         when(protoFieldFactory.getProtoField()).thenReturn(returnedProtoField);
         returnedProtoField.addField(new ProtoField("test-1", 1));
@@ -99,7 +99,7 @@ public class ProtoUpdateListenerTest {
     }
 
     @Test(expected = BQTableUpdateFailure.class)
-    public void shouldThrowExceptionIfConverterFails() throws ProtoNotFoundException, BQSchemaMappingException {
+    public void shouldThrowExceptionIfConverterFails() {
         ProtoField returnedProtoField = new ProtoField();
         when(protoFieldFactory.getProtoField()).thenReturn(returnedProtoField);
         returnedProtoField.addField(new ProtoField("test-1", 1));

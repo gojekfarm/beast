@@ -1,7 +1,6 @@
 package com.gojek.beast.protomapping;
 
 import com.gojek.beast.config.Constants;
-import com.gojek.beast.exception.BQSchemaMappingException;
 import com.gojek.beast.models.ProtoField;
 import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.LegacySQLTypeName;
@@ -90,7 +89,7 @@ public class ConverterTest {
     }
 
     @Test
-    public void shouldTestConvertToSchemaSuccessful() throws BQSchemaMappingException {
+    public void shouldTestConvertToSchemaSuccessful() {
         List<ProtoField> nestedBQFields = new ArrayList<>();
         nestedBQFields.add(new ProtoField("field0_bytes", DescriptorProtos.FieldDescriptorProto.Type.TYPE_BYTES, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL));
         nestedBQFields.add(new ProtoField("field1_string", DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL));
@@ -112,7 +111,7 @@ public class ConverterTest {
     }
 
     @Test
-    public void shouldTestShouldConvertIntegerDataTypes() throws BQSchemaMappingException {
+    public void shouldTestShouldConvertIntegerDataTypes() {
         List<DescriptorProtos.FieldDescriptorProto.Type> allIntTypes = new ArrayList<DescriptorProtos.FieldDescriptorProto.Type>() {{
             add(DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT64);
             add(DescriptorProtos.FieldDescriptorProto.Type.TYPE_UINT64);
@@ -142,7 +141,7 @@ public class ConverterTest {
     }
 
     @Test
-    public void shouldTestShouldConvertNestedField() throws BQSchemaMappingException {
+    public void shouldTestShouldConvertNestedField() {
         List<ProtoField> nestedBQFields = new ArrayList<>();
         nestedBQFields.add(new ProtoField("field1_level2_nested", DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL));
         nestedBQFields.add(new ProtoField("field2_level2_nested", DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL));
@@ -172,7 +171,7 @@ public class ConverterTest {
     }
 
     @Test
-    public void shouldTestShouldConvertMultiNestedFields() throws BQSchemaMappingException {
+    public void shouldTestShouldConvertMultiNestedFields() {
         List<ProtoField> nestedBQFields = new ArrayList<ProtoField>() {{
             add(new ProtoField("field1_level3_nested",
                     DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING,
@@ -229,7 +228,7 @@ public class ConverterTest {
     }
 
     @Test
-    public void shouldTestConvertToSchemaForTimestamp() throws BQSchemaMappingException {
+    public void shouldTestConvertToSchemaForTimestamp() {
         ProtoField protoField = new ProtoField(new ArrayList<ProtoField>() {{
             add(new ProtoField("field1_timestamp",
                     Constants.ProtobufTypeName.TIMESTAMP_PROTOBUF_TYPE_NAME,
@@ -244,7 +243,7 @@ public class ConverterTest {
     }
 
     @Test
-    public void shouldTestConvertToSchemaForSpecialFields() throws BQSchemaMappingException {
+    public void shouldTestConvertToSchemaForSpecialFields() {
         ProtoField protoField = new ProtoField(new ArrayList<ProtoField>() {{
             add(new ProtoField("field1_struct",
                     Constants.ProtobufTypeName.STRUCT_PROTOBUF_TYPE_NAME,
@@ -255,7 +254,7 @@ public class ConverterTest {
                     DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL));
 
             add(new ProtoField("field3_duration",
-                    "." +com.google.protobuf.Duration.getDescriptor().getFullName(),
+                    "." + com.google.protobuf.Duration.getDescriptor().getFullName(),
                     DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE,
                     DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL,
                     new ArrayList<ProtoField>() {
@@ -272,7 +271,7 @@ public class ConverterTest {
                     }));
 
             add(new ProtoField("field3_date",
-                    "." +com.google.type.Date.getDescriptor().getFullName(),
+                    "." + com.google.type.Date.getDescriptor().getFullName(),
                     DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE,
                     DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL,
                     new ArrayList<ProtoField>() {
@@ -308,13 +307,13 @@ public class ConverterTest {
 
 
     @Test
-    public void shouldTestConverterToSchemaForNullFields() throws BQSchemaMappingException {
+    public void shouldTestConverterToSchemaForNullFields() {
         List<Field> fields = converter.generateBigquerySchema(null);
         assertNull(fields);
     }
 
     @Test
-    public void shouldTestConvertToSchemaForRepeatedFields() throws BQSchemaMappingException {
+    public void shouldTestConvertToSchemaForRepeatedFields() {
         ProtoField protoField = new ProtoField(new ArrayList<ProtoField>() {{
             add(new ProtoField("field1_map",
                     DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT32,

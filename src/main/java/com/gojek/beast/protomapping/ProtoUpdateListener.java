@@ -14,6 +14,7 @@ import com.gojek.beast.exception.ProtoNotFoundException;
 import com.gojek.beast.models.BQField;
 import com.gojek.beast.models.ProtoField;
 import com.gojek.beast.models.ProtoFieldFactory;
+import com.gojek.beast.sink.bq.BQClient;
 import com.gojek.beast.stats.Stats;
 import com.gojek.de.stencil.StencilClientFactory;
 import com.gojek.de.stencil.client.StencilClient;
@@ -39,6 +40,7 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
     private Parser protoMappingParser;
     private BQClient bqClient;
     private ProtoFieldFactory protoFieldFactory;
+    private Stats statsClient = Stats.client();
 
     public ProtoUpdateListener(ProtoMappingConfig protoMappingConfig, StencilConfig stencilConfig, BQConfig bqConfig, Converter protoMappingConverter, Parser protoMappingParser, BigQuery bqInstance) {
         super(stencilConfig.getProtoSchema());
@@ -93,13 +95,14 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
             String errMsg = "Error while updating bigquery table:" + e.getMessage();
             log.error(errMsg);
             e.printStackTrace();
+            statsClient.increment("bq.table.upsert.failures");
             throw new BQTableUpdateFailure(errMsg);
         }
     }
 
     // First get latest protomapping, update bq schema, and if all goes fine
     // then only update beast's proto mapping config
-    private void updateProtoParser() throws ProtoNotFoundException, BQSchemaMappingException, BigQueryException {
+    private void updateProtoParser() {
         ProtoField protoField = protoFieldFactory.getProtoField();
         protoField = protoMappingParser.parseFields(protoField, proto, stencilClient);
         JsonObject protoMappingJson = protoMappingConverter.generateColumnMappings(protoField.getFields());
