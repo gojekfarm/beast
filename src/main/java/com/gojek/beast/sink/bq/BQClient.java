@@ -36,16 +36,14 @@ public class BQClient {
         TableDefinition tableDefinition = getTableDefinition(schema);
         TableInfo tableInfo = TableInfo.newBuilder(tableID, tableDefinition).build();
 
-        upsertDatasetAndStream(tableInfo);
+        upsertDatasetAndTable(tableInfo);
         statsClient.timeIt("bq.upsert.table.time", start);
         log.info("Successfully upserted bigquery table");
     }
 
-    private void upsertDatasetAndStream(TableInfo tableInfo) {
-        try {
+    private void upsertDatasetAndTable(TableInfo tableInfo) {
+        if (!bigquery.getDataset(tableID.getDataset()).exists()) {
             bigquery.create(DatasetInfo.of(tableID.getDataset()));
-        } catch (BigQueryException e) {
-            log.info("Bigquery dataset already exists, no need to create dataset");
         }
 
         try {

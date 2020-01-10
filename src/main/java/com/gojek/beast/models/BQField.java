@@ -62,14 +62,12 @@ public class BQField {
     }
 
     private LegacySQLTypeName getType(ProtoField protoField) {
-        LegacySQLTypeName typeFromFieldName = FIELD_NAME_TO_BQ_TYPE_MAP.get(protoField.getTypeName());
+        LegacySQLTypeName typeFromFieldName = FIELD_NAME_TO_BQ_TYPE_MAP.get(protoField.getTypeName()) != null
+                ? FIELD_NAME_TO_BQ_TYPE_MAP.get(protoField.getTypeName())
+                : FIELD_TYPE_TO_BQ_TYPE_MAP.get(protoField.getType());
         if (typeFromFieldName == null) {
-            LegacySQLTypeName typeFromFieldType = FIELD_TYPE_TO_BQ_TYPE_MAP.get(protoField.getType());
-            if (typeFromFieldType == null) {
-                statsClient.increment(String.format("proto.bq.typemapping.notfound.errors,field=%s,type=%s,typeName=%s", protoField.getName(), protoField.getType(), protoField.getTypeName()));
-                throw new BQSchemaMappingException(String.format("No type mapping found for field: %s, fieldType: %s, typeName: %s", protoField.getName(), protoField.getType(), protoField.getTypeName()));
-            }
-            return typeFromFieldType;
+            statsClient.increment(String.format("proto.bq.typemapping.notfound.errors,field=%s,type=%s,typeName=%s", protoField.getName(), protoField.getType(), protoField.getTypeName()));
+            throw new BQSchemaMappingException(String.format("No type mapping found for field: %s, fieldType: %s, typeName: %s", protoField.getName(), protoField.getType(), protoField.getTypeName()));
         }
         return typeFromFieldName;
     }

@@ -13,7 +13,9 @@ import com.google.cloud.bigquery.BigQueryException;
 import com.google.cloud.bigquery.DatasetInfo;
 import com.google.cloud.bigquery.TimePartitioning;
 import com.google.cloud.bigquery.Schema;
+import com.google.cloud.bigquery.Dataset;
 import com.google.cloud.bigquery.StandardTableDefinition;
+import com.google.cloud.bigquery.Table;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -30,6 +32,10 @@ public class BQClientTest {
     private BigQuery bigquery;
     @Mock
     private BQConfig bqConfig;
+    @Mock
+    private Dataset dataset;
+    @Mock
+    private Table table;
     private BQClient bqClient;
 
     @Test
@@ -54,10 +60,12 @@ public class BQClientTest {
         TableId tableId = TableId.of(bqConfig.getDataset(), bqConfig.getTable());
         TableInfo tableInfo = TableInfo.newBuilder(tableId, tableDefinition).build();
 
-        when(bigquery.create(DatasetInfo.of(tableId.getDataset()))).thenThrow(new BigQueryException(404, "Dataset Already Exists"));
+        when(bigquery.getDataset(tableId.getDataset())).thenReturn(dataset);
+        when(dataset.exists()).thenReturn(false);
+        when(bigquery.create(tableInfo)).thenReturn(table);
 
         bqClient.upsertTable(bqSchemaFields);
-
+        verify(bigquery).create(DatasetInfo.of(tableId.getDataset()));
         verify(bigquery).create(tableInfo);
     }
 
@@ -78,14 +86,14 @@ public class BQClientTest {
             add(Field.newBuilder(Constants.TIMESTAMP_COLUMN_NAME, LegacySQLTypeName.TIMESTAMP).setMode(Field.Mode.NULLABLE).build());
             add(Field.newBuilder(Constants.PARTITION_COLUMN_NAME, LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
         }};
-
-        bqClient.upsertTable(bqSchemaFields);
-
         TableDefinition tableDefinition = getPartitionedTableDefinition(bqSchemaFields);
-
         TableId tableId = TableId.of(bqConfig.getDataset(), bqConfig.getTable());
         TableInfo tableInfo = TableInfo.newBuilder(tableId, tableDefinition).build();
-        verify(bigquery).create(DatasetInfo.of(tableId.getDataset()));
+        when(bigquery.getDataset(tableId.getDataset())).thenReturn(dataset);
+        when(dataset.exists()).thenReturn(true);
+        when(bigquery.create(tableInfo)).thenReturn(table);
+
+        bqClient.upsertTable(bqSchemaFields);
         verify(bigquery).create(tableInfo);
     }
 
@@ -109,10 +117,12 @@ public class BQClientTest {
         TableDefinition tableDefinition = getNonPartitionedTableDefinition(bqSchemaFields);
         TableId tableId = TableId.of(bqConfig.getDataset(), bqConfig.getTable());
         TableInfo tableInfo = TableInfo.newBuilder(tableId, tableDefinition).build();
+        when(bigquery.getDataset(tableId.getDataset())).thenReturn(dataset);
+        when(dataset.exists()).thenReturn(true);
+        when(bigquery.create(tableInfo)).thenReturn(table);
 
         bqClient.upsertTable(bqSchemaFields);
 
-        verify(bigquery).create(DatasetInfo.of(tableId.getDataset()));
         verify(bigquery).create(tableInfo);
     }
 
@@ -137,10 +147,11 @@ public class BQClientTest {
 
         TableId tableId = TableId.of(bqConfig.getDataset(), bqConfig.getTable());
         TableInfo tableInfo = TableInfo.newBuilder(tableId, tableDefinition).build();
+        when(bigquery.getDataset(tableId.getDataset())).thenReturn(dataset);
+        when(dataset.exists()).thenReturn(true);
         when(bigquery.create(tableInfo)).thenThrow(new BigQueryException(404, "Table Already Exists"));
 
         bqClient.upsertTable(bqSchemaFields);
-        verify(bigquery).create(DatasetInfo.of(tableId.getDataset()));
         verify(bigquery).update(tableInfo);
     }
 
@@ -165,16 +176,18 @@ public class BQClientTest {
 
         TableId tableId = TableId.of(bqConfig.getDataset(), bqConfig.getTable());
         TableInfo tableInfo = TableInfo.newBuilder(tableId, tableDefinition).build();
+        when(bigquery.getDataset(tableId.getDataset())).thenReturn(dataset);
+        when(dataset.exists()).thenReturn(true);
         when(bigquery.create(tableInfo)).thenThrow(new BigQueryException(404, "Table Already Exists"));
         when(bigquery.update(tableInfo)).thenThrow(new BigQueryException(404, "Failed to update"));
 
         bqClient.upsertTable(bqSchemaFields);
-        verify(bigquery).create(DatasetInfo.of(tableId.getDataset()));
     }
 
     private TableDefinition getPartitionedTableDefinition(ArrayList<Field> bqSchemaFields) {
         TimePartitioning.Builder timePartitioningBuilder = TimePartitioning.newBuilder(TimePartitioning.Type.DAY);
-        timePartitioningBuilder.setField(bqConfig.getBQTablePartitionKey());
+        timePartitioningBuilder.setField(bqConfig.getBQTablePartitionKey())
+                .setRequirePartitionFilter(true);
 
         Schema schema = Schema.of(bqSchemaFields);
 
