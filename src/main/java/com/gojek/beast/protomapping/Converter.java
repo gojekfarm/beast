@@ -1,35 +1,47 @@
 package com.gojek.beast.protomapping;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.gojek.beast.config.Constants;
 import com.gojek.beast.exception.BQSchemaMappingException;
 import com.gojek.beast.models.BQField;
 import com.gojek.beast.models.ProtoField;
 import com.google.cloud.bigquery.Field;
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Converter {
-    public JsonObject generateColumnMappings(List<ProtoField> fields) {
-        if (fields.size() == 0) {
-            return new JsonObject();
-        }
-        JsonObject json = new JsonObject();
-        fields.stream().forEach(field -> {
-            if (field.isNested()) {
-                JsonObject innerJSONValue = generateColumnMappings(field.getFields());
-                innerJSONValue.addProperty(Constants.Config.RECORD_NAME, field.getName());
+    private ObjectMapper objectMapper;
 
-                Gson gson = new Gson();
-                json.add(String.valueOf(field.getIndex()), gson.fromJson(innerJSONValue.toString(), JsonElement.class));
+    public Converter() {
+        objectMapper = new ObjectMapper();
+    }
+
+    public String generateColumnMappings(List<ProtoField> fields) throws IOException {
+        ObjectNode objectNode = generateColumnMappingsJson(fields);
+        return objectMapper.writeValueAsString(objectNode);
+    }
+
+    private ObjectNode generateColumnMappingsJson(List<ProtoField> fields) {
+        if (fields.size() == 0) {
+            return JsonNodeFactory.instance.objectNode();
+        }
+
+        ObjectNode objNode = JsonNodeFactory.instance.objectNode();
+        for (ProtoField field : fields) {
+            if (field.isNested()) {
+                ObjectNode innerJSONValue = generateColumnMappingsJson(field.getFields());
+                innerJSONValue.put(Constants.Config.RECORD_NAME, field.getName());
+                objNode.put(String.valueOf(field.getIndex()), innerJSONValue);
             } else {
-                json.addProperty(String.valueOf(field.getIndex()), field.getName());
+                objNode.put(String.valueOf(field.getIndex()), field.getName());
             }
-        });
-        return json;
+        }
+        return objNode;
     }
 
     public List<Field> generateBigquerySchema(ProtoField protoField) throws BQSchemaMappingException {

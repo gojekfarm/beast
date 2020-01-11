@@ -76,7 +76,7 @@ public class BeastFactory {
     private LinkedBlockingQueue<Records> commitQueue;
     private BQConfig bqConfig;
 
-    public BeastFactory(AppConfig appConfig, BackOffConfig backOffConfig, StencilConfig stencilConfig, BQConfig bqConfig, ProtoMappingConfig protoMappingConfig, WorkerState workerState) {
+    public BeastFactory(AppConfig appConfig, BackOffConfig backOffConfig, StencilConfig stencilConfig, BQConfig bqConfig, ProtoMappingConfig protoMappingConfig, WorkerState workerState) throws IOException {
         this.appConfig = appConfig;
         this.bqConfig = bqConfig;
         this.partitionsAck = Collections.synchronizedSet(new CopyOnWriteArraySet<>());

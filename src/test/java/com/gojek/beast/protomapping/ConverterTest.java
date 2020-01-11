@@ -1,15 +1,16 @@
 package com.gojek.beast.protomapping;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.gojek.beast.config.Constants;
 import com.gojek.beast.models.ProtoField;
 import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.LegacySQLTypeName;
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.google.protobuf.DescriptorProtos;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -23,6 +24,7 @@ import static org.junit.Assert.assertNull;
 public class ConverterTest {
 
     private Converter converter = new Converter();
+    private ObjectMapper objectMapper = new ObjectMapper();
 
     private Map<DescriptorProtos.FieldDescriptorProto.Type, LegacySQLTypeName> expectedType = new HashMap<DescriptorProtos.FieldDescriptorProto.Type, LegacySQLTypeName>() {{
         put(DescriptorProtos.FieldDescriptorProto.Type.TYPE_BYTES, LegacySQLTypeName.STRING);
@@ -34,7 +36,7 @@ public class ConverterTest {
     }};
 
     @Test
-    public void shouldTestShouldCreateFirstLevelColumnMappingSuccessfully() {
+    public void shouldTestShouldCreateFirstLevelColumnMappingSuccessfully() throws IOException {
         ProtoField protoField = new ProtoField(new ArrayList<ProtoField>() {{
             add(new ProtoField("order_number", 1));
             add(new ProtoField("order_url", 2));
@@ -43,20 +45,21 @@ public class ConverterTest {
             add(new ProtoField("status", 5));
         }});
 
-        JsonObject expectedMapping = new JsonObject();
-        expectedMapping.addProperty("1", "order_number");
-        expectedMapping.addProperty("2", "order_url");
-        expectedMapping.addProperty("3", "order_details");
-        expectedMapping.addProperty("4", "created_at");
-        expectedMapping.addProperty("5", "status");
+        ObjectNode objNode = JsonNodeFactory.instance.objectNode();
+        objNode.put("1", "order_number");
+        objNode.put("2", "order_url");
+        objNode.put("3", "order_details");
+        objNode.put("4", "created_at");
+        objNode.put("5", "status");
 
-        JsonObject columnMapping = converter.generateColumnMappings(protoField.getFields());
+        String columnMapping = converter.generateColumnMappings(protoField.getFields());
 
-        assertEquals(expectedMapping.toString(), columnMapping.toString());
+        String expectedProtoMapping = objectMapper.writeValueAsString(objNode);
+        assertEquals(expectedProtoMapping, columnMapping);
     }
 
     @Test
-    public void shouldTestShouldCreateNestedMapping() {
+    public void shouldTestShouldCreateNestedMapping() throws IOException {
         ProtoField protoField = new ProtoField(new ArrayList<ProtoField>() {{
             add(new ProtoField("order_number", 1));
             add(new ProtoField("order_url", "some.type.name", DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE, 2, new ArrayList<ProtoField>() {{
@@ -66,26 +69,25 @@ public class ConverterTest {
             add(new ProtoField("order_details", 3));
         }});
 
-        Gson gson = new Gson();
-        JsonObject expectedMapping = new JsonObject();
-        JsonObject innerMapping = new JsonObject();
-        innerMapping.addProperty("1", "host");
-        innerMapping.addProperty("2", "url");
-        innerMapping.addProperty("record_name", "order_url");
-        expectedMapping.addProperty("1", "order_number");
-        expectedMapping.add("2", gson.fromJson(innerMapping.toString(), JsonElement.class));
-        expectedMapping.addProperty("3", "order_details");
+        ObjectNode objNode = JsonNodeFactory.instance.objectNode();
+        ObjectNode innerObjNode = JsonNodeFactory.instance.objectNode();
+        innerObjNode.put("1", "host");
+        innerObjNode.put("2", "url");
+        innerObjNode.put("record_name", "order_url");
+        objNode.put("1", "order_number");
+        objNode.put("2", innerObjNode);
+        objNode.put("3", "order_details");
 
 
-        JsonObject columnMapping = converter.generateColumnMappings(protoField.getFields());
-
-        assertEquals(expectedMapping.toString(), columnMapping.toString());
+        String columnMapping = converter.generateColumnMappings(protoField.getFields());
+        String expectedProtoMapping = objectMapper.writeValueAsString(objNode);
+        assertEquals(expectedProtoMapping, columnMapping);
     }
 
     @Test
-    public void generateColumnMappingsForNoFields() {
-        JsonObject json = converter.generateColumnMappings(new ArrayList<>());
-        assertEquals(json.size(), 0);
+    public void generateColumnMappingsForNoFields() throws IOException {
+        String protoMapping = converter.generateColumnMappings(new ArrayList<>());
+        assertEquals(protoMapping, "{}");
     }
 
     @Test

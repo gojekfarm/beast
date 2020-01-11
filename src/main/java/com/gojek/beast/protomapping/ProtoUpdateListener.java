@@ -23,7 +23,6 @@ import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.BigQueryException;
 import com.google.cloud.bigquery.Field;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -42,7 +41,7 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
     private ProtoFieldFactory protoFieldFactory;
     private Stats statsClient = Stats.client();
 
-    public ProtoUpdateListener(ProtoMappingConfig protoMappingConfig, StencilConfig stencilConfig, BQConfig bqConfig, Converter protoMappingConverter, Parser protoMappingParser, BigQuery bqInstance) {
+    public ProtoUpdateListener(ProtoMappingConfig protoMappingConfig, StencilConfig stencilConfig, BQConfig bqConfig, Converter protoMappingConverter, Parser protoMappingParser, BigQuery bqInstance) throws IOException {
         super(stencilConfig.getProtoSchema());
         this.proto = stencilConfig.getProtoSchema();
         this.protoMappingConfig = protoMappingConfig;
@@ -84,7 +83,7 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
         log.info("updating bq table as {} proto was updated", getProto());
         try {
             updateProtoParser();
-        } catch (ProtoNotFoundException | BQSchemaMappingException | BigQueryException e) {
+        } catch (ProtoNotFoundException | BQSchemaMappingException | BigQueryException | IOException e) {
             String errMsg = "Error while updating bigquery table:" + e.getMessage();
             log.error(errMsg);
             e.printStackTrace();
@@ -95,21 +94,21 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
 
     // First get latest protomapping, update bq schema, and if all goes fine
     // then only update beast's proto mapping config
-    private void updateProtoParser() {
+    private void updateProtoParser() throws IOException {
         ProtoField protoField = protoFieldFactory.getProtoField();
         protoField = protoMappingParser.parseFields(protoField, proto, stencilClient);
-        JsonObject protoMappingJson = protoMappingConverter.generateColumnMappings(protoField.getFields());
+        String protoMappingString = protoMappingConverter.generateColumnMappings(protoField.getFields());
 
         List<Field> bqSchemaFields = protoMappingConverter.generateBigquerySchema(protoField);
         List<Field> bqMetadataFieldsSchema = BQField.getMetadataFields();
         bqSchemaFields.addAll(bqMetadataFieldsSchema);
 
         bqClient.upsertTable(bqSchemaFields);
-        protoMappingConfig.setProperty("PROTO_COLUMN_MAPPING", protoMappingJson.toString());
+        protoMappingConfig.setProperty("PROTO_COLUMN_MAPPING", protoMappingString);
         setProtoParser(protoMappingConfig.getProtoColumnMapping());
     }
 
-    private ColumnMapping getProtoMapping() {
+    private ColumnMapping getProtoMapping() throws IOException {
         ProtoField protoField = new ProtoField();
         try {
             protoField = protoMappingParser.parseFields(protoField, proto, stencilClient);
@@ -119,8 +118,7 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
             e.printStackTrace();
             throw new ProtoMappingException(errMsg);
         }
-        JsonObject protoMappingJson = protoMappingConverter.generateColumnMappings(protoField.getFields());
-        String protoMapping = protoMappingJson.toString();
+        String protoMapping = protoMappingConverter.generateColumnMappings(protoField.getFields());
         protoMappingConfig.setProperty("PROTO_COLUMN_MAPPING", protoMapping);
         return protoMappingConfig.getProtoColumnMapping();
     }

@@ -1,5 +1,8 @@
 package com.gojek.beast.protomapping;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.gojek.beast.config.*;
 import com.gojek.beast.exception.BQTableUpdateFailure;
 import com.gojek.beast.exception.ProtoNotFoundException;
@@ -10,7 +13,6 @@ import com.gojek.de.stencil.client.StencilClient;
 import com.google.cloud.bigquery.BigQueryException;
 import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.LegacySQLTypeName;
-import com.google.gson.JsonObject;
 import org.aeonbits.owner.ConfigFactory;
 import org.junit.Assert;
 import org.junit.Before;
@@ -19,9 +21,12 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doThrow;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ProtoUpdateListenerTest {
@@ -38,6 +43,7 @@ public class ProtoUpdateListenerTest {
     private ProtoUpdateListener protoUpdateListener;
     private ProtoMappingConfig protoMappingConfig;
     private StencilConfig stencilConfig;
+    private ObjectMapper objectMapper;
 
 
     @Before
@@ -47,20 +53,22 @@ public class ProtoUpdateListenerTest {
         stencilConfig = ConfigFactory.create(StencilConfig.class, System.getProperties());
         protoMappingConfig = ConfigFactory.create(ProtoMappingConfig.class, System.getProperties());
         protoUpdateListener = new ProtoUpdateListener(protoMappingConfig, stencilConfig, stencilClient, protoMappingConverter, protoMappingParser, bqInstance, protoFieldFactory);
+        objectMapper = new ObjectMapper();
     }
 
     @Test
-    public void shouldUseNewSchemaIfProtoChanges() {
+    public void shouldUseNewSchemaIfProtoChanges() throws IOException {
         ProtoField returnedProtoField = new ProtoField();
         when(protoFieldFactory.getProtoField()).thenReturn(returnedProtoField);
         returnedProtoField.addField(new ProtoField("test-1", 1));
         returnedProtoField.addField(new ProtoField("test-2", 2));
 
         when(protoMappingParser.parseFields(returnedProtoField, stencilConfig.getProtoSchema(), stencilClient)).thenReturn(returnedProtoField);
-        JsonObject jsonObj = new JsonObject();
-        jsonObj.addProperty("1", "test-1");
-        jsonObj.addProperty("2", "test-2");
-        when(protoMappingConverter.generateColumnMappings(returnedProtoField.getFields())).thenReturn(jsonObj);
+        ObjectNode objNode = JsonNodeFactory.instance.objectNode();
+        objNode.put("1", "test-1");
+        objNode.put("2", "test-2");
+        String expectedProtoMapping = objectMapper.writeValueAsString(objNode);
+        when(protoMappingConverter.generateColumnMappings(returnedProtoField.getFields())).thenReturn(expectedProtoMapping);
 
         ArrayList<Field> returnedSchemaFields = new ArrayList<Field>() {{
             add(Field.newBuilder("test-1", LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
@@ -99,17 +107,18 @@ public class ProtoUpdateListenerTest {
     }
 
     @Test(expected = BQTableUpdateFailure.class)
-    public void shouldThrowExceptionIfConverterFails() {
+    public void shouldThrowExceptionIfConverterFails() throws IOException {
         ProtoField returnedProtoField = new ProtoField();
         when(protoFieldFactory.getProtoField()).thenReturn(returnedProtoField);
         returnedProtoField.addField(new ProtoField("test-1", 1));
         returnedProtoField.addField(new ProtoField("test-2", 2));
 
         when(protoMappingParser.parseFields(returnedProtoField, stencilConfig.getProtoSchema(), stencilClient)).thenReturn(returnedProtoField);
-        JsonObject jsonObj = new JsonObject();
-        jsonObj.addProperty("1", "test-1");
-        jsonObj.addProperty("2", "test-2");
-        when(protoMappingConverter.generateColumnMappings(returnedProtoField.getFields())).thenReturn(jsonObj);
+        ObjectNode objNode = JsonNodeFactory.instance.objectNode();
+        objNode.put("1", "test-1");
+        objNode.put("2", "test-2");
+        String expectedProtoMapping = objectMapper.writeValueAsString(objNode);
+        when(protoMappingConverter.generateColumnMappings(returnedProtoField.getFields())).thenReturn(expectedProtoMapping);
 
         ArrayList<Field> returnedSchemaFields = new ArrayList<Field>() {{
             add(Field.newBuilder("test-1", LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
