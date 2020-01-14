@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package com.gojek.beast;
+package gojek.beast;
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
@@ -21,7 +21,7 @@ message TestMessage {
     string order_url = 2;
     string order_details = 3;
     google.protobuf.Timestamp created_at = 4;
-    com.gojek.beast.Status status = 5;
+    gojek.beast.Status status = 5;
     int64 discount = 6;
     bool success = 7;
     float price = 8;
