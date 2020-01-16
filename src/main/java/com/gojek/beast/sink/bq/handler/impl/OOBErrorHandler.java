@@ -32,12 +32,15 @@ public class OOBErrorHandler implements BQErrorHandler {
         final List<Record> recordsToWrite = new ArrayList<>();
         int invalidRecordsCount = 0;
         int unKnownErrorRecordsCount = 0;
+        int oobErrorRecordsCount = 0;
         for (Record record : records.keySet()) {
             final List<BQInsertionRecordsErrorType> errorTypesForRecord = records.get(record);
             boolean recordHasOutOfBoundsData = false;
             for (final BQInsertionRecordsErrorType errorType : errorTypesForRecord) {
                 switch (errorType) {
-                    case OOB: recordHasOutOfBoundsData = true;
+                    case OOB:
+                        recordHasOutOfBoundsData = true;
+                        oobErrorRecordsCount++;
                         break;
                     case INVALID:
                         shouldBatchFail = true;
@@ -51,6 +54,7 @@ public class OOBErrorHandler implements BQErrorHandler {
                 }
             } //end of for each row
             if (recordHasOutOfBoundsData) {
+                statsClient.gauge("data.error.records,type=oob", oobErrorRecordsCount);
                 //add the record into write list
                 recordsToWrite.add(record);
             }
@@ -58,8 +62,8 @@ public class OOBErrorHandler implements BQErrorHandler {
         if (shouldBatchFail) {
             //lets not store OOB records as well as the batch contains invalid/schema related errors
             log.info("Batch with records size: {} contains invalid records, marking this batch to fail", records.size());
-            statsClient.gauge("sink.unprocessed.invalid.err.records", invalidRecordsCount);
-            statsClient.gauge("sink.unprocessed.unknown.err.records", unKnownErrorRecordsCount);
+            statsClient.gauge("data.error.records,type=invalid", invalidRecordsCount);
+            statsClient.gauge("data.error.records,type=unknown", unKnownErrorRecordsCount);
             return new WriteStatus(false, Optional.ofNullable(null));
         }
         log.info("Error handler parsed OOB records size {}, handoff to the writer {}", recordsToWrite.size(), errorWriter.getClass().getSimpleName());

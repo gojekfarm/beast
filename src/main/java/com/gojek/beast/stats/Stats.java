@@ -1,6 +1,7 @@
 package com.gojek.beast.stats;
 
 import com.gojek.beast.config.AppConfig;
+import com.gojek.beast.config.BQConfig;
 import com.timgroup.statsd.NoOpStatsDClient;
 import com.timgroup.statsd.NonBlockingStatsDClient;
 import com.timgroup.statsd.StatsDClient;
@@ -17,10 +18,12 @@ public final class Stats {
 
     private StatsDClient statsDClient;
     private AppConfig appConfig;
+    private BQConfig bqConfig;
     private String defaultTags;
 
     private Stats() {
         this.appConfig = ConfigFactory.create(AppConfig.class, System.getenv());
+        this.bqConfig = ConfigFactory.create(BQConfig.class, System.getenv());
         this.statsDClient = appConfig.isStatsdEnabled()
                 ? new NonBlockingStatsDClient(appConfig.getStatsdPrefix(), appConfig.getStatsdHost(), appConfig.getStatsdPort())
                 : new NoOpStatsDClient();
@@ -67,6 +70,10 @@ public final class Stats {
             return "";
         }).filter(s -> !s.isEmpty()).collect(Collectors.toList());
         return "," + StringUtils.join(tags, ",");
+    }
+
+    public String getBqTags() {
+        return "table=" + bqConfig.getTable() + ",project=" + bqConfig.getGCPProject();
     }
 
     public void timeIt(String metric, Instant start) {
