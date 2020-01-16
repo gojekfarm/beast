@@ -49,7 +49,7 @@ public class BqQueueWorker extends Worker {
             log.debug("Exception::Failed to poll records from read queue: " + e.getMessage());
             return new FailureStatus(e);
         }
-        statsClient.timeIt("worker.queue.bq.processing", start);
+        statsClient.timeIt("worker.queue.bq.processing.time", start);
         return new SuccessStatus();
     }
 
@@ -57,6 +57,8 @@ public class BqQueueWorker extends Worker {
         Status status;
         try {
             status = sink.push(poll);
+            statsClient.gauge("batch.records.size," + statsClient.getBqTags(), poll.getSize());
+            statsClient.gauge("batch.records.count," + statsClient.getBqTags(), poll.getRecords().size());
         } catch (BigQueryException e) {
             statsClient.increment("worker.queue.bq.errors");
             log.error("Exception::Failed to write to BQ: {}", e.getMessage());
@@ -69,7 +71,7 @@ public class BqQueueWorker extends Worker {
         if (status.isSuccess()) {
             boolean ackStatus = acknowledger.acknowledge(poll.getPartitionsCommitOffset());
             if (ackStatus) {
-                statsClient.timeIt("batch.processing.latency.time,size=" + poll.getRecords().size(), poll.getPolledTime());
+                statsClient.timeIt("batch.processing.latency.time," + statsClient.getBqTags(), poll.getPolledTime());
                 return new SuccessStatus();
             } else {
                 return new FailureStatus(new OffsetAcknowledgementException("offset acknowledgement failed"));

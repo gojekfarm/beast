@@ -40,12 +40,12 @@ public class MessageConsumer {
         Instant startTime = Instant.now();
         ConsumerRecords<byte[], byte[]> messages = kafkaConsumer.poll(timeoutMillis);
         statsClient.gauge("kafkaConsumer.poll.messages", messages.count());
+        statsClient.timeIt("kafkaConsumer.consumption.time", startTime);
         if (messages.isEmpty()) {
             return new SuccessStatus();
         }
         log.info("Pulled {} messages", messages.count());
         Status status = pushToSink(messages, startTime);
-        statsClient.timeIt("kafkaConsumer.consumption.time", startTime);
         return status;
     }
 
@@ -55,7 +55,7 @@ public class MessageConsumer {
             final Instant deSerTime = Instant.now();
             ConsumerRecordConverter recordConverter = this.protoUpdateListener.getProtoParser();
             records = recordConverter.convert(messages);
-            statsClient.timeIt("kafkaConsumer.batch.deserialization.time,size=" + records.size(), deSerTime);
+            statsClient.timeIt("kafkaConsumer.batch.deserialization.time", deSerTime);
         } catch (InvalidProtocolBufferException e) {
             Status failure = new FailureStatus(e);
             log.error("Error while converting messages: {}", failure.toString());
