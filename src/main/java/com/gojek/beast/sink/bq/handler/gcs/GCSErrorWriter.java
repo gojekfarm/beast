@@ -49,7 +49,7 @@ public class GCSErrorWriter implements ErrorWriter {
             log.error("Exception::Failed to write to GCS: {} records size: {}", se, errorRecords.size());
             throw new BQErrorHandlerException(se.getMessage());
         }
-        statsClient.gauge("sink.gcs.push.invalid.records", errorRecords.size());
+        statsClient.gauge("data.error.records,type=oob", errorRecords.size());
         statsClient.timeIt("sink.gcs.push.invalid.time", startTime);
         //alter the insert status - as successful
         return new WriteStatus(true, Optional.ofNullable(null));

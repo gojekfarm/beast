@@ -24,7 +24,7 @@ public class DefaultLogWriter implements ErrorWriter {
             records.forEach(record -> {
                 log.debug("Error record: {} columns: {}", record.getId(), record.getColumns());
             });
-            statsClient.gauge("sink.logwriter.invalid.records", records.size());
+            statsClient.gauge("data.error.records,type=oob", records.size());
         }
         return new WriteStatus(false, Optional.ofNullable(null));
     }

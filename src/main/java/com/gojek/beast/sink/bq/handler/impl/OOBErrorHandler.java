@@ -58,8 +58,8 @@ public class OOBErrorHandler implements BQErrorHandler {
         if (shouldBatchFail) {
             //lets not store OOB records as well as the batch contains invalid/schema related errors
             log.info("Batch with records size: {} contains invalid records, marking this batch to fail", records.size());
-            statsClient.gauge("sink.unprocessed.invalid.err.records", invalidRecordsCount);
-            statsClient.gauge("sink.unprocessed.unknown.err.records", unKnownErrorRecordsCount);
+            statsClient.gauge("data.error.records,type=invalid", invalidRecordsCount);
+            statsClient.gauge("data.error.records,type=unknown", unKnownErrorRecordsCount);
             return new WriteStatus(false, Optional.ofNullable(null));
         }
         log.info("Error handler parsed OOB records size {}, handoff to the writer {}", recordsToWrite.size(), errorWriter.getClass().getSimpleName());

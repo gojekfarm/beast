@@ -44,6 +44,12 @@ public class Records implements Iterable<Record> {
         return partitionsCommitOffset;
     }
 
+    public long getSize() {
+        return records.stream().mapToLong(record -> {
+            return record.getSize();
+        }).sum();
+    }
+
     @Override
     public String toString() {
         return "Records{"

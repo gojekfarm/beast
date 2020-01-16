@@ -55,7 +55,7 @@ public class MessageConsumer {
             final Instant deSerTime = Instant.now();
             ConsumerRecordConverter recordConverter = this.protoUpdateListener.getProtoParser();
             records = recordConverter.convert(messages);
-            statsClient.timeIt("kafkaConsumer.batch.deserialization.time,size=" + records.size(), deSerTime);
+            statsClient.timeIt("kafkaConsumer.batch.deserialization.time", deSerTime);
         } catch (InvalidProtocolBufferException e) {
             Status failure = new FailureStatus(e);
             log.error("Error while converting messages: {}", failure.toString());
