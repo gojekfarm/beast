@@ -60,7 +60,14 @@ public class ParserTest {
 
         Map<String, Descriptors.Descriptor> descriptorMap = getDescriptors(fileDescriptors);
 
+        Map<String, String> typeNameToPackageNameMap = new HashMap<String, String>() {{
+            put(".gojek.beast.TestMessage.CurrentStateEntry", "com.gojek.beast.TestMessage.CurrentStateEntry");
+            put(".google.protobuf.Struct.FieldsEntry", "com.google.protobuf.Struct.FieldsEntry");
+            put(".google.protobuf.Duration", "com.google.protobuf.Duration");
+        }};
+
         when(stencilClient.getAll()).thenReturn(descriptorMap);
+        when(stencilClient.getTypeNameToPackageNameMap()).thenReturn(typeNameToPackageNameMap);
         ProtoField protoField = new ProtoField();
         protoField = protoMappingParser.parseFields(protoField, "com.gojek.beast.TestMessage", stencilClient);
         assertTestMessage(protoField.getFields());
@@ -78,7 +85,15 @@ public class ParserTest {
 
         Map<String, Descriptors.Descriptor> descriptorMap = getDescriptors(fileDescriptors);
 
+        Map<String, String> typeNameToPackageNameMap = new HashMap<String, String>() {{
+            put(".gojek.beast.TestMessage.CurrentStateEntry", "com.gojek.beast.TestMessage.CurrentStateEntry");
+            put(".google.protobuf.Struct.FieldsEntry", "com.google.protobuf.Struct.FieldsEntry");
+            put(".google.protobuf.Duration", "com.google.protobuf.Duration");
+            put(".gojek.beast.TestMessage", "com.gojek.beast.TestMessage");
+        }};
+
         when(stencilClient.getAll()).thenReturn(descriptorMap);
+        when(stencilClient.getTypeNameToPackageNameMap()).thenReturn(typeNameToPackageNameMap);
         ProtoField protoField = new ProtoField();
         protoField = protoMappingParser.parseFields(protoField, "com.gojek.beast.TestNestedMessage", stencilClient);
         assertField(protoField.getFields().get(0), "nested_id", DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL, 1);
