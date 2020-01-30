@@ -4,7 +4,6 @@ import com.gojek.beast.commiter.Acknowledger;
 import com.gojek.beast.config.QueueConfig;
 import com.gojek.beast.sink.bq.handler.impl.BQErrorHandlerException;
 import com.gojek.beast.models.FailureStatus;
-import com.gojek.beast.models.OffsetAcknowledgementException;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
 import com.gojek.beast.models.SuccessStatus;
@@ -70,12 +69,11 @@ public class BqQueueWorker extends Worker {
         }
         if (status.isSuccess()) {
             boolean ackStatus = acknowledger.acknowledge(poll.getPartitionsCommitOffset());
-            if (ackStatus) {
-                statsClient.timeIt("batch.processing.latency.time," + statsClient.getBqTags(), poll.getPolledTime());
-                return new SuccessStatus();
-            } else {
-                return new FailureStatus(new OffsetAcknowledgementException("offset acknowledgement failed"));
+            statsClient.timeIt("batch.processing.latency.time," + statsClient.getBqTags(), poll.getPolledTime());
+            if (!ackStatus) {
+                statsClient.increment("batch.partition.offsets.reprocessed");
             }
+            return new SuccessStatus();
         } else {
             statsClient.increment("worker.queue.bq.push_failure");
             log.error("Failed to push records to sink {}", status.toString());

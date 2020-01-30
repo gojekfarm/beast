@@ -106,7 +106,7 @@ public class BeastFactory {
         BQResponseParser responseParser = new BQResponseParser();
         BQErrorHandler bqErrorHandler = createOOBErrorHandler();
         BQRow recordInserter = new BQRowWithInsertId();
-        if (bqConfig.isBQRowDuplicationEnabled()) {
+        if (!bqConfig.isBQRowInsertIdEnabled()) {
             recordInserter = new BQRowWithoutId();
         }
         Sink bqSink = new BqSink(bq, TableId.of(bqConfig.getDataset(), bqConfig.getTable()), responseParser, bqErrorHandler, recordInserter);

@@ -11,11 +11,11 @@ public class RebalanceListener implements ConsumerRebalanceListener {
 
     @Override
     public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
-        statsClient.increment("rebalalancer.partitions.revoked");
+        statsClient.increment("rebalancer.partitions.revoked");
     }
 
     @Override
     public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
-        statsClient.increment("rebalalancer.partitions.assigned");
+        statsClient.increment("rebalancer.partitions.assigned");
     }
 }

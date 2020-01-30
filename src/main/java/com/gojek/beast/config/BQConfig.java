@@ -22,7 +22,7 @@ public interface BQConfig extends Config {
     @Key("BQ_TABLE_PARTITION_KEY")
     String getBQTablePartitionKey();
 
-    @DefaultValue("false")
-    @Key("ENABLE_BQ_ROW_DUPLICATION")
-    Boolean isBQRowDuplicationEnabled();
+    @DefaultValue("true")
+    @Key("ENABLE_BQ_ROW_INSERTID")
+    Boolean isBQRowInsertIdEnabled();
 }
