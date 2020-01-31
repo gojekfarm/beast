@@ -56,7 +56,7 @@ public class RowMapperTest {
         fieldMappings.put("3", "order_details_field");
         fieldMappings.put("4", "created_at");
         fieldMappings.put("5", "order_status");
-        fieldMappings.put("14", "order_date_field");
+        fieldMappings.put("14", getDateColumnMapping());
 
         Map<String, Object> fields = new RowMapper(fieldMappings).map(dynamicMessage);
 
@@ -65,7 +65,10 @@ public class RowMapperTest {
         assertEquals("order-details", fields.get("order_details_field"));
         assertEquals(new DateTime(nowMillis), fields.get("created_at"));
         assertEquals("COMPLETED", fields.get("order_status"));
-        assertEquals("1996-11-21", fields.get("order_date_field"));
+        Map dateFields = (Map) fields.get("order_date_field");
+        assertEquals(1996, dateFields.get("year"));
+        assertEquals(11, dateFields.get("month"));
+        assertEquals(21, dateFields.get("day"));
         assertEquals(fieldMappings.size(), fields.size());
     }
 
@@ -269,6 +272,15 @@ public class RowMapperTest {
         return nestedMappings;
     }
 
+    private ColumnMapping getDateColumnMapping() {
+        ColumnMapping nestedMappings = new ColumnMapping();
+        nestedMappings.put("record_name", "order_date_field");
+        nestedMappings.put("1", "year");
+        nestedMappings.put("2", "month");
+        nestedMappings.put("3", "day");
+        return nestedMappings;
+    }
+
     @Test()
     public void shouldReturnNullWhenIndexNotPresent() {
         ColumnMapping fieldMappings = new ColumnMapping();
@@ -286,19 +298,6 @@ public class RowMapperTest {
         new RowMapper(null).map(dynamicMessage);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void shouldThrowIllegalArgumentExceptionOnInvalidDate() throws InvalidProtocolBufferException {
-        TestMessage testMessage = TestMessage.newBuilder()
-                .setOrderDate(com.google.type.Date.newBuilder().setYear(1996).setMonth(13).setDay(21))
-                .build();
-        ProtoParser protoParser = new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName());
-        dynamicMessage = protoParser.parse(testMessage.toByteArray());
-        ColumnMapping fieldMappings = new ColumnMapping();
-        fieldMappings.put("14", "order_date_field");
-
-        Map<String, Object> fields = new RowMapper(fieldMappings).map(dynamicMessage);
-    }
-
     @Test
     public void shouldReturnNullWhenNoDateFieldIsProvided() throws InvalidProtocolBufferException {
         TestMessage testMessage = TestMessage.newBuilder()
@@ -306,7 +305,7 @@ public class RowMapperTest {
         ProtoParser protoParser = new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName());
         dynamicMessage = protoParser.parse(testMessage.toByteArray());
         ColumnMapping fieldMappings = new ColumnMapping();
-        fieldMappings.put("14", "order_date_field");
+        fieldMappings.put("14", getDateColumnMapping());
 
         Map<String, Object> fields = new RowMapper(fieldMappings).map(dynamicMessage);
 

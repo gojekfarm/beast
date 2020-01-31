@@ -51,7 +51,6 @@ public class BQField {
         put(Constants.ProtobufTypeName.TIMESTAMP_PROTOBUF_TYPE_NAME, LegacySQLTypeName.TIMESTAMP);
         put(Constants.ProtobufTypeName.STRUCT_PROTOBUF_TYPE_NAME, LegacySQLTypeName.STRING);
         put(Constants.ProtobufTypeName.DURATION_PROTOBUF_TYPE_NAME, LegacySQLTypeName.RECORD);
-        put(Constants.ProtobufTypeName.DATE_PROTOBUF_TYPE_NAME, LegacySQLTypeName.STRING);
     }};
 
     public BQField(ProtoField protoField) {

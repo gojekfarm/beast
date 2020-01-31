@@ -87,7 +87,6 @@ public class ProtoField {
         if (this.typeName != null && !this.typeName.equals("")) {
             return !typeName.equals(Constants.ProtobufTypeName.TIMESTAMP_PROTOBUF_TYPE_NAME)
                     && !typeName.equals(Constants.ProtobufTypeName.STRUCT_PROTOBUF_TYPE_NAME)
-                    && !typeName.equals(Constants.ProtobufTypeName.DATE_PROTOBUF_TYPE_NAME)
                     && type == DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE;
         }
         return type == DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE;

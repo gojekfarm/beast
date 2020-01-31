@@ -9,7 +9,6 @@ import com.gojek.beast.converter.fields.EnumField;
 import com.gojek.beast.converter.fields.NestedField;
 import com.gojek.beast.converter.fields.ProtoField;
 import com.gojek.beast.converter.fields.TimestampField;
-import com.gojek.beast.converter.fields.DateField;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Duration;
@@ -53,15 +52,6 @@ public class FieldFactoryTest {
         ProtoField protoField = FieldFactory.getField(timestampDesc, message.getField(timestampDesc));
 
         assertEquals(TimestampField.class.getName(), protoField.getClass().getName());
-    }
-
-    @Test
-    public void shouldReturnDateField() {
-        Descriptors.FieldDescriptor dateDesc = message.getDescriptorForType().findFieldByNumber(14);
-
-        ProtoField protoField = FieldFactory.getField(dateDesc, message.getField(dateDesc));
-
-        assertEquals(DateField.class.getName(), protoField.getClass().getName());
     }
 
     @Test

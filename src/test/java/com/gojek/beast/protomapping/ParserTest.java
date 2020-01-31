@@ -64,6 +64,7 @@ public class ParserTest {
             put(".gojek.beast.TestMessage.CurrentStateEntry", "com.gojek.beast.TestMessage.CurrentStateEntry");
             put(".google.protobuf.Struct.FieldsEntry", "com.google.protobuf.Struct.FieldsEntry");
             put(".google.protobuf.Duration", "com.google.protobuf.Duration");
+            put(".google.type.Date", "com.google.type.Date");
         }};
 
         when(stencilClient.getAll()).thenReturn(descriptorMap);
@@ -89,6 +90,7 @@ public class ParserTest {
             put(".gojek.beast.TestMessage.CurrentStateEntry", "com.gojek.beast.TestMessage.CurrentStateEntry");
             put(".google.protobuf.Struct.FieldsEntry", "com.google.protobuf.Struct.FieldsEntry");
             put(".google.protobuf.Duration", "com.google.protobuf.Duration");
+            put(".google.type.Date", "com.google.type.Date");
             put(".gojek.beast.TestMessage", "com.gojek.beast.TestMessage");
         }};
 
@@ -139,6 +141,12 @@ public class ParserTest {
         assertEquals(2, fields.get(10).getFields().size());
         assertField(fields.get(10).getFields().get(0), "seconds", DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT64, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL, 1);
         assertField(fields.get(10).getFields().get(1), "nanos", DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT32, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL, 2);
+
+        assertEquals(String.format(".%s", Date.getDescriptor().getFullName()), fields.get(13).getTypeName());
+        assertEquals(3, fields.get(13).getFields().size());
+        assertField(fields.get(13).getFields().get(0), "year", DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT32, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL, 1);
+        assertField(fields.get(13).getFields().get(1), "month", DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT32, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL, 2);
+        assertField(fields.get(13).getFields().get(2), "day", DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT32, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL, 3);
     }
 
     private void assertField(ProtoField field, String name, DescriptorProtos.FieldDescriptorProto.Type ftype, DescriptorProtos.FieldDescriptorProto.Label flabel, int index) {

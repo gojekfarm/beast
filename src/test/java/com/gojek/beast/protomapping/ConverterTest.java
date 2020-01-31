@@ -286,7 +286,7 @@ public class ConverterTest {
                                     DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT32,
                                     DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL));
 
-                            add(new ProtoField("date",
+                            add(new ProtoField("day",
                                     DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT32,
                                     DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL));
 
@@ -301,10 +301,15 @@ public class ConverterTest {
         assertBqField(protoField.getFields().get(0).getName(), LegacySQLTypeName.STRING, Field.Mode.NULLABLE, fields.get(0));
         assertBqField(protoField.getFields().get(1).getName(), LegacySQLTypeName.STRING, Field.Mode.NULLABLE, fields.get(1));
         assertBqField(protoField.getFields().get(2).getName(), LegacySQLTypeName.RECORD, Field.Mode.NULLABLE, fields.get(2));
-        assertBqField(protoField.getFields().get(3).getName(), LegacySQLTypeName.STRING, Field.Mode.NULLABLE, fields.get(3));
+        assertBqField(protoField.getFields().get(3).getName(), LegacySQLTypeName.RECORD, Field.Mode.NULLABLE, fields.get(3));
         assertEquals(2, fields.get(2).getSubFields().size());
         assertBqField("duration_seconds", LegacySQLTypeName.INTEGER, Field.Mode.NULLABLE, fields.get(2).getSubFields().get(0));
         assertBqField("duration_nanos", LegacySQLTypeName.INTEGER, Field.Mode.NULLABLE, fields.get(2).getSubFields().get(1));
+
+        assertEquals(3, fields.get(3).getSubFields().size());
+        assertBqField("year", LegacySQLTypeName.INTEGER, Field.Mode.NULLABLE, fields.get(3).getSubFields().get(0));
+        assertBqField("month", LegacySQLTypeName.INTEGER, Field.Mode.NULLABLE, fields.get(3).getSubFields().get(1));
+        assertBqField("day", LegacySQLTypeName.INTEGER, Field.Mode.NULLABLE, fields.get(3).getSubFields().get(2));
     }
 
 
