@@ -66,7 +66,7 @@ public class BqQueueWorkerTest {
         Thread thread = new Thread(worker);
         thread.start();
 
-        WorkerUtil.closeWorker(worker, 100);
+        WorkerUtil.closeWorker(worker, workerState, 100);
         thread.join();
         verify(successfulSink).push(messages);
     }
@@ -99,7 +99,7 @@ public class BqQueueWorkerTest {
         Thread workerThread = new Thread(worker);
         workerThread.start();
 
-        WorkerUtil.closeWorker(worker, 200);
+        WorkerUtil.closeWorker(worker, workerState, 200);
         workerThread.join();
         verify(successfulSink).push(messages);
         verify(committer).acknowledge(offsetInfos);
@@ -116,7 +116,7 @@ public class BqQueueWorkerTest {
         Thread workerThread = new Thread(worker);
         workerThread.start();
 
-        WorkerUtil.closeWorker(worker, 100);
+        WorkerUtil.closeWorker(worker, workerState, 100);
         workerThread.join();
         verify(failureSink).push(messages);
         verify(committer, never()).acknowledge(any());
