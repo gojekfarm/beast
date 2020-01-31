@@ -25,6 +25,7 @@ import java.util.ArrayList;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.never;
 
 @RunWith(MockitoJUnitRunner.class)
 public class BQClientTest {
@@ -36,6 +37,8 @@ public class BQClientTest {
     private Dataset dataset;
     @Mock
     private Table table;
+    @Mock
+    private TableDefinition mockTableDefinition;
     private BQClient bqClient;
 
     @Test
@@ -62,11 +65,14 @@ public class BQClientTest {
 
         when(bigquery.getDataset(tableId.getDataset())).thenReturn(dataset);
         when(dataset.exists()).thenReturn(false);
+        when(table.exists()).thenReturn(false);
+        when(bigquery.getTable(tableId)).thenReturn(table);
         when(bigquery.create(tableInfo)).thenReturn(table);
 
         bqClient.upsertTable(bqSchemaFields);
         verify(bigquery).create(DatasetInfo.of(tableId.getDataset()));
         verify(bigquery).create(tableInfo);
+        verify(bigquery, never()).update(tableInfo);
     }
 
     @Test
@@ -91,10 +97,13 @@ public class BQClientTest {
         TableInfo tableInfo = TableInfo.newBuilder(tableId, tableDefinition).build();
         when(bigquery.getDataset(tableId.getDataset())).thenReturn(dataset);
         when(dataset.exists()).thenReturn(true);
+        when(table.exists()).thenReturn(false);
+        when(bigquery.getTable(tableId)).thenReturn(table);
         when(bigquery.create(tableInfo)).thenReturn(table);
 
         bqClient.upsertTable(bqSchemaFields);
         verify(bigquery).create(tableInfo);
+        verify(bigquery, never()).update(tableInfo);
     }
 
     @Test
@@ -119,15 +128,19 @@ public class BQClientTest {
         TableInfo tableInfo = TableInfo.newBuilder(tableId, tableDefinition).build();
         when(bigquery.getDataset(tableId.getDataset())).thenReturn(dataset);
         when(dataset.exists()).thenReturn(true);
+        when(table.exists()).thenReturn(false);
+        when(bigquery.getTable(tableId)).thenReturn(table);
+        when(table.exists()).thenReturn(false);
         when(bigquery.create(tableInfo)).thenReturn(table);
 
         bqClient.upsertTable(bqSchemaFields);
 
         verify(bigquery).create(tableInfo);
+        verify(bigquery, never()).update(tableInfo);
     }
 
     @Test
-    public void shouldUpdateTableIfTableAlreadyExists() {
+    public void shouldNotUpdateTableIfTableAlreadyExistsWithSameSchema() {
         when(bqConfig.isBQTablePartitioningEnabled()).thenReturn(false);
         when(bqConfig.getTable()).thenReturn("bq-table");
         when(bqConfig.getDataset()).thenReturn("bq-proto");
@@ -149,9 +162,52 @@ public class BQClientTest {
         TableInfo tableInfo = TableInfo.newBuilder(tableId, tableDefinition).build();
         when(bigquery.getDataset(tableId.getDataset())).thenReturn(dataset);
         when(dataset.exists()).thenReturn(true);
-        when(bigquery.create(tableInfo)).thenThrow(new BigQueryException(404, "Table Already Exists"));
+        when(table.exists()).thenReturn(true);
+        when(bigquery.getTable(tableId)).thenReturn(table);
+        when(table.getDefinition()).thenReturn(mockTableDefinition);
+        when(mockTableDefinition.getSchema()).thenReturn(tableDefinition.getSchema());
+        when(table.exists()).thenReturn(true);
 
         bqClient.upsertTable(bqSchemaFields);
+        verify(bigquery, never()).create(tableInfo);
+        verify(bigquery, never()).update(tableInfo);
+    }
+
+    @Test
+    public void shouldUpdateTableIfTableAlreadyExistsAndSchemaChanges() {
+        when(bqConfig.isBQTablePartitioningEnabled()).thenReturn(false);
+        when(bqConfig.getTable()).thenReturn("bq-table");
+        when(bqConfig.getDataset()).thenReturn("bq-proto");
+        bqClient = new BQClient(bigquery, bqConfig);
+
+        ArrayList<Field> bqSchemaFields = new ArrayList<Field>() {{
+            add(Field.newBuilder("test-1", LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder("test-2", LegacySQLTypeName.STRING).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder(Constants.OFFSET_COLUMN_NAME, LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder(Constants.TOPIC_COLUMN_NAME, LegacySQLTypeName.STRING).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder(Constants.LOAD_TIME_COLUMN_NAME, LegacySQLTypeName.TIMESTAMP).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder(Constants.TIMESTAMP_COLUMN_NAME, LegacySQLTypeName.TIMESTAMP).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder(Constants.PARTITION_COLUMN_NAME, LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
+        }};
+
+        TableDefinition tableDefinition = getNonPartitionedTableDefinition(bqSchemaFields);
+        ArrayList<Field> updatedBQSchemaFields = new ArrayList<>();
+        updatedBQSchemaFields.addAll(bqSchemaFields);
+        updatedBQSchemaFields.add(Field.newBuilder("new-field", LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
+        TableDefinition updatedBQTableDefinition = getNonPartitionedTableDefinition(updatedBQSchemaFields);
+
+        TableId tableId = TableId.of(bqConfig.getDataset(), bqConfig.getTable());
+        TableInfo tableInfo = TableInfo.newBuilder(tableId, updatedBQTableDefinition).build();
+        when(bigquery.getDataset(tableId.getDataset())).thenReturn(dataset);
+        when(dataset.exists()).thenReturn(true);
+        when(table.exists()).thenReturn(true);
+        when(bigquery.getTable(tableId)).thenReturn(table);
+        when(table.getDefinition()).thenReturn(mockTableDefinition);
+        when(mockTableDefinition.getSchema()).thenReturn(tableDefinition.getSchema());
+        when(bigquery.update(tableInfo)).thenReturn(table);
+
+        bqClient.upsertTable(updatedBQSchemaFields);
+        verify(bigquery, never()).create(tableInfo);
         verify(bigquery).update(tableInfo);
     }
 
@@ -160,7 +216,6 @@ public class BQClientTest {
         when(bqConfig.isBQTablePartitioningEnabled()).thenReturn(false);
         when(bqConfig.getTable()).thenReturn("bq-table");
         when(bqConfig.getDataset()).thenReturn("bq-proto");
-        bqClient = new BQClient(bigquery, bqConfig);
 
         ArrayList<Field> bqSchemaFields = new ArrayList<Field>() {{
             add(Field.newBuilder("test-1", LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
@@ -173,15 +228,23 @@ public class BQClientTest {
         }};
 
         TableDefinition tableDefinition = getNonPartitionedTableDefinition(bqSchemaFields);
+        ArrayList<Field> updatedBQSchemaFields = new ArrayList<>();
+        updatedBQSchemaFields.addAll(bqSchemaFields);
+        updatedBQSchemaFields.add(Field.newBuilder("new-field", LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
+        TableDefinition updatedBQTableDefinition = getNonPartitionedTableDefinition(updatedBQSchemaFields);
 
         TableId tableId = TableId.of(bqConfig.getDataset(), bqConfig.getTable());
-        TableInfo tableInfo = TableInfo.newBuilder(tableId, tableDefinition).build();
+        TableInfo tableInfo = TableInfo.newBuilder(tableId, updatedBQTableDefinition).build();
         when(bigquery.getDataset(tableId.getDataset())).thenReturn(dataset);
         when(dataset.exists()).thenReturn(true);
-        when(bigquery.create(tableInfo)).thenThrow(new BigQueryException(404, "Table Already Exists"));
+        when(table.exists()).thenReturn(true);
+        when(bigquery.getTable(tableId)).thenReturn(table);
+        when(table.getDefinition()).thenReturn(mockTableDefinition);
+        when(mockTableDefinition.getSchema()).thenReturn(tableDefinition.getSchema());
         when(bigquery.update(tableInfo)).thenThrow(new BigQueryException(404, "Failed to update"));
 
-        bqClient.upsertTable(bqSchemaFields);
+        bqClient = new BQClient(bigquery, bqConfig);
+        bqClient.upsertTable(updatedBQSchemaFields);
     }
 
     private TableDefinition getPartitionedTableDefinition(ArrayList<Field> bqSchemaFields) {

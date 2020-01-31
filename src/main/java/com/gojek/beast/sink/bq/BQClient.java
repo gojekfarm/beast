@@ -8,6 +8,7 @@ import com.google.cloud.bigquery.BigQueryException;
 import com.google.cloud.bigquery.Schema;
 import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.TableId;
+import com.google.cloud.bigquery.Table;
 import com.google.cloud.bigquery.TableDefinition;
 import com.google.cloud.bigquery.TableInfo;
 import com.google.cloud.bigquery.DatasetInfo;
@@ -46,13 +47,15 @@ public class BQClient {
             bigquery.create(DatasetInfo.of(tableID.getDataset()));
         }
 
-        try {
+        Table table = bigquery.getTable(tableID);
+        if (!table.exists()) {
             bigquery.create(tableInfo);
-        } catch (BigQueryException e) {
-            if (e.getMessage().contains("Already Exists")) {
+        } else {
+            Schema existingSchema = table.getDefinition().getSchema();
+            Schema updatedSchema = tableInfo.getDefinition().getSchema();
+
+            if (!BQUtils.compareBQSchemaFields(existingSchema, updatedSchema)) {
                 bigquery.update(tableInfo);
-            } else {
-                throw e;
             }
         }
     }
