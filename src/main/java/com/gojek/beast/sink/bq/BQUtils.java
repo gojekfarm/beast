@@ -2,11 +2,13 @@ package com.gojek.beast.sink.bq;
 
 import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.Schema;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+@Slf4j
 public class BQUtils {
     /**
      * Compares fieldNames of fields and nested fields in the provided schemas.
@@ -21,7 +23,6 @@ public class BQUtils {
         List<String> updatedSchemaFieldNames = getFieldNames(updatedSchema.getFields(), null);
         Collections.sort(existingSchemaFieldNames);
         Collections.sort(updatedSchemaFieldNames);
-
         return existingSchemaFieldNames.equals(updatedSchemaFieldNames);
     }
 

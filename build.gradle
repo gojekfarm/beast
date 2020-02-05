@@ -42,7 +42,7 @@ dependencies {
     }
 
     compile group: 'org.apache.kafka', name: 'kafka-clients', version: '2.0.0'
-    compile group: 'com.gojek', name: 'stencil', version: '2.0.17'
+    compile group: 'com.gojek', name: 'stencil', version: '3.0.0'
     compile group: 'com.timgroup', name: 'java-statsd-client', version: '3.1.0'
     compile group: 'com.getsentry.raven', name: 'raven', version: '8.0.3'
     compile group: 'com.getsentry.raven', name: 'raven-logback', version: '7.8.0'

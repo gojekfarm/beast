@@ -23,6 +23,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
@@ -63,7 +64,7 @@ public class ProtoUpdateListenerTest {
         returnedProtoField.addField(new ProtoField("test-1", 1));
         returnedProtoField.addField(new ProtoField("test-2", 2));
 
-        when(protoMappingParser.parseFields(returnedProtoField, stencilConfig.getProtoSchema(), stencilClient)).thenReturn(returnedProtoField);
+        when(protoMappingParser.parseFields(returnedProtoField, stencilConfig.getProtoSchema(), new HashMap<>(), new HashMap<>())).thenReturn(returnedProtoField);
         ObjectNode objNode = JsonNodeFactory.instance.objectNode();
         objNode.put("1", "test-1");
         objNode.put("2", "test-2");
@@ -101,7 +102,7 @@ public class ProtoUpdateListenerTest {
         returnedProtoField.addField(new ProtoField("test-1", 1));
         returnedProtoField.addField(new ProtoField("test-2", 2));
 
-        when(protoMappingParser.parseFields(returnedProtoField, stencilConfig.getProtoSchema(), stencilClient)).thenThrow(new ProtoNotFoundException("proto not found"));
+        when(protoMappingParser.parseFields(returnedProtoField, stencilConfig.getProtoSchema(), new HashMap<>(), new HashMap<>())).thenThrow(new ProtoNotFoundException("proto not found"));
 
         protoUpdateListener.onProtoUpdate();
     }
@@ -113,7 +114,7 @@ public class ProtoUpdateListenerTest {
         returnedProtoField.addField(new ProtoField("test-1", 1));
         returnedProtoField.addField(new ProtoField("test-2", 2));
 
-        when(protoMappingParser.parseFields(returnedProtoField, stencilConfig.getProtoSchema(), stencilClient)).thenReturn(returnedProtoField);
+        when(protoMappingParser.parseFields(returnedProtoField, stencilConfig.getProtoSchema(), new HashMap<>(), new HashMap<>())).thenReturn(returnedProtoField);
         ObjectNode objNode = JsonNodeFactory.instance.objectNode();
         objNode.put("1", "test-1");
         objNode.put("2", "test-2");

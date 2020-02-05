@@ -18,7 +18,9 @@ import com.gojek.beast.sink.bq.BQClient;
 import com.gojek.beast.stats.Stats;
 import com.gojek.de.stencil.StencilClientFactory;
 import com.gojek.de.stencil.client.StencilClient;
+import com.gojek.de.stencil.models.DescriptorAndTypeName;
 import com.gojek.de.stencil.parser.ProtoParser;
+import com.gojek.de.stencil.utils.StencilUtils;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.BigQueryException;
 import com.google.cloud.bigquery.Field;
@@ -27,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateListener {
@@ -82,7 +85,7 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
     public void onProtoUpdate() {
         log.info("updating bq table as {} proto was updated", getProto());
         try {
-            updateProtoParser();
+            updateProtoParser(fetchParsedFields());
         } catch (ProtoNotFoundException | BQSchemaMappingException | BigQueryException | IOException e) {
             String errMsg = "Error while updating bigquery table:" + e.getMessage();
             log.error(errMsg);
@@ -92,13 +95,34 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
         }
     }
 
+    @Override
+    public void onProtoUpdate(String url, Map<String, DescriptorAndTypeName> newDescriptors) {
+        log.info("updating bq table as {} proto was updated on callback", getProto());
+        try {
+            final DescriptorAndTypeName newDescriptorAndTypeName = newDescriptors.get(proto);
+            newDescriptorAndTypeName.getDescriptor().getFields();
+            ProtoField protoField = protoFieldFactory.getProtoField();
+            protoField = protoMappingParser.parseFields(protoField, proto, StencilUtils.getAllProtobuffDescriptors(newDescriptors), StencilUtils.getTypeNameToPackageNameMap(newDescriptors));
+            updateProtoParser(protoField);
+        } catch (ProtoNotFoundException | BQSchemaMappingException | BigQueryException | IOException e) {
+            String errMsg = "Error while updating bigquery table on callback:" + e.getMessage();
+            log.error(errMsg);
+            e.printStackTrace();
+            statsClient.increment("bq.table.upsert.failures");
+            throw new BQTableUpdateFailure(errMsg);
+        }
+    }
+
+    private ProtoField fetchParsedFields() {
+        ProtoField protoField = protoFieldFactory.getProtoField();
+        protoField = protoMappingParser.parseFields(protoField, proto, stencilClient.getAll(), stencilClient.getTypeNameToPackageNameMap());
+        return protoField;
+    }
+
     // First get latest protomapping, update bq schema, and if all goes fine
     // then only update beast's proto mapping config
-    private void updateProtoParser() throws IOException {
-        ProtoField protoField = protoFieldFactory.getProtoField();
-        protoField = protoMappingParser.parseFields(protoField, proto, stencilClient);
+    private void updateProtoParser(final ProtoField protoField) throws IOException {
         String protoMappingString = protoMappingConverter.generateColumnMappings(protoField.getFields());
-
         List<Field> bqSchemaFields = protoMappingConverter.generateBigquerySchema(protoField);
         List<Field> bqMetadataFieldsSchema = BQField.getMetadataFields();
         bqSchemaFields.addAll(bqMetadataFieldsSchema);
@@ -111,7 +135,7 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
     private ColumnMapping getProtoMapping() throws IOException {
         ProtoField protoField = new ProtoField();
         try {
-            protoField = protoMappingParser.parseFields(protoField, proto, stencilClient);
+            protoField = protoMappingParser.parseFields(protoField, proto, stencilClient.getAll(), stencilClient.getTypeNameToPackageNameMap());
         } catch (ProtoNotFoundException e) {
             String errMsg = "Error while generating proto to column mapping:" + e.getMessage();
             log.error(errMsg);
