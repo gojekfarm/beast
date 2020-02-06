@@ -34,16 +34,20 @@ public class BqQueueWorkerIntegrationTest {
     private Acknowledger committer;
     @Mock
     private Records messages;
+    private List<WorkerState> workerStates;
     private FailureStatus failureStatus;
 
     @Before
     public void setUp() throws Exception {
         queue = new LinkedBlockingQueue<>();
+        workerStates = new ArrayList<>();
         QueueConfig config = new QueueConfig(1000);
         int totalWorkers = 5;
 
         for (int i = 0; i < totalWorkers; i++) {
-            workers.add(new BqQueueWorker("bq-worker", sink, config, committer, queue, new WorkerState()));
+            WorkerState wState = new WorkerState();
+            workerStates.add(wState);
+            workers.add(new BqQueueWorker("bq-worker", sink, config, committer, queue, wState));
         }
         failureStatus = new FailureStatus(new RuntimeException("BQ Push Failure"));
     }
@@ -54,7 +58,7 @@ public class BqQueueWorkerIntegrationTest {
         when(sink.push(messages)).thenReturn(failureStatus);
         startWorkers(workers);
 
-        Thread closer = WorkerUtil.closeWorkers(workers, 500);
+        Thread closer = WorkerUtil.closeWorkers(workers, workerStates, 500);
         closer.join();
         assertEquals(1, queue.size());
     }
@@ -65,7 +69,7 @@ public class BqQueueWorkerIntegrationTest {
         doThrow(new BigQueryException(10, "failed to push to BQ")).when(sink).push(messages);
         startWorkers(workers);
 
-        Thread closer = WorkerUtil.closeWorkers(workers, 500);
+        Thread closer = WorkerUtil.closeWorkers(workers, workerStates, 500);
         closer.join();
         assertEquals(1, queue.size());
     }

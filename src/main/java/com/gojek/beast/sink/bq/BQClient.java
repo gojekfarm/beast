@@ -8,9 +8,11 @@ import com.google.cloud.bigquery.BigQueryException;
 import com.google.cloud.bigquery.Schema;
 import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.TableId;
+import com.google.cloud.bigquery.Table;
 import com.google.cloud.bigquery.TableDefinition;
 import com.google.cloud.bigquery.TableInfo;
 import com.google.cloud.bigquery.DatasetInfo;
+import com.google.cloud.bigquery.Dataset;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.Instant;
@@ -35,24 +37,27 @@ public class BQClient {
         Schema schema = Schema.of(bqSchemaFields);
         TableDefinition tableDefinition = getTableDefinition(schema);
         TableInfo tableInfo = TableInfo.newBuilder(tableID, tableDefinition).build();
-
         upsertDatasetAndTable(tableInfo);
         statsClient.timeIt("bq.upsert.table.time", start);
-        log.info("Successfully upserted bigquery table");
     }
 
     private void upsertDatasetAndTable(TableInfo tableInfo) {
-        if (!bigquery.getDataset(tableID.getDataset()).exists()) {
+        Dataset dataSet = bigquery.getDataset(tableID.getDataset());
+        if (dataSet == null || !bigquery.getDataset(tableID.getDataset()).exists()) {
             bigquery.create(DatasetInfo.of(tableID.getDataset()));
+            log.info("Successfully created bigquery dataset: {}", tableID.getDataset());
         }
-
-        try {
+        Table table = bigquery.getTable(tableID);
+        if (table == null || !table.exists()) {
             bigquery.create(tableInfo);
-        } catch (BigQueryException e) {
-            if (e.getMessage().contains("Already Exists")) {
+            log.info("Successfully created bigquery table: {}", tableID.getTable());
+        } else {
+            Schema existingSchema = table.getDefinition().getSchema();
+            Schema updatedSchema = tableInfo.getDefinition().getSchema();
+
+            if (!BQUtils.compareBQSchemaFields(existingSchema, updatedSchema)) {
                 bigquery.update(tableInfo);
-            } else {
-                throw e;
+                log.info("Successfully updated bigquery table: {}", tableID.getTable());
             }
         }
     }

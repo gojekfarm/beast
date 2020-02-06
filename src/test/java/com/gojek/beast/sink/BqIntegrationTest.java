@@ -5,7 +5,9 @@ import com.gojek.beast.config.ColumnMapping;
 import com.gojek.beast.converter.ConsumerRecordConverter;
 import com.gojek.beast.converter.Converter;
 import com.gojek.beast.converter.RowMapper;
+import com.gojek.beast.sink.bq.BQRowWithoutId;
 import com.gojek.beast.sink.bq.BaseBQTest;
+import com.gojek.beast.sink.bq.handler.BQRow;
 import com.gojek.beast.sink.bq.handler.gcs.GCSErrorWriter;
 import com.gojek.beast.sink.bq.handler.BQErrorHandler;
 import com.gojek.beast.models.OffsetInfo;
@@ -68,12 +70,14 @@ public class BqIntegrationTest extends BaseBQTest {
     private Blob blobMock;
     private long nowMillis;
     private BQErrorHandler gcsSinkHandler;
+    private BQRow bqRow;
     private String gcsBucket = "test-integ-godata-dlq-beast";
 
     @Before
     public void setUp() throws Exception {
         nowMillis = Instant.now().toEpochMilli();
         when(clock.currentEpochMillis()).thenReturn(nowMillis);
+        bqRow = new BQRowWithoutId();
         ErrorWriter errorWriter = new GCSErrorWriter(gcsStoreMock, "test-integ-godata", "test-integ-godata-dlq/beast");
         gcsSinkHandler = new OOBErrorHandler(errorWriter);
         final BlobId blobId = BlobId.of("test-integ-godata", "test-integ-godata-dlq/beast/testfile");
@@ -100,7 +104,7 @@ public class BqIntegrationTest extends BaseBQTest {
                 .setNestedId("nested-id")
                 .build();
         TableId tableId = TableId.of("bqsinktest", "test_nested_messages");
-        BqSink bqSink = new BqSink(authenticatedBQ(), tableId, new BQResponseParser(), gcsSinkHandler);
+        BqSink bqSink = new BqSink(authenticatedBQ(), tableId, new BQResponseParser(), gcsSinkHandler, bqRow);
 
 
         OffsetInfo offsetInfo = new OffsetInfo("topic", 1, 1, Instant.now().toEpochMilli());
@@ -128,7 +132,7 @@ public class BqIntegrationTest extends BaseBQTest {
                 .build();
 
         TableId tableId = TableId.of("bqsinktest", "nested_messages");
-        BqSink bqSink = new BqSink(authenticatedBQ(), tableId, new BQResponseParser(), gcsSinkHandler);
+        BqSink bqSink = new BqSink(authenticatedBQ(), tableId, new BQResponseParser(), gcsSinkHandler, bqRow);
 
         ColumnMapping columnMapping = new ColumnMapping();
         ColumnMapping nested = new ColumnMapping();
@@ -151,7 +155,7 @@ public class BqIntegrationTest extends BaseBQTest {
     @Test
     public void shouldPushMessagesToBqActual() {
         TableId tableId = TableId.of("bqsinktest", "users");
-        BqSink bqSink = new BqSink(authenticatedBQ(), tableId, new BQResponseParser(), gcsSinkHandler);
+        BqSink bqSink = new BqSink(authenticatedBQ(), tableId, new BQResponseParser(), gcsSinkHandler, bqRow);
 
         HashMap<String, Object> columns = new HashMap<>();
         columns.put("name", "someone_else");
@@ -205,7 +209,7 @@ public class BqIntegrationTest extends BaseBQTest {
         //Insert into BQ
         TableId tableId = TableId.of("playground", "test_nested_messages");
         BQErrorHandler errorHandler = new OOBErrorHandler(new GCSErrorWriter(gcsStore, gcsBucket, "test-integ-beast"));
-        BqSink bqSink = new BqSink(authenticatedBQ(), tableId, new BQResponseParser(), errorHandler);
+        BqSink bqSink = new BqSink(authenticatedBQ(), tableId, new BQResponseParser(), errorHandler, bqRow);
         Status push = bqSink.push(new Records(allRecords));
         assertTrue("Invalid Message should have been inserted into GCS Sink and success status should be true", push.isSuccess());
     }
@@ -230,7 +234,7 @@ public class BqIntegrationTest extends BaseBQTest {
         //Insert into BQ
         TableId tableId = TableId.of("playground", "test_nested_messages");
         BQErrorHandler errorHandler = new OOBErrorHandler(new GCSErrorWriter(gcsStore, gcsBucket, "test-integ-beast"));
-        BqSink bqSink = new BqSink(authenticatedBQ(), tableId, new BQResponseParser(), errorHandler);
+        BqSink bqSink = new BqSink(authenticatedBQ(), tableId, new BQResponseParser(), errorHandler, bqRow);
         Status push = bqSink.push(new Records(validRecords));
         assertTrue("Invalid Message should have been inserted into GCS Sink and success status should be true", push.isSuccess());
     }
@@ -238,7 +242,7 @@ public class BqIntegrationTest extends BaseBQTest {
     @Test
     public void shouldParseAndPushMessagesToBq() throws Exception {
         TableId tableId = TableId.of("bqsinktest", "test_messages");
-        BqSink bqSink = new BqSink(bigQueryMock, tableId, new BQResponseParser(), gcsSinkHandler);
+        BqSink bqSink = new BqSink(bigQueryMock, tableId, new BQResponseParser(), gcsSinkHandler, bqRow);
         String orderNumber = "order-1";
         String orderUrl = "order_url";
         String orderDetails = "order_details";

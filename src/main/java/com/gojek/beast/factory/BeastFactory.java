@@ -23,12 +23,15 @@ import com.gojek.beast.sink.MultiSink;
 import com.gojek.beast.sink.QueueSink;
 import com.gojek.beast.sink.RetrySink;
 import com.gojek.beast.sink.Sink;
+import com.gojek.beast.sink.bq.BQRowWithInsertId;
+import com.gojek.beast.sink.bq.BQRowWithoutId;
 import com.gojek.beast.sink.bq.BqSink;
-import com.gojek.beast.sink.bq.handler.DefaultLogWriter;
-import com.gojek.beast.sink.bq.handler.gcs.GCSErrorWriter;
 import com.gojek.beast.sink.bq.handler.BQErrorHandler;
 import com.gojek.beast.sink.bq.handler.BQResponseParser;
+import com.gojek.beast.sink.bq.handler.BQRow;
 import com.gojek.beast.sink.bq.handler.ErrorWriter;
+import com.gojek.beast.sink.bq.handler.DefaultLogWriter;
+import com.gojek.beast.sink.bq.handler.gcs.GCSErrorWriter;
 import com.gojek.beast.sink.bq.handler.impl.OOBErrorHandler;
 import com.gojek.beast.stats.Stats;
 import com.gojek.beast.worker.BqQueueWorker;
@@ -102,7 +105,11 @@ public class BeastFactory {
         BigQuery bq = getBigQueryInstance();
         BQResponseParser responseParser = new BQResponseParser();
         BQErrorHandler bqErrorHandler = createOOBErrorHandler();
-        Sink bqSink = new BqSink(bq, TableId.of(bqConfig.getDataset(), bqConfig.getTable()), responseParser, bqErrorHandler);
+        BQRow recordInserter = new BQRowWithInsertId();
+        if (!bqConfig.isBQRowInsertIdEnabled()) {
+            recordInserter = new BQRowWithoutId();
+        }
+        Sink bqSink = new BqSink(bq, TableId.of(bqConfig.getDataset(), bqConfig.getTable()), responseParser, bqErrorHandler, recordInserter);
         return new RetrySink(bqSink, new ExponentialBackOffProvider(backOffConfig.getExponentialBackoffInitialTimeInMs(), backOffConfig.getExponentialBackoffMaximumTimeInMs(), backOffConfig.getExponentialBackoffRate(), new BackOff()), appConfig.getMaxPushAttempts());
     }
 

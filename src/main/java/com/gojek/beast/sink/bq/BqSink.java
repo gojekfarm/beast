@@ -1,6 +1,7 @@
 package com.gojek.beast.sink.bq;
 
 import com.gojek.beast.sink.bq.handler.BQInsertionRecordsErrorType;
+import com.gojek.beast.sink.bq.handler.BQRow;
 import com.gojek.beast.sink.bq.handler.BQResponseParser;
 import com.gojek.beast.sink.bq.handler.BQErrorHandler;
 import com.gojek.beast.models.Record;
@@ -29,6 +30,7 @@ public class BqSink implements Sink {
     private final TableId tableId;
     private final BQResponseParser responseParser;
     private final BQErrorHandler errorHandler; // handler instance for BQ related errors
+    private final BQRow recordInserter;
 
     private final Stats statsClient = Stats.client();
 
@@ -59,7 +61,7 @@ public class BqSink implements Sink {
     private InsertAllResponse insertIntoBQ(Records records) {
         Instant start = Instant.now();
         Builder builder = newBuilder(tableId);
-        records.forEach((Record m) -> builder.addRow(RowToInsert.of(m.getId(), m.getColumns())));
+        records.forEach((Record m) -> builder.addRow(recordInserter.of(m)));
         InsertAllRequest rows = builder.build();
         InsertAllResponse response = bigquery.insertAll(rows);
         log.info("Pushing {} records to BQ success?: {}", records.size(), !response.hasErrors());

@@ -1,14 +1,11 @@
 package com.gojek.beast.protomapping;
 
-import com.gojek.de.stencil.client.StencilClient;
 import com.google.protobuf.Descriptors;
 
 import java.util.Map;
 
 public class DescriptorCache {
-    public Descriptors.Descriptor fetch(StencilClient stencilClient, String protoName) {
-        Map<String, Descriptors.Descriptor> allDescriptors = stencilClient.getAll();
-        Map<String, String> typeNameToPackageNameMap = stencilClient.getTypeNameToPackageNameMap();
+    public Descriptors.Descriptor fetch(Map<String, Descriptors.Descriptor> allDescriptors, Map<String, String> typeNameToPackageNameMap, String protoName) {
         if (allDescriptors.get(protoName) != null) {
             return allDescriptors.get(protoName);
         }
