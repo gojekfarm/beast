@@ -32,32 +32,32 @@ public class BQClient {
     }
 
     public void upsertTable(List<Field> bqSchemaFields) throws BigQueryException {
-        log.info("Upserting Bigquery table");
-        Instant start = Instant.now();
         Schema schema = Schema.of(bqSchemaFields);
         TableDefinition tableDefinition = getTableDefinition(schema);
         TableInfo tableInfo = TableInfo.newBuilder(tableID, tableDefinition).build();
         upsertDatasetAndTable(tableInfo);
-        statsClient.timeIt("bq.upsert.table.time", start);
     }
 
     private void upsertDatasetAndTable(TableInfo tableInfo) {
         Dataset dataSet = bigquery.getDataset(tableID.getDataset());
         if (dataSet == null || !bigquery.getDataset(tableID.getDataset()).exists()) {
             bigquery.create(DatasetInfo.of(tableID.getDataset()));
-            log.info("Successfully created bigquery dataset: {}", tableID.getDataset());
+            log.info("Successfully CREATED bigquery DATASET: {}", tableID.getDataset());
         }
         Table table = bigquery.getTable(tableID);
         if (table == null || !table.exists()) {
             bigquery.create(tableInfo);
-            log.info("Successfully created bigquery table: {}", tableID.getTable());
+            log.info("Successfully CREATED bigquery TABLE: {}", tableID.getTable());
         } else {
             Schema existingSchema = table.getDefinition().getSchema();
             Schema updatedSchema = tableInfo.getDefinition().getSchema();
 
             if (!BQUtils.compareBQSchemaFields(existingSchema, updatedSchema)) {
+                Instant start = Instant.now();
                 bigquery.update(tableInfo);
-                log.info("Successfully updated bigquery table: {}", tableID.getTable());
+                log.info("Successfully UPDATED bigquery TABLE: {}", tableID.getTable());
+                statsClient.timeIt("bq.upsert.table.time," + statsClient.getBqTags(), start);
+                statsClient.increment("bq.upsert.table.count," + statsClient.getBqTags());
             }
         }
     }

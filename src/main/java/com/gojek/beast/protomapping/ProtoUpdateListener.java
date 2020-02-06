@@ -83,7 +83,6 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
 
     @Override
     public void onProtoUpdate() {
-        log.info("updating bq table as {} proto was updated", getProto());
         try {
             updateProtoParser(fetchParsedFields());
         } catch (ProtoNotFoundException | BQSchemaMappingException | BigQueryException | IOException e) {
