@@ -58,6 +58,8 @@ public class BQClient {
                 log.info("Successfully UPDATED bigquery TABLE: {}", tableID.getTable());
                 statsClient.timeIt("bq.upsert.table.time," + statsClient.getBqTags(), start);
                 statsClient.increment("bq.upsert.table.count," + statsClient.getBqTags());
+            } else {
+                log.info("Skipping bigquery table update, since proto schema hasn't changed");
             }
         }
     }
