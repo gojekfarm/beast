@@ -3,6 +3,7 @@ package com.gojek.beast.protomapping;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.gojek.beast.TestKey;
 import com.gojek.beast.config.*;
 import com.gojek.beast.exception.BQTableUpdateFailure;
 import com.gojek.beast.exception.ProtoNotFoundException;
@@ -10,6 +11,8 @@ import com.gojek.beast.models.ProtoField;
 import com.gojek.beast.models.ProtoFieldFactory;
 import com.gojek.beast.sink.bq.BQClient;
 import com.gojek.de.stencil.client.StencilClient;
+import com.gojek.de.stencil.models.DescriptorAndTypeName;
+import com.gojek.de.stencil.utils.StencilUtils;
 import com.google.cloud.bigquery.BigQueryException;
 import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.LegacySQLTypeName;
@@ -61,25 +64,28 @@ public class ProtoUpdateListenerTest {
     public void shouldUseNewSchemaIfProtoChanges() throws IOException {
         ProtoField returnedProtoField = new ProtoField();
         when(protoFieldFactory.getProtoField()).thenReturn(returnedProtoField);
-        returnedProtoField.addField(new ProtoField("test-1", 1));
-        returnedProtoField.addField(new ProtoField("test-2", 2));
+        returnedProtoField.addField(new ProtoField("order_number", 1));
+        returnedProtoField.addField(new ProtoField("order_url", 2));
 
-        when(protoMappingParser.parseFields(returnedProtoField, stencilConfig.getProtoSchema(), new HashMap<>(), new HashMap<>())).thenReturn(returnedProtoField);
+        HashMap<String, DescriptorAndTypeName> descriptorsMap = new HashMap<String, DescriptorAndTypeName>() {{
+            put(String.format("%s.%s", TestKey.class.getPackage(), TestKey.class.getName()), new DescriptorAndTypeName(TestKey.getDescriptor(), String.format(".%s.%s", TestKey.getDescriptor().getFile().getPackage(), TestKey.getDescriptor().getName())));
+        }};
+        when(protoMappingParser.parseFields(returnedProtoField, stencilConfig.getProtoSchema(), StencilUtils.getAllProtobufDescriptors(descriptorsMap), StencilUtils.getTypeNameToPackageNameMap(descriptorsMap))).thenReturn(returnedProtoField);
         ObjectNode objNode = JsonNodeFactory.instance.objectNode();
-        objNode.put("1", "test-1");
-        objNode.put("2", "test-2");
+        objNode.put("1", "order_number");
+        objNode.put("2", "order_url");
         String expectedProtoMapping = objectMapper.writeValueAsString(objNode);
         when(protoMappingConverter.generateColumnMappings(returnedProtoField.getFields())).thenReturn(expectedProtoMapping);
 
         ArrayList<Field> returnedSchemaFields = new ArrayList<Field>() {{
-            add(Field.newBuilder("test-1", LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
-            add(Field.newBuilder("test-2", LegacySQLTypeName.STRING).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder("order_number", LegacySQLTypeName.STRING).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder("order_url", LegacySQLTypeName.STRING).setMode(Field.Mode.NULLABLE).build());
         }};
         when(protoMappingConverter.generateBigquerySchema(returnedProtoField)).thenReturn(returnedSchemaFields);
 
         ArrayList<Field> bqSchemaFields = new ArrayList<Field>() {{
-            add(Field.newBuilder("test-1", LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
-            add(Field.newBuilder("test-2", LegacySQLTypeName.STRING).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder("order_number", LegacySQLTypeName.STRING).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder("order_url", LegacySQLTypeName.STRING).setMode(Field.Mode.NULLABLE).build());
             add(Field.newBuilder(Constants.OFFSET_COLUMN_NAME, LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
             add(Field.newBuilder(Constants.TOPIC_COLUMN_NAME, LegacySQLTypeName.STRING).setMode(Field.Mode.NULLABLE).build());
             add(Field.newBuilder(Constants.LOAD_TIME_COLUMN_NAME, LegacySQLTypeName.TIMESTAMP).setMode(Field.Mode.NULLABLE).build());
@@ -88,48 +94,56 @@ public class ProtoUpdateListenerTest {
         }};
         doNothing().when(bqInstance).upsertTable(bqSchemaFields);
 
-        protoUpdateListener.onProtoUpdate();
+        protoUpdateListener.onProtoUpdate(stencilConfig.getStencilUrl(), descriptorsMap);
 
         ColumnMapping actualNewProtoMapping = protoMappingConfig.getProtoColumnMapping();
-        Assert.assertEquals("test-1", actualNewProtoMapping.getProperty("1"));
-        Assert.assertEquals("test-2", actualNewProtoMapping.getProperty("2"));
+        Assert.assertEquals("order_number", actualNewProtoMapping.getProperty("1"));
+        Assert.assertEquals("order_url", actualNewProtoMapping.getProperty("2"));
     }
 
     @Test(expected = BQTableUpdateFailure.class)
     public void shouldThrowExceptionIfParserFails() {
         ProtoField returnedProtoField = new ProtoField();
+        HashMap<String, DescriptorAndTypeName> descriptorsMap = new HashMap<String, DescriptorAndTypeName>() {{
+            put(String.format("%s.%s", TestKey.class.getPackage(), TestKey.class.getName()), new DescriptorAndTypeName(TestKey.getDescriptor(), String.format(".%s.%s", TestKey.getDescriptor().getFile().getPackage(), TestKey.getDescriptor().getName())));
+        }};
+        when(protoMappingParser.parseFields(returnedProtoField, stencilConfig.getProtoSchema(), StencilUtils.getAllProtobufDescriptors(descriptorsMap), StencilUtils.getTypeNameToPackageNameMap(descriptorsMap))).thenReturn(returnedProtoField);
+        ObjectNode objNode = JsonNodeFactory.instance.objectNode();
+        objNode.put("1", "order_number");
+        objNode.put("2", "order_url");
         when(protoFieldFactory.getProtoField()).thenReturn(returnedProtoField);
-        returnedProtoField.addField(new ProtoField("test-1", 1));
-        returnedProtoField.addField(new ProtoField("test-2", 2));
 
-        when(protoMappingParser.parseFields(returnedProtoField, stencilConfig.getProtoSchema(), new HashMap<>(), new HashMap<>())).thenThrow(new ProtoNotFoundException("proto not found"));
+        when(protoMappingParser.parseFields(returnedProtoField, stencilConfig.getProtoSchema(), StencilUtils.getAllProtobufDescriptors(descriptorsMap), StencilUtils.getTypeNameToPackageNameMap(descriptorsMap))).thenThrow(new ProtoNotFoundException("proto not found"));
 
-        protoUpdateListener.onProtoUpdate();
+        protoUpdateListener.onProtoUpdate(stencilConfig.getStencilUrl(), descriptorsMap);
     }
 
     @Test(expected = BQTableUpdateFailure.class)
     public void shouldThrowExceptionIfConverterFails() throws IOException {
         ProtoField returnedProtoField = new ProtoField();
         when(protoFieldFactory.getProtoField()).thenReturn(returnedProtoField);
-        returnedProtoField.addField(new ProtoField("test-1", 1));
-        returnedProtoField.addField(new ProtoField("test-2", 2));
+        returnedProtoField.addField(new ProtoField("order_number", 1));
+        returnedProtoField.addField(new ProtoField("order_url", 2));
 
-        when(protoMappingParser.parseFields(returnedProtoField, stencilConfig.getProtoSchema(), new HashMap<>(), new HashMap<>())).thenReturn(returnedProtoField);
+        HashMap<String, DescriptorAndTypeName> descriptorsMap = new HashMap<String, DescriptorAndTypeName>() {{
+            put(String.format("%s.%s", TestKey.class.getPackage(), TestKey.class.getName()), new DescriptorAndTypeName(TestKey.getDescriptor(), String.format(".%s.%s", TestKey.getDescriptor().getFile().getPackage(), TestKey.getDescriptor().getName())));
+        }};
+        when(protoMappingParser.parseFields(returnedProtoField, stencilConfig.getProtoSchema(), StencilUtils.getAllProtobufDescriptors(descriptorsMap), StencilUtils.getTypeNameToPackageNameMap(descriptorsMap))).thenReturn(returnedProtoField);
         ObjectNode objNode = JsonNodeFactory.instance.objectNode();
-        objNode.put("1", "test-1");
-        objNode.put("2", "test-2");
+        objNode.put("1", "order_number");
+        objNode.put("2", "order_url");
         String expectedProtoMapping = objectMapper.writeValueAsString(objNode);
         when(protoMappingConverter.generateColumnMappings(returnedProtoField.getFields())).thenReturn(expectedProtoMapping);
 
         ArrayList<Field> returnedSchemaFields = new ArrayList<Field>() {{
-            add(Field.newBuilder("test-1", LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
-            add(Field.newBuilder("test-2", LegacySQLTypeName.STRING).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder("order_number", LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder("order_url", LegacySQLTypeName.STRING).setMode(Field.Mode.NULLABLE).build());
         }};
         when(protoMappingConverter.generateBigquerySchema(returnedProtoField)).thenReturn(returnedSchemaFields);
 
         ArrayList<Field> bqSchemaFields = new ArrayList<Field>() {{
-            add(Field.newBuilder("test-1", LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
-            add(Field.newBuilder("test-2", LegacySQLTypeName.STRING).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder("order_number", LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder("order_url", LegacySQLTypeName.STRING).setMode(Field.Mode.NULLABLE).build());
             add(Field.newBuilder(Constants.OFFSET_COLUMN_NAME, LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
             add(Field.newBuilder(Constants.TOPIC_COLUMN_NAME, LegacySQLTypeName.STRING).setMode(Field.Mode.NULLABLE).build());
             add(Field.newBuilder(Constants.LOAD_TIME_COLUMN_NAME, LegacySQLTypeName.TIMESTAMP).setMode(Field.Mode.NULLABLE).build());
@@ -138,6 +152,6 @@ public class ProtoUpdateListenerTest {
         }};
         doThrow(new BigQueryException(10, "bigquery mapping has failed")).when(bqInstance).upsertTable(bqSchemaFields);
 
-        protoUpdateListener.onProtoUpdate();
+        protoUpdateListener.onProtoUpdate(stencilConfig.getStencilUrl(), descriptorsMap);
     }
 }

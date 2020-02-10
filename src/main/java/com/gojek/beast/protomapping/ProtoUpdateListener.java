@@ -75,33 +75,18 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
             stencilClient = StencilClientFactory.getClient(stencilConfig.getStencilUrl(), System.getenv(), Stats.client().getStatsDClient(), this);
 
             log.info("updating bq table at startup for proto schema {}", getProto());
-            onProtoUpdate();
+            onProtoUpdate(stencilConfig.getStencilUrl(), stencilClient.getAllDescriptorAndTypeName());
         } else {
             stencilClient = StencilClientFactory.getClient(stencilConfig.getStencilUrl(), System.getenv(), Stats.client().getStatsDClient());
         }
     }
 
     @Override
-    public void onProtoUpdate() {
-        try {
-            updateProtoParser(fetchParsedFields());
-        } catch (ProtoNotFoundException | BQSchemaMappingException | BigQueryException | IOException e) {
-            String errMsg = "Error while updating bigquery table:" + e.getMessage();
-            log.error(errMsg);
-            e.printStackTrace();
-            statsClient.increment("bq.table.upsert.failures");
-            throw new BQTableUpdateFailure(errMsg);
-        }
-    }
-
-    @Override
     public void onProtoUpdate(String url, Map<String, DescriptorAndTypeName> newDescriptors) {
-        log.info("updating bq table as {} proto was updated on callback", getProto());
+        log.info("stencil cache was refreshed, validating if bigquery schema changed");
         try {
-            final DescriptorAndTypeName newDescriptorAndTypeName = newDescriptors.get(proto);
-            newDescriptorAndTypeName.getDescriptor().getFields();
             ProtoField protoField = protoFieldFactory.getProtoField();
-            protoField = protoMappingParser.parseFields(protoField, proto, StencilUtils.getAllProtobuffDescriptors(newDescriptors), StencilUtils.getTypeNameToPackageNameMap(newDescriptors));
+            protoField = protoMappingParser.parseFields(protoField, proto, StencilUtils.getAllProtobufDescriptors(newDescriptors), StencilUtils.getTypeNameToPackageNameMap(newDescriptors));
             updateProtoParser(protoField);
         } catch (ProtoNotFoundException | BQSchemaMappingException | BigQueryException | IOException e) {
             String errMsg = "Error while updating bigquery table on callback:" + e.getMessage();
@@ -110,12 +95,6 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
             statsClient.increment("bq.table.upsert.failures");
             throw new BQTableUpdateFailure(errMsg);
         }
-    }
-
-    private ProtoField fetchParsedFields() {
-        ProtoField protoField = protoFieldFactory.getProtoField();
-        protoField = protoMappingParser.parseFields(protoField, proto, stencilClient.getAll(), stencilClient.getTypeNameToPackageNameMap());
-        return protoField;
     }
 
     // First get latest protomapping, update bq schema, and if all goes fine
