@@ -13,7 +13,7 @@ plugins {
     id 'checkstyle'
     id 'jacoco'
     id "com.google.protobuf" version "0.8.7"
-    id 'io.franzbecker.gradle-lombok' version '1.14'
+    id 'io.franzbecker.gradle-lombok' version '3.2.0'
 }
 
 group 'com.gojek.beast'
