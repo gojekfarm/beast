@@ -28,7 +28,7 @@ public class FailureStatus implements Status {
     @Override
     public String toString() {
         return "FailureStatus{"
-                + "cause=" + cause.getMessage()
-                + ", message='" + message + '\'' + '}';
+                + "cause=" + cause.getCause()
+                + ", message='" + ((message != null) ? message : cause.getMessage()) + '\'' + '}';
     }
 }
