@@ -41,6 +41,7 @@ import com.gojek.beast.worker.Worker;
 import com.gojek.beast.worker.WorkerState;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
+import com.google.cloud.TransportOptions;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.BigQueryOptions;
 import com.google.cloud.bigquery.TableId;
@@ -94,6 +95,7 @@ public class BeastFactory {
         Integer bqWorkerPoolSize = appConfig.getBqWorkerPoolSize();
         List<Worker> threads = new ArrayList<>(bqWorkerPoolSize);
         Acknowledger acknowledger = createAcknowledger();
+        log.info("BQ Row InsertId is: {}", (bqConfig.isBQRowInsertIdEnabled()) ? "Enabled" : "Disabled");
         for (int i = 0; i < bqWorkerPoolSize; i++) {
             Worker bqQueueWorker = new BqQueueWorker("bq-worker-" + i, createBigQuerySink(), new QueueConfig(appConfig.getBqWorkerPollTimeoutMs()), acknowledger, readQueue, workerState);
             threads.add(bqQueueWorker);
@@ -125,7 +127,12 @@ public class BeastFactory {
     }
 
     private BigQuery getBigQueryInstance() {
+        final TransportOptions transportOptions = BigQueryOptions.getDefaultHttpTransportOptions().toBuilder()
+                .setConnectTimeout(Integer.parseInt(bqConfig.getBqClientConnectTimeout()))
+                .setReadTimeout(Integer.parseInt(bqConfig.getBqClientReadTimeout()))
+                .build();
         return BigQueryOptions.newBuilder()
+                .setTransportOptions(transportOptions)
                 .setCredentials(getGoogleCredentials())
                 .setProjectId(bqConfig.getGCPProject())
                 .build().getService();

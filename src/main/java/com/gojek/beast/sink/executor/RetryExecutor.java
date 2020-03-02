@@ -50,6 +50,7 @@ public class RetryExecutor implements Executor {
         try {
             status = sink.push(records);
         } catch (Exception e) {
+            statsClient.increment("retrysink.exec.failure.count," + statsClient.getBqTags());
             status = new FailureStatus(e);
         }
         ifFailure();

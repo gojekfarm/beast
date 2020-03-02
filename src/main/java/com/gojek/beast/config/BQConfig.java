@@ -25,4 +25,12 @@ public interface BQConfig extends Config {
     @DefaultValue("true")
     @Key("ENABLE_BQ_ROW_INSERTID")
     Boolean isBQRowInsertIdEnabled();
+
+    @DefaultValue("-1")
+    @Key("BQ_CLIENT_READ_TIMEOUT")
+    String getBqClientReadTimeout();
+
+    @DefaultValue("-1")
+    @Key("BQ_CLIENT_CONNECT_TIMEOUT")
+    String getBqClientConnectTimeout();
 }
