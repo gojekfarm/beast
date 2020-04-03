@@ -1,5 +1,6 @@
 package com.gojek.beast.factory;
 
+import com.gojek.beast.Clock;
 import com.gojek.beast.backoff.BackOff;
 import com.gojek.beast.backoff.ExponentialBackOffProvider;
 import com.gojek.beast.config.AppConfig;
@@ -160,8 +161,8 @@ public class BeastFactory {
         if (committer != null) {
             return committer;
         }
-        OffsetState offsetState = new OffsetState(appConfig.getOffsetAckTimeoutMs());
-        committer = new OffsetCommitWorker("committer", partitionsAck, createKafkaConsumer(), offsetState, commitQueue, workerState);
+        OffsetState offsetState = new OffsetState(partitionsAck, appConfig.getOffsetAckTimeoutMs(), appConfig.getOffsetCommitTime());
+        committer = new OffsetCommitWorker("committer", new QueueConfig(appConfig.getBqWorkerPollTimeoutMs(), "commit"), createKafkaConsumer(), offsetState, commitQueue, workerState, new Clock());
         return committer;
     }
 

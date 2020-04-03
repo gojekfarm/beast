@@ -6,16 +6,21 @@ import org.apache.kafka.common.TopicPartition;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.Set;
 
 public class OffsetState {
     @Getter
     private final long acknowledgeTimeoutMs;
+    @Getter
+    private final long offsetCommitTime;
     private boolean start;
-    private Map<TopicPartition, OffsetAndMetadata> lastCommitOffset;
     private Instant lastCommittedTime;
+    private Set<Map<TopicPartition, OffsetAndMetadata>> partitionOffsetAck;
 
-    public OffsetState(long acknowledgeTimeoutMs) {
+    public OffsetState(Set<Map<TopicPartition, OffsetAndMetadata>> partitionOffsetAck, long acknowledgeTimeoutMs, long offsetCommitTime) {
+        this.partitionOffsetAck = partitionOffsetAck;
         this.acknowledgeTimeoutMs = acknowledgeTimeoutMs;
+        this.offsetCommitTime = offsetCommitTime;
         lastCommittedTime = Instant.now();
     }
 
@@ -23,14 +28,19 @@ public class OffsetState {
         if (!start) {
             return false;
         }
-        boolean sameOffset = lastCommitOffset == currentOffset || currentOffset.equals(lastCommitOffset);
         boolean ackTimedOut = (Instant.now().toEpochMilli() - lastCommittedTime.toEpochMilli()) > acknowledgeTimeoutMs;
-        boolean neverAcknowledged = lastCommitOffset == null && ackTimedOut;
-        return (sameOffset && ackTimedOut) || neverAcknowledged;
+        return ackTimedOut;
     }
 
-    public void resetOffset(Map<TopicPartition, OffsetAndMetadata> acknowledgedOffset) {
-        lastCommitOffset = acknowledgedOffset;
+    public int partitionOffsetAckSize() {
+        return partitionOffsetAck.size();
+    }
+
+    public boolean removeFromOffsetAck(Map<TopicPartition, OffsetAndMetadata> commitOffset) {
+        return partitionOffsetAck.remove(commitOffset);
+    }
+
+    public void resetOffset() {
         lastCommittedTime = Instant.now();
     }
 

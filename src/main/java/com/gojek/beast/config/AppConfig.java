@@ -75,4 +75,8 @@ public interface AppConfig extends Config {
 
     @Key("GCS_WRITER_PROJECT_NAME")
     String getGcsWriterProject();
+
+    @DefaultValue("2000")
+    @Key("OFFSET_COMMIT_TIME")
+    long getOffsetCommitTime();
 }
