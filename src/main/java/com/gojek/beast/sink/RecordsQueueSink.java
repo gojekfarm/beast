@@ -12,7 +12,7 @@ import java.time.Instant;
 import java.util.concurrent.BlockingQueue;
 
 @AllArgsConstructor
-public class QueueSink implements Sink {
+public class RecordsQueueSink implements Sink {
     private final Stats statsClient = Stats.client();
     private final BlockingQueue<Records> recordQueue;
     private final QueueConfig config;

@@ -21,7 +21,8 @@ import com.gojek.beast.consumer.MessageConsumer;
 import com.gojek.beast.consumer.RebalanceListener;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.sink.MultiSink;
-import com.gojek.beast.sink.QueueSink;
+import com.gojek.beast.sink.RecordsQueueSink;
+import com.gojek.beast.sink.OffsetMapQueueSink;
 import com.gojek.beast.sink.RetrySink;
 import com.gojek.beast.sink.Sink;
 import com.gojek.beast.sink.bq.BQRowWithInsertId;
@@ -46,8 +47,8 @@ import com.google.cloud.TransportOptions;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.BigQueryOptions;
 import com.google.cloud.bigquery.TableId;
-import com.google.cloud.storage.StorageOptions;
 import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.StorageOptions;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -78,7 +79,7 @@ public class BeastFactory {
     private BlockingQueue<Records> readQueue;
     private MultiSink multiSink;
     private MessageConsumer messageConsumer;
-    private LinkedBlockingQueue<Records> commitQueue;
+    private LinkedBlockingQueue<Map<TopicPartition, OffsetAndMetadata>> commitQueue;
     private BQConfig bqConfig;
 
     public BeastFactory(AppConfig appConfig, BackOffConfig backOffConfig, StencilConfig stencilConfig, BQConfig bqConfig, ProtoMappingConfig protoMappingConfig, WorkerState workerState) throws IOException {
@@ -104,7 +105,7 @@ public class BeastFactory {
         return threads;
     }
 
-    public Sink createBigQuerySink() {
+    private Sink createBigQuerySink() {
         BigQuery bq = getBigQueryInstance();
         BQResponseParser responseParser = new BQResponseParser();
         BQErrorHandler bqErrorHandler = createOOBErrorHandler();
@@ -116,7 +117,7 @@ public class BeastFactory {
         return new RetrySink(bqSink, new ExponentialBackOffProvider(backOffConfig.getExponentialBackoffInitialTimeInMs(), backOffConfig.getExponentialBackoffMaximumTimeInMs(), backOffConfig.getExponentialBackoffRate(), new BackOff()), appConfig.getMaxPushAttempts());
     }
 
-    public BQErrorHandler createOOBErrorHandler() {
+    private BQErrorHandler createOOBErrorHandler() {
         final Storage gcsStore = getGCStorageInstance();
         ErrorWriter errorWriter = new DefaultLogWriter();
         if (appConfig.isGCSErrorSinkEnabled()) {
@@ -170,8 +171,8 @@ public class BeastFactory {
         if (multiSink != null) {
             return multiSink;
         }
-        QueueSink readQueueSink = new QueueSink(readQueue, new QueueConfig(appConfig.getBqWorkerPollTimeoutMs(), "read"));
-        QueueSink committerQueueSink = new QueueSink(commitQueue, new QueueConfig(appConfig.getBqWorkerPollTimeoutMs(), "commit"));
+        RecordsQueueSink readQueueSink = new RecordsQueueSink(readQueue, new QueueConfig(appConfig.getBqWorkerPollTimeoutMs(), "read"));
+        OffsetMapQueueSink committerQueueSink = new OffsetMapQueueSink(commitQueue, new QueueConfig(appConfig.getBqWorkerPollTimeoutMs(), "commit"));
         multiSink = new MultiSink(Arrays.asList(readQueueSink, committerQueueSink));
         return multiSink;
     }
