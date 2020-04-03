@@ -1,15 +1,13 @@
 package com.gojek.beast.protomapping;
 
 import com.gojek.beast.Clock;
-import com.gojek.beast.config.StencilConfig;
 import com.gojek.beast.config.BQConfig;
 import com.gojek.beast.config.ColumnMapping;
 import com.gojek.beast.config.ProtoMappingConfig;
+import com.gojek.beast.config.StencilConfig;
 import com.gojek.beast.converter.ConsumerRecordConverter;
 import com.gojek.beast.converter.RowMapper;
 import com.gojek.beast.exception.BQTableUpdateFailure;
-import com.gojek.beast.exception.BQSchemaMappingException;
-import com.gojek.beast.exception.ProtoMappingException;
 import com.gojek.beast.exception.ProtoNotFoundException;
 import com.gojek.beast.models.BQField;
 import com.gojek.beast.models.ProtoField;
@@ -88,10 +86,9 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
             ProtoField protoField = protoFieldFactory.getProtoField();
             protoField = protoMappingParser.parseFields(protoField, proto, StencilUtils.getAllProtobufDescriptors(newDescriptors), StencilUtils.getTypeNameToPackageNameMap(newDescriptors));
             updateProtoParser(protoField);
-        } catch (ProtoNotFoundException | BQSchemaMappingException | BigQueryException | IOException e) {
+        } catch (BigQueryException | ProtoNotFoundException | IOException e) {
             String errMsg = "Error while updating bigquery table on callback:" + e.getMessage();
             log.error(errMsg);
-            e.printStackTrace();
             statsClient.increment("bq.table.upsert.failures");
             throw new BQTableUpdateFailure(errMsg);
         }
@@ -112,14 +109,7 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
 
     private ColumnMapping getProtoMapping() throws IOException {
         ProtoField protoField = new ProtoField();
-        try {
-            protoField = protoMappingParser.parseFields(protoField, proto, stencilClient.getAll(), stencilClient.getTypeNameToPackageNameMap());
-        } catch (ProtoNotFoundException e) {
-            String errMsg = "Error while generating proto to column mapping:" + e.getMessage();
-            log.error(errMsg);
-            e.printStackTrace();
-            throw new ProtoMappingException(errMsg);
-        }
+        protoField = protoMappingParser.parseFields(protoField, proto, stencilClient.getAll(), stencilClient.getTypeNameToPackageNameMap());
         String protoMapping = protoMappingConverter.generateColumnMappings(protoField.getFields());
         protoMappingConfig.setProperty("PROTO_COLUMN_MAPPING", protoMapping);
         return protoMappingConfig.getProtoColumnMapping();
