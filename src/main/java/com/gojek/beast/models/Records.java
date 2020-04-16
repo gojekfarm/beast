@@ -1,6 +1,5 @@
 package com.gojek.beast.models;
 
-import com.gojek.beast.sink.SinkElement;
 import lombok.Getter;
 import lombok.experimental.Delegate;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -11,7 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Records implements Iterable<Record>, SinkElement {
+public class Records implements Iterable<Record> {
     @Delegate
     @Getter
     private final List<Record> records;
