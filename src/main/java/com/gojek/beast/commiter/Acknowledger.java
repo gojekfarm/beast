@@ -1,9 +1,12 @@
 package com.gojek.beast.commiter;
 
-import com.gojek.beast.models.OffsetMap;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.common.TopicPartition;
+
+import java.util.Map;
 
 public interface Acknowledger {
-    boolean acknowledge(OffsetMap offsets);
+    boolean acknowledge(Map<TopicPartition, OffsetAndMetadata> offsets);
 
     void close(String reason);
 }

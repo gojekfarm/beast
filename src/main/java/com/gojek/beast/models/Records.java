@@ -27,10 +27,10 @@ public class Records implements Iterable<Record> {
         this.polledTime = polledTime;
     }
 
-    public OffsetMap getPartitionsCommitOffset() {
+    public Map<TopicPartition, OffsetAndMetadata> getPartitionsCommitOffset() {
         // kafka commit requires offset + 1 (next offset)
         if (!partitionsCommitOffset.isEmpty()) {
-            return new OffsetMap(partitionsCommitOffset);
+            return partitionsCommitOffset;
         }
         records.forEach(r -> {
             OffsetInfo offsetInfo = r.getOffsetInfo();
@@ -41,7 +41,7 @@ public class Records implements Iterable<Record> {
                 partitionsCommitOffset.put(key, value);
             }
         });
-        return new OffsetMap(partitionsCommitOffset);
+        return partitionsCommitOffset;
     }
 
     public long getSize() {

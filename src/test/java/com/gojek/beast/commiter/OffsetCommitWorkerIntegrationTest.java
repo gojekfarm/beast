@@ -3,7 +3,6 @@ package com.gojek.beast.commiter;
 import com.gojek.beast.Clock;
 import com.gojek.beast.config.QueueConfig;
 import com.gojek.beast.consumer.KafkaConsumer;
-import com.gojek.beast.models.OffsetMap;
 import com.gojek.beast.util.RecordsUtil;
 import com.gojek.beast.worker.OffsetCommitWorker;
 import com.gojek.beast.worker.WorkerState;
@@ -42,14 +41,14 @@ import static org.mockito.Mockito.never;
 
 @RunWith(MockitoJUnitRunner.class)
 public class OffsetCommitWorkerIntegrationTest {
-    private Set<OffsetMap> acknowledgements;
+    private Set<Map<TopicPartition, OffsetAndMetadata>> acknowledgements;
 
     @Mock
     private KafkaConsumer kafkaConsumer;
     @Captor
     private ArgumentCaptor<Map<TopicPartition, OffsetAndMetadata>> commitPartitionsOffsetCaptor;
     private int acknowledgeTimeoutMs;
-    private LinkedBlockingQueue<OffsetMap> commitQueue;
+    private LinkedBlockingQueue<Map<TopicPartition, OffsetAndMetadata>> commitQueue;
     private RecordsUtil recordsUtil;
     private OffsetCommitWorker committer;
     private OffsetState offsetState;
@@ -61,7 +60,7 @@ public class OffsetCommitWorkerIntegrationTest {
     public void setUp() {
         commitQueue = new LinkedBlockingQueue<>();
         clock = new Clock();
-        CopyOnWriteArraySet<OffsetMap> ackSet = new CopyOnWriteArraySet<>();
+        CopyOnWriteArraySet<Map<TopicPartition, OffsetAndMetadata>> ackSet = new CopyOnWriteArraySet<>();
         acknowledgements = Collections.synchronizedSet(ackSet);
         acknowledgeTimeoutMs = 2000;
         recordsUtil = new RecordsUtil();
@@ -73,10 +72,10 @@ public class OffsetCommitWorkerIntegrationTest {
 
     @Test
     public void shouldCommitPartitionsOfAllRecordsInSequence() throws InterruptedException {
-        OffsetMap offsetMap1 = recordsUtil.createRecords("driver-", 3).getPartitionsCommitOffset();
-        OffsetMap offsetMap2 = recordsUtil.createRecords("customer-", 3).getPartitionsCommitOffset();
-        OffsetMap offsetMap3 = recordsUtil.createRecords("merchant-", 3).getPartitionsCommitOffset();
-        List<OffsetMap> recordsList = Arrays.asList(offsetMap1, offsetMap2, offsetMap3);
+        Map<TopicPartition, OffsetAndMetadata> offsetMap1 = recordsUtil.createRecords("driver-", 3).getPartitionsCommitOffset();
+        Map<TopicPartition, OffsetAndMetadata> offsetMap2 = recordsUtil.createRecords("customer-", 3).getPartitionsCommitOffset();
+        Map<TopicPartition, OffsetAndMetadata> offsetMap3 = recordsUtil.createRecords("merchant-", 3).getPartitionsCommitOffset();
+        List<Map<TopicPartition, OffsetAndMetadata>> recordsList = Arrays.asList(offsetMap1, offsetMap2, offsetMap3);
         commitQueue.addAll(recordsList);
         committer.setDefaultSleepMs(10);
 
@@ -85,7 +84,7 @@ public class OffsetCommitWorkerIntegrationTest {
 
         new Thread(() -> {
             Arrays.asList(2, 1, 0).forEach(index -> {
-                OffsetMap partitionsCommitOffset = recordsList.get(index);
+                Map<TopicPartition, OffsetAndMetadata> partitionsCommitOffset = recordsList.get(index);
                 boolean acknowledge = offsetAcknowledger.acknowledge(partitionsCommitOffset);
                 assertTrue("Couldn't ack" + partitionsCommitOffset + " " + index, acknowledge);
             });
@@ -117,13 +116,13 @@ public class OffsetCommitWorkerIntegrationTest {
 
     @Test
     public void shouldStopConsumerWhenAckTimeOutHappens() throws InterruptedException {
-        OffsetMap offsetMap1 = recordsUtil.createRecords("driver-", 3).getPartitionsCommitOffset();
-        OffsetMap offsetMap2 = recordsUtil.createRecords("customer-", 3).getPartitionsCommitOffset();
-        OffsetMap offsetMap3 = recordsUtil.createRecords("merchant-", 3).getPartitionsCommitOffset();
-        List<OffsetMap> recordsList = Arrays.asList(offsetMap1, offsetMap2, offsetMap3);
+        Map<TopicPartition, OffsetAndMetadata> offsetMap1 = recordsUtil.createRecords("driver-", 3).getPartitionsCommitOffset();
+        Map<TopicPartition, OffsetAndMetadata> offsetMap2 = recordsUtil.createRecords("customer-", 3).getPartitionsCommitOffset();
+        Map<TopicPartition, OffsetAndMetadata> offsetMap3 = recordsUtil.createRecords("merchant-", 3).getPartitionsCommitOffset();
+        List<Map<TopicPartition, OffsetAndMetadata>> recordsList = Arrays.asList(offsetMap1, offsetMap2, offsetMap3);
         commitQueue.addAll(recordsList);
         committer.setDefaultSleepMs(10);
-        List<OffsetMap> ackRecordsList = Arrays.asList(offsetMap1, offsetMap3);
+        List<Map<TopicPartition, OffsetAndMetadata>> ackRecordsList = Arrays.asList(offsetMap1, offsetMap3);
         Thread committerThread = new Thread(committer);
         committerThread.start();
 
@@ -150,10 +149,10 @@ public class OffsetCommitWorkerIntegrationTest {
 
     @Test
     public void shouldStopWhenNoAcknowledgements() throws InterruptedException {
-        OffsetMap offsetMap1 = recordsUtil.createRecords("driver-", 3).getPartitionsCommitOffset();
-        OffsetMap offsetMap2 = recordsUtil.createRecords("customer-", 3).getPartitionsCommitOffset();
-        OffsetMap offsetMap3 = recordsUtil.createRecords("merchant-", 3).getPartitionsCommitOffset();
-        List<OffsetMap> recordsList = Arrays.asList(offsetMap1, offsetMap2, offsetMap3);
+        Map<TopicPartition, OffsetAndMetadata> offsetMap1 = recordsUtil.createRecords("driver-", 3).getPartitionsCommitOffset();
+        Map<TopicPartition, OffsetAndMetadata> offsetMap2 = recordsUtil.createRecords("customer-", 3).getPartitionsCommitOffset();
+        Map<TopicPartition, OffsetAndMetadata> offsetMap3 = recordsUtil.createRecords("merchant-", 3).getPartitionsCommitOffset();
+        List<Map<TopicPartition, OffsetAndMetadata>> recordsList = Arrays.asList(offsetMap1, offsetMap2, offsetMap3);
         commitQueue.addAll(recordsList);
         committer.setDefaultSleepMs(10);
         Thread committerThread = new Thread(committer);

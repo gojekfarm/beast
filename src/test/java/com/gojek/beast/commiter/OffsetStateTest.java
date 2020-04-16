@@ -1,6 +1,5 @@
 package com.gojek.beast.commiter;
 
-import com.gojek.beast.models.OffsetMap;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.Test;
@@ -15,8 +14,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class OffsetStateTest {
-    private CopyOnWriteArraySet<OffsetMap> ackSet = new CopyOnWriteArraySet<>();
-    private Set<OffsetMap> acknowledgements = Collections.synchronizedSet(ackSet);
+    private CopyOnWriteArraySet<Map<TopicPartition, OffsetAndMetadata>> ackSet = new CopyOnWriteArraySet<>();
+    private Set<Map<TopicPartition, OffsetAndMetadata>> acknowledgements = Collections.synchronizedSet(ackSet);
 
     @Test
     public void shouldReturnFalseWhenAcknowledgedRecently() {

@@ -3,12 +3,13 @@ package com.gojek.beast.worker;
 import com.gojek.beast.commiter.Acknowledger;
 import com.gojek.beast.config.QueueConfig;
 import com.gojek.beast.models.FailureStatus;
-import com.gojek.beast.models.OffsetMap;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.SuccessStatus;
 import com.gojek.beast.sink.Sink;
 import com.gojek.beast.util.WorkerUtil;
 import com.google.cloud.bigquery.BigQueryException;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.common.TopicPartition;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -16,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -42,7 +44,7 @@ public class BqQueueWorkerTest {
     @Mock
     private Sink failureSink;
     @Mock
-    private OffsetMap offsetMap;
+    private Map<TopicPartition, OffsetAndMetadata> offsetMap;
     private WorkerState workerState;
 
     @Before

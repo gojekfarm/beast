@@ -1,7 +1,6 @@
 package com.gojek.beast.sink;
 
 import com.gojek.beast.config.QueueConfig;
-import com.gojek.beast.models.OffsetMap;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
 import com.gojek.beast.models.OffsetInfo;
@@ -38,7 +37,7 @@ public class OffsetMapQueueSinkTest {
 
     @Test
     public void shouldPushMessageToQueue() throws InterruptedException {
-        BlockingQueue<OffsetMap> queue = new LinkedBlockingQueue<>();
+        BlockingQueue<Map<TopicPartition, OffsetAndMetadata>> queue = new LinkedBlockingQueue<>();
         queueSink = new OffsetMapQueueSink(queue, queueConfig);
         Records messages = new Records(Collections.singletonList(new Record(offsetInfo, new HashMap<>())));
 
@@ -46,9 +45,9 @@ public class OffsetMapQueueSinkTest {
 
         assertTrue(status.isSuccess());
         assertEquals(1, queue.size());
-        OffsetMap partitionsCommitOffset = queue.take();
-        assertEquals(1, partitionsCommitOffset.getOffsetAndMetadataMap().size());
-        Map.Entry<TopicPartition, OffsetAndMetadata> offset = partitionsCommitOffset.getOffsetAndMetadataMap().entrySet().iterator().next();
+        Map<TopicPartition, OffsetAndMetadata> partitionsCommitOffset = queue.take();
+        assertEquals(1, partitionsCommitOffset.size());
+        Map.Entry<TopicPartition, OffsetAndMetadata> offset = partitionsCommitOffset.entrySet().iterator().next();
         assertEquals(offset.getKey().topic(), "default-topic");
         assertEquals(offset.getKey().partition(), 0);
         assertEquals(offset.getValue().offset(), 1);
@@ -56,7 +55,7 @@ public class OffsetMapQueueSinkTest {
 
     @Test
     public void shouldPushMultipleMessagesToQueue() throws InterruptedException {
-        BlockingQueue<OffsetMap> queue = new LinkedBlockingQueue<>();
+        BlockingQueue<Map<TopicPartition, OffsetAndMetadata>> queue = new LinkedBlockingQueue<>();
         queueSink = new OffsetMapQueueSink(queue, queueConfig);
         Records messages = new Records(Arrays.asList(new Record(offsetInfo, new HashMap<>()), new Record(offsetInfo, new HashMap<>())));
 
@@ -64,9 +63,9 @@ public class OffsetMapQueueSinkTest {
 
         assertTrue(status.isSuccess());
         assertEquals(1, queue.size());
-        OffsetMap partitionsCommitOffset = queue.take();
-        assertEquals(1, partitionsCommitOffset.getOffsetAndMetadataMap().size());
-        Map.Entry<TopicPartition, OffsetAndMetadata> offset = partitionsCommitOffset.getOffsetAndMetadataMap().entrySet().iterator().next();
+        Map<TopicPartition, OffsetAndMetadata> partitionsCommitOffset = queue.take();
+        assertEquals(1, partitionsCommitOffset.size());
+        Map.Entry<TopicPartition, OffsetAndMetadata> offset = partitionsCommitOffset.entrySet().iterator().next();
         assertEquals(offset.getKey().topic(), "default-topic");
         assertEquals(offset.getKey().partition(), 0);
         assertEquals(offset.getValue().offset(), 1);
@@ -74,10 +73,10 @@ public class OffsetMapQueueSinkTest {
 
     @Test
     public void shouldReturnFailureStatusOnException() throws InterruptedException {
-        BlockingQueue<OffsetMap> queue = mock(BlockingQueue.class);
+        BlockingQueue<Map<TopicPartition, OffsetAndMetadata>> queue = mock(BlockingQueue.class);
         Records records = new Records(Arrays.asList(new Record(offsetInfo, new HashMap<>()), new Record(offsetInfo, new HashMap<>())));
         queueSink = new OffsetMapQueueSink(queue, queueConfig);
-        OffsetMap offsetMap = records.getPartitionsCommitOffset();
+        Map<TopicPartition, OffsetAndMetadata> offsetMap = records.getPartitionsCommitOffset();
         doThrow(new InterruptedException()).when(queue).offer(offsetMap, queueConfig.getTimeout(), queueConfig.getTimeoutUnit());
 
         Status status = queueSink.push(records);
@@ -86,8 +85,8 @@ public class OffsetMapQueueSinkTest {
     }
 
     @Test
-    public void shouldReturnFailureStatusWhenQueueIsFull() throws InterruptedException {
-        BlockingQueue<OffsetMap> queue = new LinkedBlockingQueue<>(1);
+    public void shouldReturnFailureStatusWhenQueueIsFull() {
+        BlockingQueue<Map<TopicPartition, OffsetAndMetadata>> queue = new LinkedBlockingQueue<>(1);
         Records records = new Records(Arrays.asList(new Record(offsetInfo, new HashMap<>()), new Record(offsetInfo, new HashMap<>())));
         queue.offer(records.getPartitionsCommitOffset());
         queueSink = new OffsetMapQueueSink(queue, queueConfig);

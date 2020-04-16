@@ -1,6 +1,5 @@
 package com.gojek.beast.commiter;
 
-import com.gojek.beast.models.OffsetMap;
 import lombok.Getter;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -16,9 +15,9 @@ public class OffsetState {
     private final long offsetCommitTime;
     private boolean start;
     private Instant lastCommittedTime;
-    private Set<OffsetMap> partitionOffsetAck;
+    private Set<Map<TopicPartition, OffsetAndMetadata>> partitionOffsetAck;
 
-    public OffsetState(Set<OffsetMap> partitionOffsetAck, long acknowledgeTimeoutMs, long offsetCommitTime) {
+    public OffsetState(Set<Map<TopicPartition, OffsetAndMetadata>> partitionOffsetAck, long acknowledgeTimeoutMs, long offsetCommitTime) {
         this.partitionOffsetAck = partitionOffsetAck;
         this.acknowledgeTimeoutMs = acknowledgeTimeoutMs;
         this.offsetCommitTime = offsetCommitTime;
@@ -37,7 +36,7 @@ public class OffsetState {
         return partitionOffsetAck.size();
     }
 
-    public boolean removeFromOffsetAck(OffsetMap commitOffset) {
+    public boolean removeFromOffsetAck(Map<TopicPartition, OffsetAndMetadata> commitOffset) {
         return partitionOffsetAck.remove(commitOffset);
     }
 

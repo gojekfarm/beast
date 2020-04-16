@@ -19,7 +19,6 @@ import com.gojek.beast.commiter.OffsetState;
 import com.gojek.beast.consumer.KafkaConsumer;
 import com.gojek.beast.consumer.MessageConsumer;
 import com.gojek.beast.consumer.RebalanceListener;
-import com.gojek.beast.models.OffsetMap;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.sink.MultiSink;
 import com.gojek.beast.sink.RecordsQueueSink;
@@ -51,6 +50,8 @@ import com.google.cloud.bigquery.TableId;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.common.TopicPartition;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -74,11 +75,11 @@ public class BeastFactory {
     private AppConfig appConfig;
     private KafkaConsumer kafkaConsumer;
     private OffsetCommitWorker committer;
-    private Set<OffsetMap> partitionsAck;
+    private Set<Map<TopicPartition, OffsetAndMetadata>> partitionsAck;
     private BlockingQueue<Records> readQueue;
     private MultiSink multiSink;
     private MessageConsumer messageConsumer;
-    private LinkedBlockingQueue<OffsetMap> commitQueue;
+    private LinkedBlockingQueue<Map<TopicPartition, OffsetAndMetadata>> commitQueue;
     private BQConfig bqConfig;
 
     public BeastFactory(AppConfig appConfig, BackOffConfig backOffConfig, StencilConfig stencilConfig, BQConfig bqConfig, ProtoMappingConfig protoMappingConfig, WorkerState workerState) throws IOException {

@@ -6,7 +6,6 @@ import com.gojek.beast.commiter.KafkaCommitter;
 import com.gojek.beast.commiter.OffsetAcknowledger;
 import com.gojek.beast.commiter.OffsetState;
 import com.gojek.beast.config.QueueConfig;
-import com.gojek.beast.models.OffsetMap;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.After;
@@ -37,12 +36,12 @@ public class OffsetCommitWorkerTest {
     @Captor
     private ArgumentCaptor<Map<TopicPartition, OffsetAndMetadata>> commitPartitionsOffsetCaptor;
     @Mock
-    private OffsetMap offsetMap;
+    private Map<TopicPartition, OffsetAndMetadata> offsetMap;
     @Mock
     private KafkaCommitter kafkaCommitter;
     private QueueConfig queueConfig;
     private int pollTimeout;
-    private Set<OffsetMap> acknowledgements;
+    private Set<Map<TopicPartition, OffsetAndMetadata>> acknowledgements;
     private OffsetState offsetState;
     private Acknowledger offsetAcknowledger;
     private WorkerState workerState;
@@ -57,11 +56,10 @@ public class OffsetCommitWorkerTest {
         offsetCommitTime = 1000;
         ackTimeoutTime = 2000;
         queueConfig = new QueueConfig(pollTimeout);
-        Map<TopicPartition, OffsetAndMetadata> commitPartitionsOffset = new HashMap<TopicPartition, OffsetAndMetadata>() {{
+        offsetMap = new HashMap<TopicPartition, OffsetAndMetadata>() {{
             put(new TopicPartition("topic", 0), new OffsetAndMetadata(1));
         }};
-        offsetMap = new OffsetMap(commitPartitionsOffset);
-        CopyOnWriteArraySet<OffsetMap> ackSet = new CopyOnWriteArraySet<>();
+        CopyOnWriteArraySet<Map<TopicPartition, OffsetAndMetadata>> ackSet = new CopyOnWriteArraySet<>();
         acknowledgements = Collections.synchronizedSet(ackSet);
         offsetState = new OffsetState(acknowledgements, ackTimeoutTime, offsetCommitTime);
         workerState = new WorkerState();
@@ -77,7 +75,7 @@ public class OffsetCommitWorkerTest {
     @Test
     public void shouldCommitFirstOffsetWhenAcknowledged() throws InterruptedException {
         when(clock.currentEpochMillis()).thenReturn(0L, 0L, 0L, 1001L);
-        BlockingQueue<OffsetMap> commitQueue = spy(new LinkedBlockingQueue<>());
+        BlockingQueue<Map<TopicPartition, OffsetAndMetadata>> commitQueue = spy(new LinkedBlockingQueue<>());
         OffsetCommitWorker committer = new OffsetCommitWorker("committer", new QueueConfig(200), kafkaCommitter, offsetState, commitQueue, workerState, clock);
         committer.setDefaultSleepMs(10);
         commitQueue.put(offsetMap);
@@ -103,20 +101,20 @@ public class OffsetCommitWorkerTest {
 
     @Test
     public void shouldBatchCommitOffsets() throws InterruptedException {
-        OffsetMap record1CommitOffset = new OffsetMap(new HashMap<TopicPartition, OffsetAndMetadata>() {{
+        Map<TopicPartition, OffsetAndMetadata> record1CommitOffset = new HashMap<TopicPartition, OffsetAndMetadata>() {{
             put(new TopicPartition("topic", 0), new OffsetAndMetadata(1));
-        }});
-        OffsetMap record2CommitOffset = new OffsetMap(new HashMap<TopicPartition, OffsetAndMetadata>() {{
+        }};
+        Map<TopicPartition, OffsetAndMetadata> record2CommitOffset = new HashMap<TopicPartition, OffsetAndMetadata>() {{
             put(new TopicPartition("topic", 0), new OffsetAndMetadata(2));
-        }});
-        OffsetMap record3CommitOffset = new OffsetMap(new HashMap<TopicPartition, OffsetAndMetadata>() {{
+        }};
+        Map<TopicPartition, OffsetAndMetadata> record3CommitOffset = new HashMap<TopicPartition, OffsetAndMetadata>() {{
             put(new TopicPartition("topic", 0), new OffsetAndMetadata(3));
-        }});
+        }};
         when(clock.currentEpochMillis()).thenReturn(0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 1001L);
-        BlockingQueue<OffsetMap> commitQueue = spy(new LinkedBlockingQueue<>());
+        BlockingQueue<Map<TopicPartition, OffsetAndMetadata>> commitQueue = spy(new LinkedBlockingQueue<>());
         OffsetCommitWorker committer = new OffsetCommitWorker("committer", new QueueConfig(200), kafkaCommitter, offsetState, commitQueue, workerState, clock);
 
-        for (OffsetMap rs : Arrays.asList(record1CommitOffset, record2CommitOffset, record3CommitOffset)) {
+        for (Map<TopicPartition, OffsetAndMetadata> rs : Arrays.asList(record1CommitOffset, record2CommitOffset, record3CommitOffset)) {
             commitQueue.offer(rs, 1, TimeUnit.SECONDS);
         }
         offsetAcknowledger.acknowledge(record3CommitOffset);
@@ -142,22 +140,22 @@ public class OffsetCommitWorkerTest {
 
     @Test
     public void shouldCommitInSequenceWithParallelAcknowledgements() throws InterruptedException {
-        OffsetMap record1CommitOffset = new OffsetMap(new HashMap<TopicPartition, OffsetAndMetadata>() {{
+        Map<TopicPartition, OffsetAndMetadata> record1CommitOffset = new HashMap<TopicPartition, OffsetAndMetadata>() {{
             put(new TopicPartition("topic", 0), new OffsetAndMetadata(1));
-        }});
-        OffsetMap record2CommitOffset = new OffsetMap(new HashMap<TopicPartition, OffsetAndMetadata>() {{
+        }};
+        Map<TopicPartition, OffsetAndMetadata> record2CommitOffset = new HashMap<TopicPartition, OffsetAndMetadata>() {{
             put(new TopicPartition("topic", 0), new OffsetAndMetadata(2));
-        }});
-        OffsetMap record3CommitOffset = new OffsetMap(new HashMap<TopicPartition, OffsetAndMetadata>() {{
+        }};
+        Map<TopicPartition, OffsetAndMetadata> record3CommitOffset = new HashMap<TopicPartition, OffsetAndMetadata>() {{
             put(new TopicPartition("topic", 0), new OffsetAndMetadata(3));
-        }});
+        }};
         int ackDelayRandomMs = 100;
         when(clock.currentEpochMillis()).thenReturn(0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 1001L);
-        BlockingQueue<OffsetMap> commitQueue = spy(new LinkedBlockingQueue<>());
+        BlockingQueue<Map<TopicPartition, OffsetAndMetadata>> commitQueue = spy(new LinkedBlockingQueue<>());
         OffsetCommitWorker committer = new OffsetCommitWorker("committer", new QueueConfig(200), kafkaCommitter, offsetState, commitQueue, workerState, clock);
         committer.setDefaultSleepMs(50);
-        List<OffsetMap> incomingRecords = Arrays.asList(record1CommitOffset, record2CommitOffset, record3CommitOffset);
-        for (OffsetMap incomingRecord : incomingRecords) {
+        List<Map<TopicPartition, OffsetAndMetadata>> incomingRecords = Arrays.asList(record1CommitOffset, record2CommitOffset, record3CommitOffset);
+        for (Map<TopicPartition, OffsetAndMetadata> incomingRecord : incomingRecords) {
             commitQueue.offer(incomingRecord, 1, TimeUnit.SECONDS);
         }
 
@@ -186,7 +184,7 @@ public class OffsetCommitWorkerTest {
     public void shouldStopProcessWhenCommitterGetException() throws InterruptedException {
         doThrow(ConcurrentModificationException.class).when(kafkaCommitter).commitSync(anyMap());
         offsetAcknowledger.acknowledge(offsetMap);
-        BlockingQueue<OffsetMap> commitQueue = spy(new LinkedBlockingQueue<>());
+        BlockingQueue<Map<TopicPartition, OffsetAndMetadata>> commitQueue = spy(new LinkedBlockingQueue<>());
         when(clock.currentEpochMillis()).thenReturn(0L, 0L, 0L, 1001L);
         OffsetCommitWorker committer = new OffsetCommitWorker("committer", new QueueConfig(200), kafkaCommitter, offsetState, commitQueue, workerState, clock);
         commitQueue.put(offsetMap);
@@ -203,11 +201,11 @@ public class OffsetCommitWorkerTest {
 
 class AcknowledgeHelper extends Thread {
 
-    private OffsetMap offset;
+    private Map<TopicPartition, OffsetAndMetadata> offset;
     private Acknowledger acknowledger;
     private long sleepMs;
 
-    AcknowledgeHelper(OffsetMap offset, Acknowledger acknowledger, long sleepMs) {
+    AcknowledgeHelper(Map<TopicPartition, OffsetAndMetadata> offset, Acknowledger acknowledger, long sleepMs) {
         this.offset = offset;
         this.acknowledger = acknowledger;
         this.sleepMs = sleepMs;
