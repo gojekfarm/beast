@@ -2,15 +2,15 @@ package com.gojek.beast.sink.executor;
 
 import com.gojek.beast.backoff.BackOffProvider;
 import com.gojek.beast.models.FailureStatus;
+import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
 import com.gojek.beast.sink.Sink;
-import com.gojek.beast.sink.SinkElement;
 import com.gojek.beast.stats.Stats;
 
 public class RetryExecutor implements Executor {
 
     private Sink sink;
-    private SinkElement records;
+    private Records records;
     private int maxAttempts;
     private BackOffProvider backOffProvider;
     private final Stats statsClient = Stats.client(); // metrics client
@@ -18,7 +18,7 @@ public class RetryExecutor implements Executor {
     private Status status;
     private int attemptCount = 0;
 
-    public RetryExecutor(Sink sink, SinkElement records, int maxAttempts, BackOffProvider backOffProvider) {
+    public RetryExecutor(Sink sink, Records records, int maxAttempts, BackOffProvider backOffProvider) {
         this.sink = sink;
         this.records = records;
         this.maxAttempts = maxAttempts;

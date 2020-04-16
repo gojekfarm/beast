@@ -13,7 +13,7 @@ import java.time.Instant;
 import java.util.concurrent.BlockingQueue;
 
 @AllArgsConstructor
-public class OffsetMapQueueSink implements Sink<Records> {
+public class OffsetMapQueueSink implements Sink {
     private final Stats statsClient = Stats.client();
     private final BlockingQueue<OffsetMap> recordQueue;
     private final QueueConfig config;

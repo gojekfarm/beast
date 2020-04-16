@@ -1,9 +1,10 @@
 package com.gojek.beast.sink;
 
+import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
 
-public interface Sink<T extends SinkElement> {
-    Status push(T records);
+public interface Sink {
+    Status push(Records records);
 
     void close(String reason);
 }

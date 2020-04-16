@@ -1,6 +1,7 @@
 package com.gojek.beast.sink;
 
 import com.gojek.beast.backoff.BackOffProvider;
+import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
 import com.gojek.beast.sink.executor.RetryExecutor;
 import com.gojek.beast.stats.Stats;
@@ -9,14 +10,14 @@ import lombok.AllArgsConstructor;
 import java.time.Instant;
 
 @AllArgsConstructor
-public class RetrySink<T extends SinkElement> implements Sink<T> {
+public class RetrySink implements Sink {
     private final Stats statsClient = Stats.client();
     private Sink sink;
     private BackOffProvider backOffProvider;
     private int maxRetryAttempts;
 
     @Override
-    public Status push(T records) {
+    public Status push(Records records) {
         Instant start = Instant.now();
         Status pushStatus;
 
