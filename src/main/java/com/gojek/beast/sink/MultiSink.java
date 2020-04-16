@@ -1,8 +1,8 @@
 package com.gojek.beast.sink;
 
 import com.gojek.beast.models.MultiException;
-import com.gojek.beast.models.Status;
 import com.gojek.beast.models.Records;
+import com.gojek.beast.models.Status;
 import com.gojek.beast.models.SuccessStatus;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

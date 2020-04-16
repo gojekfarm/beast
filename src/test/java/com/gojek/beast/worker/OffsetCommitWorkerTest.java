@@ -36,7 +36,7 @@ public class OffsetCommitWorkerTest {
     @Captor
     private ArgumentCaptor<Map<TopicPartition, OffsetAndMetadata>> commitPartitionsOffsetCaptor;
     @Mock
-    private Map<TopicPartition, OffsetAndMetadata> offsetMap;
+    private Map<TopicPartition, OffsetAndMetadata> commitPartitionsOffset;
     @Mock
     private KafkaCommitter kafkaCommitter;
     private QueueConfig queueConfig;
@@ -56,7 +56,7 @@ public class OffsetCommitWorkerTest {
         offsetCommitTime = 1000;
         ackTimeoutTime = 2000;
         queueConfig = new QueueConfig(pollTimeout);
-        offsetMap = new HashMap<TopicPartition, OffsetAndMetadata>() {{
+        commitPartitionsOffset = new HashMap<TopicPartition, OffsetAndMetadata>() {{
             put(new TopicPartition("topic", 0), new OffsetAndMetadata(1));
         }};
         CopyOnWriteArraySet<Map<TopicPartition, OffsetAndMetadata>> ackSet = new CopyOnWriteArraySet<>();
@@ -78,8 +78,8 @@ public class OffsetCommitWorkerTest {
         BlockingQueue<Map<TopicPartition, OffsetAndMetadata>> commitQueue = spy(new LinkedBlockingQueue<>());
         OffsetCommitWorker committer = new OffsetCommitWorker("committer", new QueueConfig(200), kafkaCommitter, offsetState, commitQueue, workerState, clock);
         committer.setDefaultSleepMs(10);
-        commitQueue.put(offsetMap);
-        offsetAcknowledger.acknowledge(offsetMap);
+        commitQueue.put(commitPartitionsOffset);
+        offsetAcknowledger.acknowledge(commitPartitionsOffset);
 
         Thread commitThread = new Thread(committer);
         commitThread.start();
@@ -183,11 +183,11 @@ public class OffsetCommitWorkerTest {
     @Test
     public void shouldStopProcessWhenCommitterGetException() throws InterruptedException {
         doThrow(ConcurrentModificationException.class).when(kafkaCommitter).commitSync(anyMap());
-        offsetAcknowledger.acknowledge(offsetMap);
+        offsetAcknowledger.acknowledge(commitPartitionsOffset);
         BlockingQueue<Map<TopicPartition, OffsetAndMetadata>> commitQueue = spy(new LinkedBlockingQueue<>());
         when(clock.currentEpochMillis()).thenReturn(0L, 0L, 0L, 1001L);
         OffsetCommitWorker committer = new OffsetCommitWorker("committer", new QueueConfig(200), kafkaCommitter, offsetState, commitQueue, workerState, clock);
-        commitQueue.put(offsetMap);
+        commitQueue.put(commitPartitionsOffset);
 
         Thread commiterThread = new Thread(committer);
         commiterThread.start();

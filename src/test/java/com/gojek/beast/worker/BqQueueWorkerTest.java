@@ -44,7 +44,7 @@ public class BqQueueWorkerTest {
     @Mock
     private Sink failureSink;
     @Mock
-    private Map<TopicPartition, OffsetAndMetadata> offsetMap;
+    private Map<TopicPartition, OffsetAndMetadata> offsetInfos;
     private WorkerState workerState;
 
     @Before
@@ -52,7 +52,7 @@ public class BqQueueWorkerTest {
         pollTimeout = 200;
         queueConfig = new QueueConfig(pollTimeout);
         when(successfulSink.push(any())).thenReturn(new SuccessStatus());
-        when(messages.getPartitionsCommitOffset()).thenReturn(offsetMap);
+        when(messages.getPartitionsCommitOffset()).thenReturn(offsetInfos);
         when(messages.getPolledTime()).thenReturn(Instant.now());
         workerState = new WorkerState();
     }
@@ -102,7 +102,7 @@ public class BqQueueWorkerTest {
         WorkerUtil.closeWorker(worker, workerState, 200);
         workerThread.join();
         verify(successfulSink).push(messages);
-        verify(committer).acknowledge(offsetMap);
+        verify(committer).acknowledge(offsetInfos);
     }
 
     @Test

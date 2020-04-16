@@ -24,7 +24,7 @@ public class RetrySink implements Sink {
         RetryExecutor retryExecutor = new RetryExecutor(sink, records, maxRetryAttempts, backOffProvider);
         pushStatus = retryExecutor.execute().status();
 
-        statsClient.gauge("RetrySink.queue.push.messages", records.getSize());
+        statsClient.gauge("RetrySink.queue.push.messages", records.size());
         statsClient.timeIt("RetrySink.queue.push.time", start);
         return pushStatus;
     }

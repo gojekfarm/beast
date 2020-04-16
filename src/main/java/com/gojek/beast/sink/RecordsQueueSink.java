@@ -27,7 +27,7 @@ public class RecordsQueueSink implements Sink {
         } catch (InterruptedException e) {
             return new FailureStatus(e);
         }
-        statsClient.gauge("sink.queue.push.messages", messages.getSize());
+        statsClient.gauge("sink.queue.push.messages", messages.size());
         statsClient.timeIt("sink.queue.push.time", start);
         return offered ? new SuccessStatus()
                 : new FailureStatus(new RuntimeException(String.format("%s queue is full with capacity: %d", config.getName(), recordQueue.size())));
