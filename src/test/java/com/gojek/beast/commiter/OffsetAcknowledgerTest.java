@@ -1,13 +1,11 @@
 package com.gojek.beast.commiter;
 
-import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.common.TopicPartition;
+import com.gojek.beast.models.OffsetMap;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 
 import java.util.Collections;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -17,9 +15,9 @@ import static org.mockito.Mockito.mock;
 
 public class OffsetAcknowledgerTest {
     private Acknowledger offsetAcknowledger;
-    private Set<Map<TopicPartition, OffsetAndMetadata>> acknowledgements;
+    private Set<OffsetMap> acknowledgements;
     @Mock
-    private Map<TopicPartition, OffsetAndMetadata> commitPartitionsOffset;
+    private OffsetMap commitPartitionsOffset;
 
     @Before
     public void setUp() throws Exception {
@@ -29,7 +27,7 @@ public class OffsetAcknowledgerTest {
 
     @Test
     public void shouldPushAcknowledgementsToSet() {
-        Map<TopicPartition, OffsetAndMetadata> partition1Offset = mock(Map.class);
+        OffsetMap partition1Offset = mock(OffsetMap.class);
 
         offsetAcknowledger.acknowledge(commitPartitionsOffset);
         offsetAcknowledger.acknowledge(partition1Offset);

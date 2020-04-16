@@ -24,7 +24,7 @@ import static com.google.cloud.bigquery.InsertAllRequest.*;
 
 @Slf4j
 @AllArgsConstructor
-public class BqSink implements Sink {
+public class BqSink implements Sink<com.gojek.beast.models.Records> {
 
     private final BigQuery bigquery;
     private final TableId tableId;

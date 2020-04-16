@@ -1,7 +1,6 @@
 package com.gojek.beast.sink;
 
 import com.gojek.beast.models.MultiException;
-import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
 import com.gojek.beast.models.SuccessStatus;
 import lombok.AllArgsConstructor;
@@ -12,11 +11,11 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @AllArgsConstructor
-public class MultiSink implements Sink {
+public class MultiSink<T extends SinkElement> implements Sink<T> {
     private final List<Sink> sinks;
 
     @Override
-    public Status push(Records records) {
+    public Status push(T records) {
         List<Status> failures = sinks.stream()
                 .map(s -> s.push(records))
                 .filter(s -> !s.isSuccess())

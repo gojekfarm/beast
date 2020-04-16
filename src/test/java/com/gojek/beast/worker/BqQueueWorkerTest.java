@@ -3,13 +3,12 @@ package com.gojek.beast.worker;
 import com.gojek.beast.commiter.Acknowledger;
 import com.gojek.beast.config.QueueConfig;
 import com.gojek.beast.models.FailureStatus;
+import com.gojek.beast.models.OffsetMap;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.SuccessStatus;
 import com.gojek.beast.sink.Sink;
 import com.gojek.beast.util.WorkerUtil;
 import com.google.cloud.bigquery.BigQueryException;
-import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.common.TopicPartition;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -17,7 +16,6 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.time.Instant;
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -44,7 +42,7 @@ public class BqQueueWorkerTest {
     @Mock
     private Sink failureSink;
     @Mock
-    private Map<TopicPartition, OffsetAndMetadata> offsetInfos;
+    private OffsetMap offsetMap;
     private WorkerState workerState;
 
     @Before
@@ -52,7 +50,7 @@ public class BqQueueWorkerTest {
         pollTimeout = 200;
         queueConfig = new QueueConfig(pollTimeout);
         when(successfulSink.push(any())).thenReturn(new SuccessStatus());
-        when(messages.getPartitionsCommitOffset()).thenReturn(offsetInfos);
+        when(messages.getPartitionsCommitOffset()).thenReturn(offsetMap);
         when(messages.getPolledTime()).thenReturn(Instant.now());
         workerState = new WorkerState();
     }
@@ -102,7 +100,7 @@ public class BqQueueWorkerTest {
         WorkerUtil.closeWorker(worker, workerState, 200);
         workerThread.join();
         verify(successfulSink).push(messages);
-        verify(committer).acknowledge(offsetInfos);
+        verify(committer).acknowledge(offsetMap);
     }
 
     @Test

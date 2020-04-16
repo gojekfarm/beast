@@ -5,11 +5,11 @@ import com.gojek.beast.commiter.KafkaCommitter;
 import com.gojek.beast.commiter.OffsetState;
 import com.gojek.beast.config.QueueConfig;
 import com.gojek.beast.models.FailureStatus;
+import com.gojek.beast.models.OffsetMap;
+import com.gojek.beast.models.Status;
 import com.gojek.beast.models.OffsetMetadata;
 import com.gojek.beast.models.SuccessStatus;
 import com.gojek.beast.stats.Stats;
-import com.gojek.beast.models.Records;
-import com.gojek.beast.models.Status;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -24,7 +24,7 @@ import java.util.concurrent.BlockingQueue;
 public class OffsetCommitWorker extends Worker {
     private static final int DEFAULT_SLEEP_MS = 100;
     private final Stats statsClient = Stats.client();
-    private final BlockingQueue<Records> commitQueue;
+    private final BlockingQueue<OffsetMap> commitQueue;
     private final QueueConfig queueConfig;
     private final KafkaCommitter kafkaCommitter;
     @Setter
@@ -33,7 +33,7 @@ public class OffsetCommitWorker extends Worker {
     private OffsetState offsetState;
     private Clock clock;
 
-    public OffsetCommitWorker(String name, QueueConfig queueConfig, KafkaCommitter kafkaCommitter, OffsetState offsetState, BlockingQueue<Records> commitQueue, WorkerState workerState, Clock clock) {
+    public OffsetCommitWorker(String name, QueueConfig queueConfig, KafkaCommitter kafkaCommitter, OffsetState offsetState, BlockingQueue<OffsetMap> commitQueue, WorkerState workerState, Clock clock) {
         super(name, workerState);
         this.clock = clock;
         this.queueConfig = queueConfig;
@@ -61,23 +61,23 @@ public class OffsetCommitWorker extends Worker {
 
             int offsetClubbedBatches = 0;
             while (true) {
-                Records commitOffset = commitQueue.poll(queueConfig.getTimeout(), queueConfig.getTimeoutUnit());
+                OffsetMap currentOffset = commitQueue.poll(queueConfig.getTimeout(), queueConfig.getTimeoutUnit());
                 if (stopped || clock.currentEpochMillis() - start > offsetState.getOffsetCommitTime()) {
                     break;
                 }
 
-                if (commitOffset == null) {
+                if (currentOffset == null) {
                     continue;
                 }
 
-                Map<TopicPartition, OffsetAndMetadata> currentOffset = commitOffset.getPartitionsCommitOffset();
                 Instant commitQueuePollStartTime = Instant.now();
                 while (true) {
                     if (offsetState.removeFromOffsetAck(currentOffset)) {
-                        commitQueue.remove(commitOffset);
+                        commitQueue.remove(currentOffset);
 
-                        currentOffset.keySet().forEach(topicPartition -> {
-                            OffsetAndMetadata offsetAndMetadata = currentOffset.get(topicPartition);
+                        Map<TopicPartition, OffsetAndMetadata> offsetAndMetadataMap = currentOffset.getOffsetAndMetadataMap();
+                        offsetAndMetadataMap.keySet().forEach(topicPartition -> {
+                            OffsetAndMetadata offsetAndMetadata = offsetAndMetadataMap.get(topicPartition);
                             OffsetMetadata previousOffset = (OffsetMetadata) partitionsCommitOffset.getOrDefault(topicPartition, new OffsetMetadata(Integer.MIN_VALUE));
                             OffsetMetadata newOffset = new OffsetMetadata(offsetAndMetadata.offset());
                             if (previousOffset.compareTo(newOffset) < 0) {

@@ -1,5 +1,6 @@
 package com.gojek.beast.models;
 
+import com.gojek.beast.sink.SinkElement;
 import lombok.Getter;
 import lombok.experimental.Delegate;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -10,7 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Records implements Iterable<Record> {
+public class Records implements Iterable<Record>, SinkElement {
     @Delegate
     @Getter
     private final List<Record> records;
@@ -27,10 +28,10 @@ public class Records implements Iterable<Record> {
         this.polledTime = polledTime;
     }
 
-    public Map<TopicPartition, OffsetAndMetadata> getPartitionsCommitOffset() {
+    public OffsetMap getPartitionsCommitOffset() {
         // kafka commit requires offset + 1 (next offset)
         if (!partitionsCommitOffset.isEmpty()) {
-            return partitionsCommitOffset;
+            return new OffsetMap(partitionsCommitOffset);
         }
         records.forEach(r -> {
             OffsetInfo offsetInfo = r.getOffsetInfo();
@@ -41,7 +42,7 @@ public class Records implements Iterable<Record> {
                 partitionsCommitOffset.put(key, value);
             }
         });
-        return partitionsCommitOffset;
+        return new OffsetMap(partitionsCommitOffset);
     }
 
     public long getSize() {
