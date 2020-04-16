@@ -22,7 +22,8 @@ import com.gojek.beast.consumer.RebalanceListener;
 import com.gojek.beast.models.OffsetMap;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.sink.MultiSink;
-import com.gojek.beast.sink.QueueSink;
+import com.gojek.beast.sink.RecordsQueueSink;
+import com.gojek.beast.sink.OffsetMapQueueSink;
 import com.gojek.beast.sink.RetrySink;
 import com.gojek.beast.sink.Sink;
 import com.gojek.beast.sink.bq.BQRowWithInsertId;
@@ -103,7 +104,16 @@ public class BeastFactory {
         return threads;
     }
 
-    public Sink createBigQuerySink() {
+    public OffsetCommitWorker createOffsetCommitter() {
+        if (committer != null) {
+            return committer;
+        }
+        OffsetState offsetState = new OffsetState(partitionsAck, appConfig.getOffsetAckTimeoutMs(), appConfig.getOffsetCommitTime());
+        committer = new OffsetCommitWorker("committer", new QueueConfig(appConfig.getBqWorkerPollTimeoutMs(), "commit"), createKafkaConsumer(), offsetState, commitQueue, workerState, new Clock());
+        return committer;
+    }
+
+    private Sink createBigQuerySink() {
         BigQuery bq = getBigQueryInstance();
         BQResponseParser responseParser = new BQResponseParser();
         BQErrorHandler bqErrorHandler = createOOBErrorHandler();
@@ -115,7 +125,7 @@ public class BeastFactory {
         return new RetrySink(bqSink, new ExponentialBackOffProvider(backOffConfig.getExponentialBackoffInitialTimeInMs(), backOffConfig.getExponentialBackoffMaximumTimeInMs(), backOffConfig.getExponentialBackoffRate(), new BackOff()), appConfig.getMaxPushAttempts());
     }
 
-    public BQErrorHandler createOOBErrorHandler() {
+    private BQErrorHandler createOOBErrorHandler() {
         final Storage gcsStore = getGCStorageInstance();
         ErrorWriter errorWriter = new DefaultLogWriter();
         if (appConfig.isGCSErrorSinkEnabled()) {
@@ -156,21 +166,12 @@ public class BeastFactory {
         return credentials;
     }
 
-    public OffsetCommitWorker createOffsetCommitter() {
-        if (committer != null) {
-            return committer;
-        }
-        OffsetState offsetState = new OffsetState(partitionsAck, appConfig.getOffsetAckTimeoutMs(), appConfig.getOffsetCommitTime());
-        committer = new OffsetCommitWorker("committer", new QueueConfig(appConfig.getBqWorkerPollTimeoutMs(), "commit"), createKafkaConsumer(), offsetState, commitQueue, workerState, new Clock());
-        return committer;
-    }
-
     private MultiSink createMultiSink() {
         if (multiSink != null) {
             return multiSink;
         }
-        QueueSink readQueueSink = new QueueSink(readQueue, new QueueConfig(appConfig.getBqWorkerPollTimeoutMs(), "read"));
-        QueueSink committerQueueSink = new QueueSink(commitQueue, new QueueConfig(appConfig.getBqWorkerPollTimeoutMs(), "commit"));
+        RecordsQueueSink readQueueSink = new RecordsQueueSink(readQueue, new QueueConfig(appConfig.getBqWorkerPollTimeoutMs(), "read"));
+        OffsetMapQueueSink committerQueueSink = new OffsetMapQueueSink(commitQueue, new QueueConfig(appConfig.getBqWorkerPollTimeoutMs(), "commit"));
         multiSink = new MultiSink(Arrays.asList(readQueueSink, committerQueueSink));
         return multiSink;
     }
