@@ -6,7 +6,6 @@ import com.gojek.beast.sink.bq.handler.impl.BQErrorHandlerException;
 import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
-import com.gojek.beast.models.SuccessStatus;
 import com.gojek.beast.sink.Sink;
 import com.gojek.beast.stats.Stats;
 import com.google.cloud.bigquery.BigQueryException;
@@ -14,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.time.Instant;
 import java.util.concurrent.BlockingQueue;
+
+import static com.gojek.beast.config.Constants.SUCCESS_STATUS;
 
 @Slf4j
 public class BqQueueWorker extends Worker {
@@ -37,7 +38,7 @@ public class BqQueueWorker extends Worker {
         Instant start = Instant.now();
         try {
             Records poll = queue.poll(config.getTimeout(), config.getTimeoutUnit());
-            if (poll == null || poll.isEmpty()) return new SuccessStatus();
+            if (poll == null || poll.isEmpty()) return SUCCESS_STATUS;
             Status status = pushToSink(poll);
             if (!status.isSuccess()) {
                 queue.offer(poll, config.getTimeout(), config.getTimeoutUnit());
@@ -49,15 +50,15 @@ public class BqQueueWorker extends Worker {
             return new FailureStatus(e);
         }
         statsClient.timeIt("worker.queue.bq.processing.time", start);
-        return new SuccessStatus();
+        return SUCCESS_STATUS;
     }
 
     private Status pushToSink(Records poll) {
         Status status;
         try {
             status = sink.push(poll);
-            statsClient.gauge("batch.records.size," + statsClient.getBqTags(), poll.getSize());
-            statsClient.gauge("batch.records.count," + statsClient.getBqTags(), poll.getRecords().size());
+            statsClient.count("kafka.batch.records.size," + statsClient.getBqTags(), poll.getSize());
+            statsClient.count("kafka.batch.records.count," + statsClient.getBqTags(), poll.getRecords().size());
         } catch (BigQueryException e) {
             statsClient.increment("worker.queue.bq.errors");
             log.error("Exception::Failed to write to BQ: {}", e.getMessage());
@@ -73,7 +74,7 @@ public class BqQueueWorker extends Worker {
             if (!ackStatus) {
                 statsClient.increment("batch.partition.offsets.reprocessed");
             }
-            return new SuccessStatus();
+            return SUCCESS_STATUS;
         } else {
             statsClient.increment("worker.queue.bq.push_failure");
             log.error("Failed to push records to sink {}", status.toString());

@@ -4,7 +4,6 @@ import com.gojek.beast.commiter.Acknowledger;
 import com.gojek.beast.config.QueueConfig;
 import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.models.Records;
-import com.gojek.beast.models.SuccessStatus;
 import com.gojek.beast.sink.Sink;
 import com.gojek.beast.util.WorkerUtil;
 import com.google.cloud.bigquery.BigQueryException;
@@ -22,6 +21,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import static com.gojek.beast.config.Constants.SUCCESS_STATUS;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doThrow;
@@ -51,7 +51,7 @@ public class BqQueueWorkerTest {
     public void setUp() {
         pollTimeout = 200;
         queueConfig = new QueueConfig(pollTimeout);
-        when(successfulSink.push(any())).thenReturn(new SuccessStatus());
+        when(successfulSink.push(any())).thenReturn(SUCCESS_STATUS);
         when(messages.getPartitionsCommitOffset()).thenReturn(offsetInfos);
         when(messages.getPolledTime()).thenReturn(Instant.now());
         workerState = new WorkerState();

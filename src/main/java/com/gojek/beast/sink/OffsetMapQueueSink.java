@@ -4,7 +4,6 @@ import com.gojek.beast.config.QueueConfig;
 import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
-import com.gojek.beast.models.SuccessStatus;
 import com.gojek.beast.stats.Stats;
 import lombok.AllArgsConstructor;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -13,6 +12,8 @@ import org.apache.kafka.common.TopicPartition;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+
+import static com.gojek.beast.config.Constants.SUCCESS_STATUS;
 
 @AllArgsConstructor
 public class OffsetMapQueueSink implements Sink {
@@ -31,11 +32,14 @@ public class OffsetMapQueueSink implements Sink {
         } catch (InterruptedException e) {
             return new FailureStatus(e);
         }
-        statsClient.count("sink.queue.push.messages", offsetmap.size());
-        statsClient.timeIt("sink.queue.push.time", start);
-        return offered ? new SuccessStatus()
-                : new FailureStatus(new RuntimeException(String.format("%s queue is full with capacity: %d", config.getName(), recordQueue.size())));
-
+        statsClient.count("commitQueueSink.push.messages", offsetmap.size());
+        statsClient.timeIt("commitQueueSink.push.time", start);
+        if (offered) {
+            return SUCCESS_STATUS;
+        } else {
+            statsClient.increment("commitQueueSink.push.failures");
+            return new FailureStatus(new RuntimeException(String.format("%s queue is full with capacity: %d", config.getName(), recordQueue.size())));
+        }
     }
 
 
