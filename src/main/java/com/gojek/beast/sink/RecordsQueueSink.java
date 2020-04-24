@@ -4,12 +4,13 @@ import com.gojek.beast.config.QueueConfig;
 import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
-import com.gojek.beast.models.SuccessStatus;
 import com.gojek.beast.stats.Stats;
 import lombok.AllArgsConstructor;
 
 import java.time.Instant;
 import java.util.concurrent.BlockingQueue;
+
+import static com.gojek.beast.config.Constants.SUCCESS_STATUS;
 
 @AllArgsConstructor
 public class RecordsQueueSink implements Sink {
@@ -27,10 +28,15 @@ public class RecordsQueueSink implements Sink {
         } catch (InterruptedException e) {
             return new FailureStatus(e);
         }
-        statsClient.gauge("sink.queue.push.messages", messages.size());
-        statsClient.timeIt("sink.queue.push.time", start);
-        return offered ? new SuccessStatus()
-                : new FailureStatus(new RuntimeException(String.format("%s queue is full with capacity: %d", config.getName(), recordQueue.size())));
+        statsClient.count("readQueueSink.push.messages", messages.size());
+        statsClient.timeIt("readQueueSink.push.time", start);
+
+        if (offered) {
+            return SUCCESS_STATUS;
+        } else {
+            statsClient.increment("readQueueSink.push.failures");
+            return new FailureStatus(new RuntimeException(String.format("%s queue is full with capacity: %d", config.getName(), recordQueue.size())));
+        }
     }
 
     @Override

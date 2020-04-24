@@ -6,7 +6,6 @@ import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.models.Record;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
-import com.gojek.beast.models.SuccessStatus;
 import com.gojek.beast.sink.Sink;
 import com.gojek.beast.stats.Stats;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -16,6 +15,8 @@ import org.apache.kafka.common.errors.WakeupException;
 
 import java.time.Instant;
 import java.util.List;
+
+import static com.gojek.beast.config.Constants.SUCCESS_STATUS;
 
 @Slf4j
 public class MessageConsumer {
@@ -39,10 +40,10 @@ public class MessageConsumer {
         }
         Instant startTime = Instant.now();
         ConsumerRecords<byte[], byte[]> messages = kafkaConsumer.poll(timeoutMillis);
-        statsClient.gauge("kafkaConsumer.poll.messages", messages.count());
-        statsClient.timeIt("kafkaConsumer.consumption.time", startTime);
+        statsClient.count("kafka.consumer.poll.messages", messages.count());
+        statsClient.timeIt("kafka.consumer.consumption.time", startTime);
         if (messages.isEmpty()) {
-            return new SuccessStatus();
+            return SUCCESS_STATUS;
         }
         log.info("Pulled {} messages", messages.count());
         Status status = pushToSink(messages, startTime);
