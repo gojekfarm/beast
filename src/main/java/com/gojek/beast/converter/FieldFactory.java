@@ -14,20 +14,22 @@ import java.util.List;
 import java.util.Optional;
 
 public class FieldFactory {
+    private static final List<ProtoField> PROTO_FIELDS = Arrays.asList(
+            new TimestampField(),
+            new EnumField(),
+            new ByteField(),
+            new StructField(),
+            new NestedField()
+    );
+    private static final DefaultProtoField DEFAULT_PROTO_FIELD = new DefaultProtoField();
 
     public static ProtoField getField(Descriptors.FieldDescriptor descriptor, Object fieldValue) {
-        List<ProtoField> protoFields = Arrays.asList(
-                new TimestampField(descriptor, fieldValue),
-                new EnumField(descriptor, fieldValue),
-                new ByteField(descriptor, fieldValue),
-                new StructField(descriptor, fieldValue),
-                new NestedField(descriptor, fieldValue)
-        );
-        Optional<ProtoField> first = protoFields
+
+        Optional<ProtoField> first = PROTO_FIELDS
                 .stream()
-                .filter(ProtoField::matches)
+                .filter(field -> field.matches(descriptor, fieldValue))
                 .findFirst();
-        return first.orElseGet(() -> new DefaultProtoField(descriptor, fieldValue));
+        return first.orElse(DEFAULT_PROTO_FIELD);
     }
 
 }

@@ -44,10 +44,10 @@ public class RowMapper {
             }
             Integer protoIndex = Integer.valueOf(column);
             Descriptors.FieldDescriptor fieldDesc = descriptorForType.findFieldByNumber(protoIndex);
-            if (fieldDesc != null && !message.getField(fieldDesc).toString().isEmpty()) {
+            if (fieldDesc != null && message.getField(fieldDesc) != null) {
                 Object field = message.getField(fieldDesc);
                 ProtoField protoField = FieldFactory.getField(fieldDesc, field);
-                Object fieldValue = protoField.getValue();
+                Object fieldValue = protoField.getValue(fieldDesc, field);
 
                 if (fieldValue instanceof List) {
                     addRepeatedFields(row, (String) key, value, (List<Object>) fieldValue);

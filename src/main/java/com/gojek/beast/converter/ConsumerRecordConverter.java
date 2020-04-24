@@ -23,8 +23,7 @@ public class ConsumerRecordConverter implements Converter {
     public List<Record> convert(final Iterable<ConsumerRecord<byte[], byte[]>> messages) throws InvalidProtocolBufferException {
         ArrayList<Record> records = new ArrayList<>();
         for (ConsumerRecord<byte[], byte[]> message : messages) {
-            byte[] value = message.value();
-            Map<String, Object> columns = rowMapper.map(parser.parse(value));
+            Map<String, Object> columns = rowMapper.map(parser.parse(message.value()));
             OffsetInfo offsetInfo = new OffsetInfo(message.topic(), message.partition(), message.offset(), message.timestamp());
             addMetadata(columns, offsetInfo);
             records.add(new Record(offsetInfo, columns));

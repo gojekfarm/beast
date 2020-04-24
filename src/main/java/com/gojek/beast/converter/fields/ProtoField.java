@@ -1,8 +1,10 @@
 package com.gojek.beast.converter.fields;
 
+import com.google.protobuf.Descriptors;
+
 public interface ProtoField {
 
-    Object getValue();
+    Object getValue(Descriptors.FieldDescriptor fieldDescriptor, Object fieldValue);
 
-    boolean matches();
+    boolean matches(Descriptors.FieldDescriptor descriptor, Object fieldValue);
 }

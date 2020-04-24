@@ -8,11 +8,10 @@ import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 public class StructField implements ProtoField {
-    private final Descriptors.FieldDescriptor descriptor;
-    private final Object fieldValue;
+    private static final String MESSAGE = "MESSAGE";
 
     @Override
-    public Object getValue() {
+    public Object getValue(Descriptors.FieldDescriptor fieldDescriptor, Object fieldValue) {
         try {
             return JsonFormat.printer()
                     .omittingInsignificantWhitespace()
@@ -23,8 +22,8 @@ public class StructField implements ProtoField {
     }
 
     @Override
-    public boolean matches() {
-        return descriptor.getJavaType().name().equals("MESSAGE")
-                && descriptor.getMessageType().getFullName().equals(com.google.protobuf.Struct.getDescriptor().getFullName());
+    public boolean matches(Descriptors.FieldDescriptor fieldDescriptor, Object fieldValue) {
+        return fieldDescriptor.getJavaType().name().equals(MESSAGE)
+                && fieldDescriptor.getMessageType().getFullName().equals(com.google.protobuf.Struct.getDescriptor().getFullName());
     }
 }

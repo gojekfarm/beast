@@ -8,17 +8,16 @@ import java.util.List;
 
 @AllArgsConstructor
 public class NestedField implements ProtoField {
-    private final Descriptors.FieldDescriptor descriptor;
-    private final Object fieldValue;
+    private static final String MESSAGE = "MESSAGE";
 
     @Override
-    public DynamicMessage getValue() {
+    public DynamicMessage getValue(Descriptors.FieldDescriptor fieldDescriptor, Object fieldValue) {
         return (DynamicMessage) fieldValue;
     }
 
     @Override
-    public boolean matches() {
-        return descriptor.getJavaType().name().equals("MESSAGE")
+    public boolean matches(Descriptors.FieldDescriptor fieldDescriptor, Object fieldValue) {
+        return fieldDescriptor.getJavaType().name().equals(MESSAGE)
                 && !(fieldValue instanceof List);
     }
 }

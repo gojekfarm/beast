@@ -45,9 +45,7 @@ public class Records implements Iterable<Record> {
     }
 
     public long getSize() {
-        return records.stream().mapToLong(record -> {
-            return record.getSize();
-        }).sum();
+        return records.stream().mapToLong(Record::getSize).sum();
     }
 
     @Override
