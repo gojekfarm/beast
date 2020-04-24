@@ -7,7 +7,6 @@ import com.gojek.beast.config.QueueConfig;
 import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.models.Status;
 import com.gojek.beast.models.OffsetMetadata;
-import com.gojek.beast.models.SuccessStatus;
 import com.gojek.beast.stats.Stats;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +17,8 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+
+import static com.gojek.beast.config.Constants.SUCCESS_STATUS;
 
 @Slf4j
 public class OffsetCommitWorker extends Worker {
@@ -104,7 +105,7 @@ public class OffsetCommitWorker extends Worker {
             e.printStackTrace();
             return new FailureStatus(new RuntimeException("Exception in offset committer: " + e.getMessage()));
         }
-        return new SuccessStatus();
+        return SUCCESS_STATUS;
     }
 
     private void commit(Map<TopicPartition, OffsetAndMetadata> partitionsCommitOffset) {

@@ -4,7 +4,6 @@ import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.models.MultiException;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
-import com.gojek.beast.models.SuccessStatus;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -13,6 +12,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import java.util.Arrays;
 import java.util.Collections;
 
+import static com.gojek.beast.config.Constants.SUCCESS_STATUS;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -32,7 +32,7 @@ public class MultiSinkTest {
     public void shouldPushToMultipleSinks() {
         Sink sink1 = mock(Sink.class);
         Sink sink2 = mock(Sink.class);
-        Status success = new SuccessStatus();
+        Status success = SUCCESS_STATUS;
         when(sink1.push(records)).thenReturn(success);
         when(sink2.push(records)).thenReturn(success);
         multiSink = new MultiSink(Arrays.asList(sink1, sink2));
@@ -48,7 +48,7 @@ public class MultiSinkTest {
     public void shouldReturnFailureStatusWhenOneSinkFails() {
         Sink sink1 = mock(Sink.class);
         Sink sink2 = mock(Sink.class);
-        Status success = new SuccessStatus();
+        Status success = SUCCESS_STATUS;
         Exception cause = new Exception();
         Status failure = new FailureStatus(cause);
         when(sink1.push(records)).thenReturn(failure);

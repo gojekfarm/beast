@@ -1,13 +1,13 @@
 package com.gojek.beast.worker;
 
 import com.gojek.beast.consumer.MessageConsumer;
-import com.gojek.beast.models.SuccessStatus;
 import org.apache.kafka.common.errors.WakeupException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import static com.gojek.beast.config.Constants.SUCCESS_STATUS;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
@@ -23,7 +23,7 @@ public class ConsumerWorkerTest {
     @Test
     public void shouldConsumeMessagesWhenNotStopped() throws InterruptedException {
         Worker worker = new ConsumerWorker("consumer", consumer, new WorkerState());
-        when(consumer.consume()).thenReturn(new SuccessStatus());
+        when(consumer.consume()).thenReturn(SUCCESS_STATUS);
         new Thread(worker).start();
 
         Thread.sleep(50L);

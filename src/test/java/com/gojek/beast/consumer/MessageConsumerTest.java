@@ -5,7 +5,6 @@ import com.gojek.beast.converter.ConsumerRecordConverter;
 import com.gojek.beast.models.Record;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
-import com.gojek.beast.models.SuccessStatus;
 import com.gojek.beast.sink.Sink;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -21,6 +20,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.List;
 
+import static com.gojek.beast.config.Constants.SUCCESS_STATUS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -47,7 +47,7 @@ public class MessageConsumerTest {
     @Mock
     private List<Record> records;
     private MessageConsumer consumer;
-    private Status success = new SuccessStatus();
+    private Status success = SUCCESS_STATUS;
 
     @Before
     public void setUp() {
