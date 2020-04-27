@@ -7,6 +7,8 @@ import com.gojek.beast.config.ProtoMappingConfig;
 import com.gojek.beast.config.StencilConfig;
 import com.gojek.beast.converter.ConsumerRecordConverter;
 import com.gojek.beast.converter.RowMapper;
+import com.gojek.beast.exception.BQPartitionKeyNotSpecified;
+import com.gojek.beast.exception.BQSchemaMappingException;
 import com.gojek.beast.exception.BQTableUpdateFailure;
 import com.gojek.beast.exception.ProtoNotFoundException;
 import com.gojek.beast.models.BQField;
@@ -86,7 +88,7 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
             ProtoField protoField = protoFieldFactory.getProtoField();
             protoField = protoMappingParser.parseFields(protoField, proto, StencilUtils.getAllProtobufDescriptors(newDescriptors), StencilUtils.getTypeNameToPackageNameMap(newDescriptors));
             updateProtoParser(protoField);
-        } catch (BigQueryException | ProtoNotFoundException | IOException e) {
+        } catch (BigQueryException | ProtoNotFoundException | BQSchemaMappingException | BQPartitionKeyNotSpecified | IOException e) {
             String errMsg = "Error while updating bigquery table on callback:" + e.getMessage();
             log.error(errMsg);
             statsClient.increment("bq.table.upsert.failures");
