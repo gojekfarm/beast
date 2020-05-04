@@ -5,17 +5,15 @@ import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 public class DefaultProtoField implements ProtoField {
-    private final Descriptors.FieldDescriptor descriptor;
-    private final Object fieldValue;
 
     // handles primitives, repeated field
     @Override
-    public Object getValue() {
+    public Object getValue(Descriptors.FieldDescriptor fieldDescriptor, Object fieldValue) {
         return fieldValue;
     }
 
     @Override
-    public boolean matches() {
+    public boolean matches(Descriptors.FieldDescriptor fieldDescriptor, Object fieldValue) {
         return false;
     }
 }

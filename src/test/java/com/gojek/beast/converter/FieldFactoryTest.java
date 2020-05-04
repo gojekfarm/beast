@@ -71,7 +71,7 @@ public class FieldFactoryTest {
 
         assertEquals(ByteField.class.getName(), protoField.getClass().getName());
         String encodedToken = new String(Base64.getEncoder().encode("token".getBytes()));
-        assertEquals(encodedToken, protoField.getValue());
+        assertEquals(encodedToken, protoField.getValue(byteDesc, message.getField(byteDesc)));
     }
 
     @Test
@@ -103,6 +103,6 @@ public class FieldFactoryTest {
         ProtoField protoField = FieldFactory.getField(repeatedFieldDesc, message.getField(repeatedFieldDesc));
 
         assertEquals(DefaultProtoField.class.getName(), protoField.getClass().getName());
-        assertEquals(protoField.getValue(), message.getAliasesList().stream().map(String::toString).collect(Collectors.toList()));
+        assertEquals(protoField.getValue(repeatedFieldDesc, message.getField(repeatedFieldDesc)), message.getAliasesList().stream().map(String::toString).collect(Collectors.toList()));
     }
 }

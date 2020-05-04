@@ -8,12 +8,11 @@ import java.util.List;
 
 @AllArgsConstructor
 public class EnumField implements ProtoField {
-    private final Descriptors.FieldDescriptor descriptor;
-    private final Object fieldValue;
+    private static final String ENUM = "ENUM";
 
     @Override
-    public Object getValue() {
-        if (descriptor.isRepeated()) {
+    public Object getValue(Descriptors.FieldDescriptor fieldDescriptor, Object fieldValue) {
+        if (fieldDescriptor.isRepeated()) {
             List<Descriptors.EnumValueDescriptor> enumValues = ((List<Descriptors.EnumValueDescriptor>) (fieldValue));
             List<String> enumStrValues = new ArrayList<>();
             for (Descriptors.EnumValueDescriptor enumVal : enumValues) {
@@ -25,7 +24,7 @@ public class EnumField implements ProtoField {
     }
 
     @Override
-    public boolean matches() {
-        return descriptor.getJavaType().name().equals("ENUM");
+    public boolean matches(Descriptors.FieldDescriptor fieldDescriptor, Object fieldValue)  {
+        return fieldDescriptor.getJavaType().name().equals(ENUM);
     }
 }
