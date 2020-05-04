@@ -17,6 +17,7 @@ public class Records implements Iterable<Record> {
     @Getter
     private final Instant polledTime; // time when this batch were fetched or created
     private Map<TopicPartition, OffsetAndMetadata> partitionsCommitOffset = new HashMap<>();
+    private Map<Integer, Long> recordCountByPartition = new HashMap<>();
 
     public Records(List<Record> records) {
         this(records, Instant.now());
@@ -45,9 +46,14 @@ public class Records implements Iterable<Record> {
     }
 
     public long getSize() {
-        return records.stream().mapToLong(record -> {
-            return record.getSize();
-        }).sum();
+        return records.stream().mapToLong(Record::getSize).sum();
+    }
+
+    public Map<Integer, Long> getRecordCountByPartition() {
+        if (recordCountByPartition.isEmpty()) {
+            records.forEach(r -> recordCountByPartition.merge(r.getPartition(), 1L, Long::sum));
+        }
+        return recordCountByPartition;
     }
 
     @Override
