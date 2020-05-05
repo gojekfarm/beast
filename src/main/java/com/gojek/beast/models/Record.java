@@ -15,10 +15,14 @@ public class Record {
     private Map<String, Object> columns;
 
     public String getId() {
-        return String.format("%s_%d_%d", offsetInfo.getTopic(), offsetInfo.getPartition(), offsetInfo.getOffset());
+        return String.format("%s_%d_%d", offsetInfo.getTopic(), getPartition(), offsetInfo.getOffset());
+    }
+
+    public Integer getPartition() {
+        return offsetInfo.getPartition();
     }
 
     public long getSize() {
-        return columns.toString().getBytes(StandardCharsets.UTF_8).length;
+        return columns == null ? 0 : columns.toString().getBytes(StandardCharsets.UTF_8).length;
     }
 }

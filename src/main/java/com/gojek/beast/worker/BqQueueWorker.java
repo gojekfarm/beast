@@ -58,7 +58,7 @@ public class BqQueueWorker extends Worker {
         try {
             status = sink.push(poll);
             statsClient.count("kafka.batch.records.size," + statsClient.getBqTags(), poll.getSize());
-            statsClient.count("kafka.batch.records.count," + statsClient.getBqTags(), poll.getRecords().size());
+            poll.getRecordCountByPartition().forEach((partition, recordCount) -> statsClient.count("kafka.batch.records.count," + statsClient.getBqTags() + ",partition=" + partition.toString(), recordCount));
         } catch (BigQueryException e) {
             statsClient.increment("worker.queue.bq.errors");
             log.error("Exception::Failed to write to BQ: {}", e.getMessage());
