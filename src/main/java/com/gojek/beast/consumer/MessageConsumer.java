@@ -45,8 +45,9 @@ public class MessageConsumer {
         if (messages.isEmpty()) {
             return SUCCESS_STATUS;
         }
+        Instant pollTime = Instant.now();
         log.info("Pulled {} messages", messages.count());
-        Status status = pushToSink(messages, startTime);
+        Status status = pushToSink(messages, pollTime);
         return status;
     }
 
