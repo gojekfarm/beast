@@ -67,6 +67,7 @@ public class OffsetCommitWorker extends Worker {
                 }
 
                 if (currentOffset == null) {
+                    offsetState.resetOffset();
                     continue;
                 }
 
