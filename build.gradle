@@ -50,7 +50,7 @@ dependencies {
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.9.8'
 
     compile 'org.aeonbits.owner:owner:1.0.10'
-    compile 'com.google.cloud:google-cloud-bigquery:1.101.0'
+    compile 'com.google.cloud:google-cloud-bigquery:1.115.0'
     compile 'com.google.protobuf:protobuf-java:3.1.0'
     compile 'com.google.protobuf:protobuf-java-util:3.1.0'
 

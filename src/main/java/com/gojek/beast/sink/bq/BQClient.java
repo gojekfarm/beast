@@ -23,10 +23,12 @@ public class BQClient {
     private BigQuery bigquery;
     private TableId tableID;
     private Stats statsClient = Stats.client();
+    private BQConfig bqConfig;
     private BQTableDefinition bqTableDefinition;
 
     public BQClient(BigQuery bigquery, BQConfig bqConfig) {
         this.bigquery = bigquery;
+        this.bqConfig = bqConfig;
         this.tableID = TableId.of(bqConfig.getDataset(), bqConfig.getTable());
         this.bqTableDefinition = new BQTableDefinition(bqConfig);
     }
@@ -34,16 +36,30 @@ public class BQClient {
     public void upsertTable(List<Field> bqSchemaFields) throws BigQueryException {
         Schema schema = Schema.of(bqSchemaFields);
         TableDefinition tableDefinition = getTableDefinition(schema);
-        TableInfo tableInfo = TableInfo.newBuilder(tableID, tableDefinition).build();
+        TableInfo tableInfo = TableInfo.newBuilder(tableID, tableDefinition)
+                .setLabels(bqConfig.getTableLabels())
+                .build();
         upsertDatasetAndTable(tableInfo);
     }
 
     private void upsertDatasetAndTable(TableInfo tableInfo) {
         Dataset dataSet = bigquery.getDataset(tableID.getDataset());
         if (dataSet == null || !bigquery.getDataset(tableID.getDataset()).exists()) {
-            bigquery.create(DatasetInfo.of(tableID.getDataset()));
+            bigquery.create(
+                    Dataset.newBuilder(tableID.getDataset())
+                            .setLabels(bqConfig.getDatasetLabels())
+                            .build()
+            );
             log.info("Successfully CREATED bigquery DATASET: {}", tableID.getDataset());
+        } else if (!dataSet.getLabels().equals(bqConfig.getDatasetLabels())) {
+            bigquery.update(
+                    Dataset.newBuilder(tableID.getDataset())
+                            .setLabels(bqConfig.getDatasetLabels())
+                            .build()
+            );
+            log.info("Successfully UPDATED bigquery DATASET: {} with labels", tableID.getDataset());
         }
+
         Table table = bigquery.getTable(tableID);
         if (table == null || !table.exists()) {
             bigquery.create(tableInfo);
@@ -52,7 +68,7 @@ public class BQClient {
             Schema existingSchema = table.getDefinition().getSchema();
             Schema updatedSchema = tableInfo.getDefinition().getSchema();
 
-            if (!BQUtils.compareBQSchemaFields(existingSchema, updatedSchema)) {
+            if (shouldUpdateTable(tableInfo, table, existingSchema, updatedSchema)) {
                 Instant start = Instant.now();
                 bigquery.update(tableInfo);
                 log.info("Successfully UPDATED bigquery TABLE: {}", tableID.getTable());
@@ -62,6 +78,11 @@ public class BQClient {
                 log.info("Skipping bigquery table update, since proto schema hasn't changed");
             }
         }
+    }
+
+    private boolean shouldUpdateTable(TableInfo tableInfo, Table table, Schema existingSchema, Schema updatedSchema) {
+        return !table.getLabels().equals(tableInfo.getLabels()) ||
+                !BQUtils.compareBQSchemaFields(existingSchema, updatedSchema);
     }
 
     private TableDefinition getTableDefinition(Schema schema) throws BQPartitionKeyNotSpecified {
