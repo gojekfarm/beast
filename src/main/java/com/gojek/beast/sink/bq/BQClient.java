@@ -11,7 +11,6 @@ import com.google.cloud.bigquery.TableId;
 import com.google.cloud.bigquery.Table;
 import com.google.cloud.bigquery.TableDefinition;
 import com.google.cloud.bigquery.TableInfo;
-import com.google.cloud.bigquery.DatasetInfo;
 import com.google.cloud.bigquery.Dataset;
 import lombok.extern.slf4j.Slf4j;
 
@@ -81,8 +80,8 @@ public class BQClient {
     }
 
     private boolean shouldUpdateTable(TableInfo tableInfo, Table table, Schema existingSchema, Schema updatedSchema) {
-        return !table.getLabels().equals(tableInfo.getLabels()) ||
-                !BQUtils.compareBQSchemaFields(existingSchema, updatedSchema);
+        return !table.getLabels().equals(tableInfo.getLabels())
+                || !BQUtils.compareBQSchemaFields(existingSchema, updatedSchema);
     }
 
     private TableDefinition getTableDefinition(Schema schema) throws BQPartitionKeyNotSpecified {
