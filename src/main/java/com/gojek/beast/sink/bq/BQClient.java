@@ -12,6 +12,7 @@ import com.google.cloud.bigquery.Table;
 import com.google.cloud.bigquery.TableDefinition;
 import com.google.cloud.bigquery.TableInfo;
 import com.google.cloud.bigquery.Dataset;
+import com.google.cloud.bigquery.StandardTableDefinition;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.Instant;
@@ -80,8 +81,21 @@ public class BQClient {
     }
 
     private boolean shouldUpdateTable(TableInfo tableInfo, Table table, Schema existingSchema, Schema updatedSchema) {
+        boolean needToChangePartitionExpiry = false;
+        if (table.getDefinition().getType().equals(TableDefinition.Type.TABLE) && bqConfig.getBQTablePartitionExpiry() != -1) {
+            if (shouldChangeParitionExpiryForStandardTable(table)) {
+                needToChangePartitionExpiry = true;
+            }
+        }
         return !table.getLabels().equals(tableInfo.getLabels())
-                || !BQUtils.compareBQSchemaFields(existingSchema, updatedSchema);
+                || !BQUtils.compareBQSchemaFields(existingSchema, updatedSchema)
+                || needToChangePartitionExpiry;
+    }
+
+    private boolean shouldChangeParitionExpiryForStandardTable(Table table) {
+        Long expirationMs = ((StandardTableDefinition) (table.getDefinition())).getTimePartitioning().getExpirationMs();
+        return expirationMs == null
+                || (expirationMs.longValue() != bqConfig.getBQTablePartitionExpiry());
     }
 
     private TableDefinition getTableDefinition(Schema schema) throws BQPartitionKeyNotSpecified {
