@@ -50,7 +50,7 @@ public class BQTableDefinition {
         timePartitioningBuilder.setField(bqConfig.getBQTablePartitionKey())
                 .setRequirePartitionFilter(true);
 
-        if(bqConfig.getBQTablePartitionExpiry() != -1) {
+        if (bqConfig.getBQTablePartitionExpiry() != -1) {
             timePartitioningBuilder.setExpirationMs(bqConfig.getBQTablePartitionExpiry());
         }
 
