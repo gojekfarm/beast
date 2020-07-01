@@ -82,7 +82,7 @@ public class BQClient {
 
     private boolean shouldUpdateTable(TableInfo tableInfo, Table table, Schema existingSchema, Schema updatedSchema) {
         boolean needToChangePartitionExpiry = false;
-        if (table.getDefinition().getType().equals(TableDefinition.Type.TABLE) && bqConfig.getBQTablePartitionExpiry() != -1) {
+        if (table.getDefinition().getType().equals(TableDefinition.Type.TABLE) && bqConfig.getBQTablePartitionExpiryMillis() != -1) {
             if (shouldChangeParitionExpiryForStandardTable(table)) {
                 needToChangePartitionExpiry = true;
             }
@@ -95,7 +95,7 @@ public class BQClient {
     private boolean shouldChangeParitionExpiryForStandardTable(Table table) {
         Long expirationMs = ((StandardTableDefinition) (table.getDefinition())).getTimePartitioning().getExpirationMs();
         return expirationMs == null
-                || (expirationMs.longValue() != bqConfig.getBQTablePartitionExpiry());
+                || (expirationMs.longValue() != bqConfig.getBQTablePartitionExpiryMillis());
     }
 
     private TableDefinition getTableDefinition(Schema schema) throws BQPartitionKeyNotSpecified {

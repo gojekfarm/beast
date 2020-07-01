@@ -83,7 +83,7 @@ public class BQTableDefinitionTest {
     @Test
     public void shouldCreateTableWithPartitionExiry() {
         long partitionExpiry = 5184000000L;
-        when(bqConfig.getBQTablePartitionExpiry()).thenReturn(partitionExpiry);
+        when(bqConfig.getBQTablePartitionExpiryMillis()).thenReturn(partitionExpiry);
         when(bqConfig.isBQTablePartitioningEnabled()).thenReturn(true);
         when(bqConfig.getBQTablePartitionKey()).thenReturn("timestamp_field");
         Schema bqSchema = Schema.of(
