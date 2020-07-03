@@ -303,7 +303,7 @@ public class BQClientTest {
         timePartitioningBuilder.setField(bqConfig.getBQTablePartitionKey())
                 .setRequirePartitionFilter(true);
 
-        if (bqConfig.getBQTablePartitionExpiryMillis() != -1) {
+        if (bqConfig.getBQTablePartitionExpiryMillis() > 0) {
             timePartitioningBuilder.setExpirationMs(bqConfig.getBQTablePartitionExpiryMillis());
         }
 

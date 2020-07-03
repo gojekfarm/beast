@@ -13,6 +13,7 @@ import com.google.cloud.bigquery.TableDefinition;
 import com.google.cloud.bigquery.TableInfo;
 import com.google.cloud.bigquery.Dataset;
 import com.google.cloud.bigquery.StandardTableDefinition;
+import com.google.cloud.bigquery.TimePartitioning;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.Instant;
@@ -82,7 +83,7 @@ public class BQClient {
 
     private boolean shouldUpdateTable(TableInfo tableInfo, Table table, Schema existingSchema, Schema updatedSchema) {
         boolean needToChangePartitionExpiry = false;
-        if (table.getDefinition().getType().equals(TableDefinition.Type.TABLE) && bqConfig.getBQTablePartitionExpiryMillis() != -1) {
+        if (table.getDefinition().getType().equals(TableDefinition.Type.TABLE) && bqConfig.getBQTablePartitionExpiryMillis() > 0) {
             if (shouldChangeParitionExpiryForStandardTable(table)) {
                 needToChangePartitionExpiry = true;
             }
@@ -93,9 +94,14 @@ public class BQClient {
     }
 
     private boolean shouldChangeParitionExpiryForStandardTable(Table table) {
-        Long expirationMs = ((StandardTableDefinition) (table.getDefinition())).getTimePartitioning().getExpirationMs();
-        return expirationMs == null
-                || (expirationMs.longValue() != bqConfig.getBQTablePartitionExpiryMillis());
+        TimePartitioning timePartitioning = ((StandardTableDefinition) (table.getDefinition())).getTimePartitioning();
+        if (timePartitioning != null) {
+            Long expirationMs = timePartitioning.getExpirationMs();
+            return expirationMs == null
+                    || (expirationMs.longValue() != bqConfig.getBQTablePartitionExpiryMillis());
+        }
+        // If the table is not partitioned already, update the table
+        return true;
     }
 
     private TableDefinition getTableDefinition(Schema schema) throws BQPartitionKeyNotSpecified {
