@@ -49,7 +49,7 @@ public class BQTableDefinitionTest {
         assertEquals(returnedSchema.getFields().get(0).getType(), bqSchema.getFields().get(0).getType());
     }
 
-    @Test (expected = BQPartitionKeyNotSpecified.class)
+    @Test(expected = BQPartitionKeyNotSpecified.class)
     public void shouldThrowErrorIfPartitionFieldNotSet() {
         when(bqConfig.isBQTablePartitioningEnabled()).thenReturn(true);
         Schema bqSchema = Schema.of(
@@ -78,5 +78,22 @@ public class BQTableDefinitionTest {
         assertEquals(returnedSchema.getFields().get(0).getMode(), bqSchema.getFields().get(0).getMode());
         assertEquals(returnedSchema.getFields().get(0).getType(), bqSchema.getFields().get(0).getType());
         assertEquals("timestamp_field", tableDefinition.getTimePartitioning().getField());
+    }
+
+    @Test
+    public void shouldCreateTableWithPartitionExiry() {
+        long partitionExpiry = 5184000000L;
+        when(bqConfig.getBQTablePartitionExpiryMillis()).thenReturn(partitionExpiry);
+        when(bqConfig.isBQTablePartitioningEnabled()).thenReturn(true);
+        when(bqConfig.getBQTablePartitionKey()).thenReturn("timestamp_field");
+        Schema bqSchema = Schema.of(
+                Field.newBuilder("timestamp_field", LegacySQLTypeName.TIMESTAMP).build()
+        );
+
+        BQTableDefinition bqTableDefinition = new BQTableDefinition(bqConfig);
+        StandardTableDefinition tableDefinition = bqTableDefinition.getTableDefinition(bqSchema);
+
+        assertEquals("timestamp_field", tableDefinition.getTimePartitioning().getField());
+        assertEquals(partitionExpiry, tableDefinition.getTimePartitioning().getExpirationMs().longValue());
     }
 }

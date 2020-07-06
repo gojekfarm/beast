@@ -45,4 +45,8 @@ public interface BQConfig extends Config {
     @DefaultValue("-1")
     @Key("BQ_CLIENT_CONNECT_TIMEOUT")
     String getBqClientConnectTimeout();
+
+    @DefaultValue("-1")
+    @Key("BQ_TABLE_PARTITION_EXPIRY_MILLIS")
+    Long getBQTablePartitionExpiryMillis();
 }

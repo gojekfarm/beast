@@ -38,13 +38,16 @@ public class BQClientTest {
     @Mock
     private Table table;
     @Mock
-    private TableDefinition mockTableDefinition;
+    private StandardTableDefinition mockTableDefinition;
+    @Mock
+    private TimePartitioning mockTimePartitioning;
     private BQClient bqClient;
 
     @Test
     public void shouldIgnoreExceptionIfDatasetAlreadyExists() {
         when(bqConfig.isBQTablePartitioningEnabled()).thenReturn(true);
         when(bqConfig.getBQTablePartitionKey()).thenReturn("partition_column");
+        when(bqConfig.getBQTablePartitionExpiryMillis()).thenReturn(-1L);
         when(bqConfig.getTable()).thenReturn("bq-table");
         when(bqConfig.getDataset()).thenReturn("bq-proto");
         bqClient = new BQClient(bigquery, bqConfig);
@@ -79,6 +82,7 @@ public class BQClientTest {
     public void shouldCreateBigqueryTableWithPartition() {
         when(bqConfig.isBQTablePartitioningEnabled()).thenReturn(true);
         when(bqConfig.getBQTablePartitionKey()).thenReturn("partition_column");
+        when(bqConfig.getBQTablePartitionExpiryMillis()).thenReturn(-1L);
         when(bqConfig.getTable()).thenReturn("bq-table");
         when(bqConfig.getDataset()).thenReturn("bq-proto");
         bqClient = new BQClient(bigquery, bqConfig);
@@ -142,6 +146,7 @@ public class BQClientTest {
     @Test
     public void shouldNotUpdateTableIfTableAlreadyExistsWithSameSchema() {
         when(bqConfig.isBQTablePartitioningEnabled()).thenReturn(false);
+        when(bqConfig.getBQTablePartitionExpiryMillis()).thenReturn(-1L);
         when(bqConfig.getTable()).thenReturn("bq-table");
         when(bqConfig.getDataset()).thenReturn("bq-proto");
         bqClient = new BQClient(bigquery, bqConfig);
@@ -165,6 +170,7 @@ public class BQClientTest {
         when(table.exists()).thenReturn(true);
         when(bigquery.getTable(tableId)).thenReturn(table);
         when(table.getDefinition()).thenReturn(mockTableDefinition);
+        when(mockTableDefinition.getType()).thenReturn(TableDefinition.Type.TABLE);
         when(mockTableDefinition.getSchema()).thenReturn(tableDefinition.getSchema());
         when(table.exists()).thenReturn(true);
 
@@ -176,6 +182,7 @@ public class BQClientTest {
     @Test
     public void shouldUpdateTableIfTableAlreadyExistsAndSchemaChanges() {
         when(bqConfig.isBQTablePartitioningEnabled()).thenReturn(false);
+        when(bqConfig.getBQTablePartitionExpiryMillis()).thenReturn(-1L);
         when(bqConfig.getTable()).thenReturn("bq-table");
         when(bqConfig.getDataset()).thenReturn("bq-proto");
         bqClient = new BQClient(bigquery, bqConfig);
@@ -203,6 +210,7 @@ public class BQClientTest {
         when(table.exists()).thenReturn(true);
         when(bigquery.getTable(tableId)).thenReturn(table);
         when(table.getDefinition()).thenReturn(mockTableDefinition);
+        when(mockTableDefinition.getType()).thenReturn(TableDefinition.Type.TABLE);
         when(mockTableDefinition.getSchema()).thenReturn(tableDefinition.getSchema());
         when(bigquery.update(tableInfo)).thenReturn(table);
 
@@ -211,9 +219,51 @@ public class BQClientTest {
         verify(bigquery).update(tableInfo);
     }
 
+    @Test
+    public void shouldUpdateTableIfTableNeedsToSetPartitionExpiry() {
+        long partitionExpiry = 5184000000L;
+        when(bqConfig.isBQTablePartitioningEnabled()).thenReturn(true);
+        when(bqConfig.getTable()).thenReturn("bq-table");
+        when(bqConfig.getDataset()).thenReturn("bq-proto");
+        when(bqConfig.getBQTablePartitionExpiryMillis()).thenReturn(partitionExpiry);
+        when(bqConfig.isBQTablePartitioningEnabled()).thenReturn(true);
+        when(bqConfig.getBQTablePartitionKey()).thenReturn("partition_column");
+        bqClient = new BQClient(bigquery, bqConfig);
+
+        ArrayList<Field> bqSchemaFields = new ArrayList<Field>() {{
+            add(Field.newBuilder("test-1", LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder("partition_column", LegacySQLTypeName.TIMESTAMP).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder(Constants.OFFSET_COLUMN_NAME, LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder(Constants.TOPIC_COLUMN_NAME, LegacySQLTypeName.STRING).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder(Constants.LOAD_TIME_COLUMN_NAME, LegacySQLTypeName.TIMESTAMP).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder(Constants.TIMESTAMP_COLUMN_NAME, LegacySQLTypeName.TIMESTAMP).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder(Constants.PARTITION_COLUMN_NAME, LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
+        }};
+
+        TableDefinition tableDefinition = getPartitionedTableDefinition(bqSchemaFields);
+
+        TableId tableId = TableId.of(bqConfig.getDataset(), bqConfig.getTable());
+        TableInfo tableInfo = TableInfo.newBuilder(tableId, tableDefinition).build();
+        when(bigquery.getDataset(tableId.getDataset())).thenReturn(dataset);
+        when(dataset.exists()).thenReturn(true);
+        when(table.exists()).thenReturn(true);
+        when(bigquery.getTable(tableId)).thenReturn(table);
+        when(table.getDefinition()).thenReturn(mockTableDefinition);
+        when(mockTableDefinition.getType()).thenReturn(TableDefinition.Type.TABLE);
+        when(mockTableDefinition.getTimePartitioning()).thenReturn(mockTimePartitioning);
+        when(mockTimePartitioning.getExpirationMs()).thenReturn(null);
+        when(mockTableDefinition.getSchema()).thenReturn(tableDefinition.getSchema());
+        when(table.exists()).thenReturn(true);
+
+        bqClient.upsertTable(bqSchemaFields);
+        verify(bigquery, never()).create(tableInfo);
+        verify(bigquery).update(tableInfo);
+    }
+
     @Test(expected = BigQueryException.class)
     public void shouldThrowExceptionIfUpdateTableFails() {
         when(bqConfig.isBQTablePartitioningEnabled()).thenReturn(false);
+        when(bqConfig.getBQTablePartitionExpiryMillis()).thenReturn(-1L);
         when(bqConfig.getTable()).thenReturn("bq-table");
         when(bqConfig.getDataset()).thenReturn("bq-proto");
 
@@ -240,6 +290,7 @@ public class BQClientTest {
         when(table.exists()).thenReturn(true);
         when(bigquery.getTable(tableId)).thenReturn(table);
         when(table.getDefinition()).thenReturn(mockTableDefinition);
+        when(mockTableDefinition.getType()).thenReturn(TableDefinition.Type.TABLE);
         when(mockTableDefinition.getSchema()).thenReturn(tableDefinition.getSchema());
         when(bigquery.update(tableInfo)).thenThrow(new BigQueryException(404, "Failed to update"));
 
@@ -251,6 +302,10 @@ public class BQClientTest {
         TimePartitioning.Builder timePartitioningBuilder = TimePartitioning.newBuilder(TimePartitioning.Type.DAY);
         timePartitioningBuilder.setField(bqConfig.getBQTablePartitionKey())
                 .setRequirePartitionFilter(true);
+
+        if (bqConfig.getBQTablePartitionExpiryMillis() > 0) {
+            timePartitioningBuilder.setExpirationMs(bqConfig.getBQTablePartitionExpiryMillis());
+        }
 
         Schema schema = Schema.of(bqSchemaFields);
 
