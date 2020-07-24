@@ -38,6 +38,12 @@ message TestNestedMessage {
     TestMessage single_message = 2;
 }
 
+message TestRecursiveMessage {
+    string string_value = 1;
+    float float_value = 2;
+    TestRecursiveMessage recursive_message = 3;
+}
+
 message TestNestedRepeatedMessage {
     TestMessage single_message = 1;
     repeated TestMessage repeated_message = 2;

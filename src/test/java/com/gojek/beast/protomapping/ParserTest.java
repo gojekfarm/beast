@@ -2,6 +2,7 @@ package com.gojek.beast.protomapping;
 
 import com.gojek.beast.TestMessage;
 import com.gojek.beast.TestNestedMessage;
+import com.gojek.beast.TestRecursiveMessage;
 import com.gojek.beast.exception.ProtoNotFoundException;
 import com.gojek.beast.models.ProtoField;
 import com.gojek.de.stencil.client.StencilClient;
@@ -64,12 +65,38 @@ public class ParserTest {
             put(".google.protobuf.Duration", "com.google.protobuf.Duration");
             put(".google.type.Date", "com.google.type.Date");
         }};
-/*
-        when(stencilClient.getAll()).thenReturn(descriptorMap);
-        when(stencilClient.getTypeNameToPackageNameMap()).thenReturn(typeNameToPackageNameMap);*/
+
         ProtoField protoField = new ProtoField();
         protoField = protoMappingParser.parseFields(protoField, "com.gojek.beast.TestMessage", descriptorMap, typeNameToPackageNameMap);
         assertTestMessage(protoField.getFields());
+    }
+
+    @Test
+    public void shouldParseProtoSchemaForRecursiveFieldTillMaxLevel() {
+        ArrayList<Descriptors.FileDescriptor> fileDescriptors = new ArrayList<>();
+
+        fileDescriptors.add(TestRecursiveMessage.getDescriptor().getFile());
+
+        Map<String, Descriptors.Descriptor> descriptorMap = getDescriptors(fileDescriptors);
+
+        Map<String, String> typeNameToPackageNameMap = new HashMap<String, String>() {{
+            put(".gojek.beast.TestRecursiveMessage", "com.gojek.beast.TestRecursiveMessage");
+        }};
+
+        ProtoField protoField = new ProtoField();
+        protoField = protoMappingParser.parseFields(protoField, "com.gojek.beast.TestRecursiveMessage", descriptorMap, typeNameToPackageNameMap);
+        assertField(protoField.getFields().get(0), "string_value", DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL, 1);
+        assertField(protoField.getFields().get(1), "float_value", DescriptorProtos.FieldDescriptorProto.Type.TYPE_FLOAT, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL, 2);
+
+        ProtoField recursiveField = protoField;
+        int totalLevel = 1;
+        while (recursiveField.getFields().size() == 3) {
+            assertField(protoField.getFields().get(0), "string_value", DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL, 1);
+            assertField(protoField.getFields().get(1), "float_value", DescriptorProtos.FieldDescriptorProto.Type.TYPE_FLOAT, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL, 2);
+            recursiveField = recursiveField.getFields().get(2);
+            totalLevel++;
+        }
+        assertEquals(15, totalLevel);
     }
 
     @Test
