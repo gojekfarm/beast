@@ -1,7 +1,7 @@
 package com.gojek.beast.exception;
 
 public class BQTableUpdateFailure extends RuntimeException {
-    public BQTableUpdateFailure(String message) {
-        super(message);
+    public BQTableUpdateFailure(String message, Throwable rootCause) {
+        super(message, rootCause);
     }
 }
