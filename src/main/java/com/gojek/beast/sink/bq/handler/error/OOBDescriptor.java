@@ -17,7 +17,7 @@ public class OOBDescriptor implements ErrorDescriptor {
     @Override
     public boolean matches() {
         return reason.equals("invalid")
-                && ((message.contains("is outside the allowed bounds") && message.contains("365 days in the past and 183 days in the future"))
+                && ((message.contains("is outside the allowed bounds") && message.contains("1825 days in the past and 366 days in the future"))
                     || message.contains("out of range"));
     }
 
