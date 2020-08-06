@@ -30,7 +30,7 @@ public class ErrorTypeFactoryTest {
 
     @Test
     public void testErrorTypeIsOutOfBounds() {
-        assertEquals(BQInsertionRecordsErrorType.OOB, ErrorTypeFactory.getErrorType("invalid", "is outside the allowed bounds, 365 days in the past and 183 days in the future"));
+        assertEquals(BQInsertionRecordsErrorType.OOB, ErrorTypeFactory.getErrorType("invalid", "is outside the allowed bounds, 1825 days in the past and 366 days in the future"));
         assertEquals(BQInsertionRecordsErrorType.OOB, ErrorTypeFactory.getErrorType("invalid", "out of range"));
     }
 }
