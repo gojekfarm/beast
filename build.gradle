@@ -91,6 +91,7 @@ sourceSets {
 }
 
 test {
+    forkEvery = 1
     testLogging {
         events "PASSED", "STARTED", "FAILED", "SKIPPED"
     }
