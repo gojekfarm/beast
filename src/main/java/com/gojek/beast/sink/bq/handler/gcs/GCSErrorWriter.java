@@ -47,7 +47,7 @@ public class GCSErrorWriter implements ErrorWriter {
             storeMessagesInGCS(errorRecords);
         } catch (StorageException se) {
             log.error("Exception::Failed to write to GCS: {} records size: {}", se, errorRecords.size());
-            throw new BQErrorHandlerException(se.getMessage());
+            throw new BQErrorHandlerException(se.getMessage(), se);
         }
         statsClient.timeIt("sink.gcs.push.invalid.time", startTime);
         //alter the insert status - as successful
@@ -70,7 +70,7 @@ public class GCSErrorWriter implements ErrorWriter {
                 final Blob objectCreated = gcsStore.create(objectInfo, topicMessagesMap.get(topicName).getBytes());
             } catch (JsonProcessingException jpe) {
                 log.error("Exception::Failed to write to GCS: {} records size: {}", jpe, errorRecords.size());
-                throw new BQErrorHandlerException(jpe.getMessage());
+                throw new BQErrorHandlerException(jpe.getMessage(), jpe);
             }
         });
         log.info("Pushing {} records to GCS success?: {}", errorRecords.size(), true);
@@ -84,7 +84,7 @@ public class GCSErrorWriter implements ErrorWriter {
     private Map<String, GCSInvalidMessagesWrapper> getMessagesToSerializePerTopic(final List<Record> errorRecords) {
         //create records for each topic -> offsetInfo -> Map<columns, values>
         final Map<String, GCSInvalidMessagesWrapper> topicMessagesMap = new HashMap<>();
-        for (Record record: errorRecords) {
+        for (Record record : errorRecords) {
             final OffsetInfo offSetInfo = record.getOffsetInfo();
             final String topicName = offSetInfo.getTopic();
             GCSInvalidMessagesWrapper messageWrapper = topicMessagesMap.get(topicName);

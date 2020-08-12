@@ -92,7 +92,7 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
             String errMsg = "Error while updating bigquery table on callback:" + e.getMessage();
             log.error(errMsg);
             statsClient.increment("bq.table.upsert.failures");
-            throw new BQTableUpdateFailure(errMsg);
+            throw new BQTableUpdateFailure(errMsg, e);
         }
     }
 

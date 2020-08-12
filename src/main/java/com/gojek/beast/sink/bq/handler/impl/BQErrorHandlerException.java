@@ -5,7 +5,7 @@ package com.gojek.beast.sink.bq.handler.impl;
  */
 public class BQErrorHandlerException extends RuntimeException {
 
-    public BQErrorHandlerException(final String message) {
-        super(message);
+    public BQErrorHandlerException(final String message, Throwable rootCause) {
+        super(message, rootCause);
     }
 }
