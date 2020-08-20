@@ -15,6 +15,9 @@ public class MapPropertyConverter implements Converter<Map<String, String>> {
         String[] chunks = input.split(ELEMENT_SEPARATOR, -1);
         for (String chunk : chunks) {
             String[] entry = chunk.split(VALUE_SEPARATOR, -1);
+            if (entry.length <= 1) {
+                continue;
+            }
             String key = entry[0].trim();
             String value = entry[1].trim();
             result.put(key, value);

@@ -146,7 +146,7 @@ public class ParserTest {
     }
 
     private void assertTestMessage(List<ProtoField> fields) {
-        assertEquals(14, fields.size());
+        assertEquals(16, fields.size());
         assertField(fields.get(0), "order_number", DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL, 1);
         assertField(fields.get(1), "order_url", DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL, 2);
         assertField(fields.get(2), "order_details", DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL, 3);
@@ -161,6 +161,8 @@ public class ParserTest {
         assertField(fields.get(11), "aliases", DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING, DescriptorProtos.FieldDescriptorProto.Label.LABEL_REPEATED, 12);
         assertField(fields.get(12), "properties", DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL, 13);
         assertField(fields.get(13), "order_date", DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE, DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL, 14);
+        assertField(fields.get(14), "updated_at", DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE, DescriptorProtos.FieldDescriptorProto.Label.LABEL_REPEATED, 15);
+        assertField(fields.get(15), "attributes", DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE, DescriptorProtos.FieldDescriptorProto.Label.LABEL_REPEATED, 16);
 
         assertEquals(String.format(".%s", Duration.getDescriptor().getFullName()), fields.get(10).getTypeName());
         assertEquals(2, fields.get(10).getFields().size());

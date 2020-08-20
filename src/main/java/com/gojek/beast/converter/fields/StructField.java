@@ -6,6 +6,10 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import lombok.AllArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 @AllArgsConstructor
 public class StructField implements ProtoField {
     private final Descriptors.FieldDescriptor descriptor;
@@ -14,12 +18,23 @@ public class StructField implements ProtoField {
     @Override
     public Object getValue() {
         try {
-            return JsonFormat.printer()
-                    .omittingInsignificantWhitespace()
-                    .print((DynamicMessage) fieldValue);
+            if (fieldValue instanceof Collection<?>) {
+                List<String> structStrValues = new ArrayList<>();
+                for (Object field: (Collection<?>) fieldValue) {
+                    structStrValues.add(getString(field));
+                }
+                return structStrValues;
+            }
+            return getString(fieldValue);
         } catch (InvalidProtocolBufferException e) {
             return "";
         }
+    }
+
+    private String getString(Object field) throws InvalidProtocolBufferException {
+        return JsonFormat.printer()
+                .omittingInsignificantWhitespace()
+                .print((DynamicMessage) field);
     }
 
     @Override

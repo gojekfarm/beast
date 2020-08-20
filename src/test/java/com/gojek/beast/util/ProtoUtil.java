@@ -22,6 +22,8 @@ public class ProtoUtil {
                 .setCreatedAt(createdAt)
                 .setStatus(Status.COMPLETED)
                 .setTripDuration(Duration.newBuilder().setSeconds(1).setNanos(TRIP_DURATION_NANOS).build())
+                .addUpdatedAt(createdAt)
+                .addUpdatedAt(createdAt)
                 .build();
 
     }
