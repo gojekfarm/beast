@@ -311,4 +311,55 @@ public class RowMapperTest {
 
         assertNull(fields.get("order_date_field"));
     }
+
+    @Test
+    public void shouldParseRepeatedTimestamp() throws InvalidProtocolBufferException {
+        ColumnMapping fieldMappings = new ColumnMapping();
+        fieldMappings.put("15", "updated_at");
+        createdAt = Timestamp.newBuilder().setSeconds(now.getEpochSecond()).setNanos(now.getNano()).build();
+
+        TestMessage message = TestMessage.newBuilder()
+                .addUpdatedAt(createdAt).addUpdatedAt(createdAt)
+                .build();
+
+        ProtoParser protoParser = new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName());
+        Map<String, Object> fields = new RowMapper(fieldMappings).map(protoParser.parse(message.toByteArray()));
+
+        assertEquals(Arrays.asList(new DateTime(now.toEpochMilli()), new DateTime(now.toEpochMilli())), fields.get("updated_at"));
+    }
+
+    @Test
+    public void shouldParseStructField() throws InvalidProtocolBufferException {
+        ColumnMapping fieldMappings = new ColumnMapping();
+        fieldMappings.put("13", "properties");
+
+        TestMessage message = TestMessage.newBuilder()
+                .setProperties(Struct.newBuilder().putFields("name", Value.newBuilder().setStringValue("John").build())
+                        .putFields("age", Value.newBuilder().setStringValue("50").build()).build())
+                .build();
+
+        ProtoParser protoParser = new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName());
+        Map<String, Object> fields = new RowMapper(fieldMappings).map(protoParser.parse(message.toByteArray()));
+
+        assertEquals("{\"name\":\"John\",\"age\":\"50\"}", fields.get("properties"));
+    }
+
+    @Test
+    public void shouldParseRepeatableStructField() throws InvalidProtocolBufferException {
+        ColumnMapping fieldMappings = new ColumnMapping();
+        fieldMappings.put("16", "attributes");
+        Value val = Value.newBuilder().setStringValue("test").build();
+
+        TestMessage message = TestMessage.newBuilder()
+                .addAttributes(Struct.newBuilder().putFields("name", Value.newBuilder().setStringValue("John").build())
+                        .putFields("age", Value.newBuilder().setStringValue("50").build()).build())
+                .addAttributes(Struct.newBuilder().putFields("name", Value.newBuilder().setStringValue("John").build())
+                        .putFields("age", Value.newBuilder().setStringValue("60").build()).build())
+                .build();
+
+        ProtoParser protoParser = new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName());
+        Map<String, Object> fields = new RowMapper(fieldMappings).map(protoParser.parse(message.toByteArray()));
+
+        assertEquals(Arrays.asList("{\"name\":\"John\",\"age\":\"50\"}", "{\"name\":\"John\",\"age\":\"60\"}"), fields.get("attributes"));
+    }
 }

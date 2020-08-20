@@ -31,6 +31,8 @@ message TestMessage {
     repeated string aliases = 12;
     google.protobuf.Struct properties = 13;
     google.type.Date order_date = 14;
+    repeated google.protobuf.Timestamp updated_at = 15;
+    repeated google.protobuf.Struct attributes = 16;
 }
 
 message TestNestedMessage {
