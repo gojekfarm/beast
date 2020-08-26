@@ -2,6 +2,7 @@ package com.gojek.beast.protomapping;
 
 import com.gojek.beast.config.BQConfig;
 import com.gojek.beast.config.Constants;
+import com.gojek.beast.exception.BQDatasetLocationChangedException;
 import com.gojek.beast.sink.bq.BQClient;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.Field;
@@ -50,6 +51,7 @@ public class BQClientTest {
         when(bqConfig.getBQTablePartitionExpiryMillis()).thenReturn(-1L);
         when(bqConfig.getTable()).thenReturn("bq-table");
         when(bqConfig.getDataset()).thenReturn("bq-proto");
+        when(bqConfig.getBQDatasetLocation()).thenReturn("US");
         bqClient = new BQClient(bigquery, bqConfig);
 
         ArrayList<Field> bqSchemaFields = new ArrayList<Field>() {{
@@ -73,7 +75,7 @@ public class BQClientTest {
         when(bigquery.create(tableInfo)).thenReturn(table);
 
         bqClient.upsertTable(bqSchemaFields);
-        verify(bigquery).create(DatasetInfo.of(tableId.getDataset()));
+        verify(bigquery).create(DatasetInfo.newBuilder(tableId.getDataset()).setLocation("US").build());
         verify(bigquery).create(tableInfo);
         verify(bigquery, never()).update(tableInfo);
     }
@@ -85,6 +87,7 @@ public class BQClientTest {
         when(bqConfig.getBQTablePartitionExpiryMillis()).thenReturn(-1L);
         when(bqConfig.getTable()).thenReturn("bq-table");
         when(bqConfig.getDataset()).thenReturn("bq-proto");
+        when(bqConfig.getBQDatasetLocation()).thenReturn("US");
         bqClient = new BQClient(bigquery, bqConfig);
 
         ArrayList<Field> bqSchemaFields = new ArrayList<Field>() {{
@@ -101,6 +104,7 @@ public class BQClientTest {
         TableInfo tableInfo = TableInfo.newBuilder(tableId, tableDefinition).build();
         when(bigquery.getDataset(tableId.getDataset())).thenReturn(dataset);
         when(dataset.exists()).thenReturn(true);
+        when(dataset.getLocation()).thenReturn("US");
         when(table.exists()).thenReturn(false);
         when(bigquery.getTable(tableId)).thenReturn(table);
         when(bigquery.create(tableInfo)).thenReturn(table);
@@ -115,6 +119,7 @@ public class BQClientTest {
         when(bqConfig.isBQTablePartitioningEnabled()).thenReturn(false);
         when(bqConfig.getTable()).thenReturn("bq-table");
         when(bqConfig.getDataset()).thenReturn("bq-proto");
+        when(bqConfig.getBQDatasetLocation()).thenReturn("US");
         bqClient = new BQClient(bigquery, bqConfig);
 
         ArrayList<Field> bqSchemaFields = new ArrayList<Field>() {{
@@ -132,6 +137,7 @@ public class BQClientTest {
         TableInfo tableInfo = TableInfo.newBuilder(tableId, tableDefinition).build();
         when(bigquery.getDataset(tableId.getDataset())).thenReturn(dataset);
         when(dataset.exists()).thenReturn(true);
+        when(dataset.getLocation()).thenReturn("US");
         when(table.exists()).thenReturn(false);
         when(bigquery.getTable(tableId)).thenReturn(table);
         when(table.exists()).thenReturn(false);
@@ -149,6 +155,7 @@ public class BQClientTest {
         when(bqConfig.getBQTablePartitionExpiryMillis()).thenReturn(-1L);
         when(bqConfig.getTable()).thenReturn("bq-table");
         when(bqConfig.getDataset()).thenReturn("bq-proto");
+        when(bqConfig.getBQDatasetLocation()).thenReturn("US");
         bqClient = new BQClient(bigquery, bqConfig);
 
         ArrayList<Field> bqSchemaFields = new ArrayList<Field>() {{
@@ -167,6 +174,7 @@ public class BQClientTest {
         TableInfo tableInfo = TableInfo.newBuilder(tableId, tableDefinition).build();
         when(bigquery.getDataset(tableId.getDataset())).thenReturn(dataset);
         when(dataset.exists()).thenReturn(true);
+        when(dataset.getLocation()).thenReturn("US");
         when(table.exists()).thenReturn(true);
         when(bigquery.getTable(tableId)).thenReturn(table);
         when(table.getDefinition()).thenReturn(mockTableDefinition);
@@ -185,6 +193,7 @@ public class BQClientTest {
         when(bqConfig.getBQTablePartitionExpiryMillis()).thenReturn(-1L);
         when(bqConfig.getTable()).thenReturn("bq-table");
         when(bqConfig.getDataset()).thenReturn("bq-proto");
+        when(bqConfig.getBQDatasetLocation()).thenReturn("US");
         bqClient = new BQClient(bigquery, bqConfig);
 
         ArrayList<Field> bqSchemaFields = new ArrayList<Field>() {{
@@ -207,6 +216,7 @@ public class BQClientTest {
         TableInfo tableInfo = TableInfo.newBuilder(tableId, updatedBQTableDefinition).build();
         when(bigquery.getDataset(tableId.getDataset())).thenReturn(dataset);
         when(dataset.exists()).thenReturn(true);
+        when(dataset.getLocation()).thenReturn("US");
         when(table.exists()).thenReturn(true);
         when(bigquery.getTable(tableId)).thenReturn(table);
         when(table.getDefinition()).thenReturn(mockTableDefinition);
@@ -228,6 +238,7 @@ public class BQClientTest {
         when(bqConfig.getBQTablePartitionExpiryMillis()).thenReturn(partitionExpiry);
         when(bqConfig.isBQTablePartitioningEnabled()).thenReturn(true);
         when(bqConfig.getBQTablePartitionKey()).thenReturn("partition_column");
+        when(bqConfig.getBQDatasetLocation()).thenReturn("US");
         bqClient = new BQClient(bigquery, bqConfig);
 
         ArrayList<Field> bqSchemaFields = new ArrayList<Field>() {{
@@ -246,6 +257,7 @@ public class BQClientTest {
         TableInfo tableInfo = TableInfo.newBuilder(tableId, tableDefinition).build();
         when(bigquery.getDataset(tableId.getDataset())).thenReturn(dataset);
         when(dataset.exists()).thenReturn(true);
+        when(dataset.getLocation()).thenReturn("US");
         when(table.exists()).thenReturn(true);
         when(bigquery.getTable(tableId)).thenReturn(table);
         when(table.getDefinition()).thenReturn(mockTableDefinition);
@@ -266,6 +278,7 @@ public class BQClientTest {
         when(bqConfig.getBQTablePartitionExpiryMillis()).thenReturn(-1L);
         when(bqConfig.getTable()).thenReturn("bq-table");
         when(bqConfig.getDataset()).thenReturn("bq-proto");
+        when(bqConfig.getBQDatasetLocation()).thenReturn("US");
 
         ArrayList<Field> bqSchemaFields = new ArrayList<Field>() {{
             add(Field.newBuilder("test-1", LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
@@ -287,6 +300,7 @@ public class BQClientTest {
         TableInfo tableInfo = TableInfo.newBuilder(tableId, updatedBQTableDefinition).build();
         when(bigquery.getDataset(tableId.getDataset())).thenReturn(dataset);
         when(dataset.exists()).thenReturn(true);
+        when(dataset.getLocation()).thenReturn("US");
         when(table.exists()).thenReturn(true);
         when(bigquery.getTable(tableId)).thenReturn(table);
         when(table.getDefinition()).thenReturn(mockTableDefinition);
@@ -296,6 +310,38 @@ public class BQClientTest {
 
         bqClient = new BQClient(bigquery, bqConfig);
         bqClient.upsertTable(updatedBQSchemaFields);
+    }
+
+    @Test(expected = BQDatasetLocationChangedException.class)
+    public void shouldThrowExceptionIfDatasetLocationIsChanged() {
+        when(bqConfig.isBQTablePartitioningEnabled()).thenReturn(false);
+        when(bqConfig.getBQTablePartitionExpiryMillis()).thenReturn(-1L);
+        when(bqConfig.getTable()).thenReturn("bq-table");
+        when(bqConfig.getDataset()).thenReturn("bq-proto");
+        when(bqConfig.getBQDatasetLocation()).thenReturn("new-location");
+        bqClient = new BQClient(bigquery, bqConfig);
+
+        ArrayList<Field> bqSchemaFields = new ArrayList<Field>() {{
+            add(Field.newBuilder("test-1", LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder("test-2", LegacySQLTypeName.STRING).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder(Constants.OFFSET_COLUMN_NAME, LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder(Constants.TOPIC_COLUMN_NAME, LegacySQLTypeName.STRING).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder(Constants.LOAD_TIME_COLUMN_NAME, LegacySQLTypeName.TIMESTAMP).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder(Constants.TIMESTAMP_COLUMN_NAME, LegacySQLTypeName.TIMESTAMP).setMode(Field.Mode.NULLABLE).build());
+            add(Field.newBuilder(Constants.PARTITION_COLUMN_NAME, LegacySQLTypeName.INTEGER).setMode(Field.Mode.NULLABLE).build());
+        }};
+
+        TableDefinition tableDefinition = getPartitionedTableDefinition(bqSchemaFields);
+        TableId tableId = TableId.of(bqConfig.getDataset(), bqConfig.getTable());
+        TableInfo tableInfo = TableInfo.newBuilder(tableId, tableDefinition).build();
+
+        when(bigquery.getDataset(tableId.getDataset())).thenReturn(dataset);
+        when(dataset.exists()).thenReturn(true);
+        when(dataset.getLocation()).thenReturn("US");
+
+        bqClient.upsertTable(bqSchemaFields);
+        verify(bigquery, never()).create(tableInfo);
+        verify(bigquery, never()).update(tableInfo);
     }
 
     private TableDefinition getPartitionedTableDefinition(ArrayList<Field> bqSchemaFields) {
