@@ -49,4 +49,8 @@ public interface BQConfig extends Config {
     @DefaultValue("-1")
     @Key("BQ_TABLE_PARTITION_EXPIRY_MILLIS")
     Long getBQTablePartitionExpiryMillis();
+
+    @DefaultValue("US")
+    @Key("BQ_DATASET_LOCATION")
+    String getBQDatasetLocation();
 }

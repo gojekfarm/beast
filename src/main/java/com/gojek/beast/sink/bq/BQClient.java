@@ -1,6 +1,7 @@
 package com.gojek.beast.sink.bq;
 
 import com.gojek.beast.config.BQConfig;
+import com.gojek.beast.exception.BQDatasetLocationChangedException;
 import com.gojek.beast.exception.BQPartitionKeyNotSpecified;
 import com.gojek.beast.stats.Stats;
 import com.google.cloud.bigquery.BigQuery;
@@ -48,11 +49,12 @@ public class BQClient {
         if (dataSet == null || !bigquery.getDataset(tableID.getDataset()).exists()) {
             bigquery.create(
                     Dataset.newBuilder(tableID.getDataset())
+                            .setLocation(bqConfig.getBQDatasetLocation())
                             .setLabels(bqConfig.getDatasetLabels())
                             .build()
             );
             log.info("Successfully CREATED bigquery DATASET: {}", tableID.getDataset());
-        } else if (!dataSet.getLabels().equals(bqConfig.getDatasetLabels())) {
+        } else if (shouldUpdateDataset(dataSet)) {
             bigquery.update(
                     Dataset.newBuilder(tableID.getDataset())
                             .setLabels(bqConfig.getDatasetLabels())
@@ -91,6 +93,15 @@ public class BQClient {
         return !table.getLabels().equals(tableInfo.getLabels())
                 || !BQUtils.compareBQSchemaFields(existingSchema, updatedSchema)
                 || needToChangePartitionExpiry;
+    }
+
+    private boolean shouldUpdateDataset(Dataset dataSet) {
+        if (!dataSet.getLocation().equals(bqConfig.getBQDatasetLocation())) {
+            throw new BQDatasetLocationChangedException("Dataset location cannot be changed from "
+                    + dataSet.getLocation() + " to " + bqConfig.getBQDatasetLocation());
+        }
+
+        return !dataSet.getLabels().equals(bqConfig.getDatasetLabels());
     }
 
     private boolean shouldChangeParitionExpiryForStandardTable(Table table) {
