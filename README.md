@@ -57,7 +57,7 @@ docker run --env-file beast.env -v ./local_dir/project-secret.json:/var/bq-secre
 ## Running on Kubernetes
 
 Create a beast deployment for a topic in kafka, which needs to be pushed to BigQuery.
-* Deploymet can have multiple instance of beast
+* Deployment can have multiple instance of beast
 * A beast container consists of the following threads:
   - A kafka consumer
   - Multiple BQ workers
