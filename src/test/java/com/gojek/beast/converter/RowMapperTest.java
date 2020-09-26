@@ -3,25 +3,37 @@ package com.gojek.beast.converter;
 import com.gojek.beast.Status;
 import com.gojek.beast.TestMessage;
 import com.gojek.beast.TestNestedMessage;
+import com.gojek.beast.TestMessageChild;
 import com.gojek.beast.TestNestedRepeatedMessage;
 import com.gojek.beast.config.ColumnMapping;
+import com.gojek.beast.exception.UnknownProtoFieldFoundException;
 import com.gojek.beast.models.ConfigurationException;
 import com.gojek.beast.util.ProtoUtil;
+import com.gojek.de.stencil.DescriptorMapBuilder;
 import com.gojek.de.stencil.StencilClientFactory;
+import com.gojek.de.stencil.client.StencilClient;
+import com.gojek.de.stencil.models.DescriptorAndTypeName;
 import com.gojek.de.stencil.parser.ProtoParser;
+import com.gojek.de.stencil.parser.ProtoParserWithRefresh;
 import com.google.api.client.util.DateTime;
 import com.google.protobuf.*;
+import org.apache.commons.codec.DecoderException;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class RowMapperTest {
@@ -30,9 +42,10 @@ public class RowMapperTest {
     private DynamicMessage dynamicMessage;
     private Instant now;
     private long nowMillis;
+    private StencilClient stencilClientWithURL;
 
     @Before
-    public void setUp() throws InvalidProtocolBufferException {
+    public void setUp() throws IOException, Descriptors.DescriptorValidationException {
         ProtoParser protoParser = new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName());
         now = Instant.now();
         createdAt = Timestamp.newBuilder().setSeconds(now.getEpochSecond()).setNanos(now.getNano()).build();
@@ -44,8 +57,15 @@ public class RowMapperTest {
                 .setStatus(Status.COMPLETED)
                 .setOrderDate(com.google.type.Date.newBuilder().setYear(1996).setMonth(11).setDay(21))
                 .build();
+
         dynamicMessage = protoParser.parse(testMessage.toByteArray());
         nowMillis = Instant.ofEpochSecond(now.getEpochSecond(), now.getNano()).toEpochMilli();
+
+        ClassLoader classLoader = getClass().getClassLoader();
+        InputStream fileInputStream = new FileInputStream(classLoader.getResource("__files/descriptors.bin").getFile());
+        Map<String, DescriptorAndTypeName> descriptorMap = new DescriptorMapBuilder().buildFrom(fileInputStream);
+        stencilClientWithURL = mock(StencilClient.class);
+        when(stencilClientWithURL.get("com.gojek.beast.TestMessageChild")).thenReturn(descriptorMap.get("com.gojek.beast.TestMessageChild").getDescriptor());
     }
 
     @Test
@@ -296,6 +316,17 @@ public class RowMapperTest {
         fieldMappings.put("10", "some_column_in_bq");
 
         new RowMapper(null).map(dynamicMessage);
+    }
+
+    @Test(expected = UnknownProtoFieldFoundException.class)
+    public void shouldThrowExceptionIfUnknownFieldsArePresent() throws InvalidProtocolBufferException, DecoderException {
+        ColumnMapping fieldMappings = new ColumnMapping();
+        fieldMappings.put("10", "some_column_in_bq");
+
+        ProtoParserWithRefresh protoParser = new ProtoParserWithRefresh(stencilClientWithURL, TestMessageChild.class.getName());
+        byte[] testData = TestMessage.newBuilder().setOrderNumber("22").setPrice(33).setSuccess(true).build().toByteArray();
+        DynamicMessage message = protoParser.parse(testData);
+        new RowMapper(fieldMappings, true).map(message);
     }
 
     @Test

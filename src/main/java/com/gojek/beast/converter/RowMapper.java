@@ -4,7 +4,9 @@ import com.gojek.beast.config.ColumnMapping;
 import com.gojek.beast.config.Constants.Config;
 import com.gojek.beast.converter.fields.NestedField;
 import com.gojek.beast.converter.fields.ProtoField;
+import com.gojek.beast.exception.UnknownProtoFieldFoundException;
 import com.gojek.beast.models.ConfigurationException;
+import com.gojek.beast.stats.Stats;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.DynamicMessage;
 import lombok.AllArgsConstructor;
@@ -21,6 +23,12 @@ import java.util.Map;
 public class RowMapper {
 
     private final ColumnMapping mapping;
+    private final boolean failOnUnknownFileds;
+    private final Stats statsClient = Stats.client();
+
+    public RowMapper(ColumnMapping mappings) {
+        this(mappings, false);
+    }
 
     public Map<String, Object> map(DynamicMessage message) {
         if (mapping == null) {
@@ -32,6 +40,10 @@ public class RowMapper {
     private Map<String, Object> getMappings(DynamicMessage message, ColumnMapping columnMapping) {
         if (message == null || columnMapping == null || columnMapping.isEmpty()) {
             return Collections.emptyMap();
+        }
+        if (failOnUnknownFileds && message.getUnknownFields().asMap().size() > 0) {
+            statsClient.increment("kafka.protobuf.unknownfields.errors");
+            throw new UnknownProtoFieldFoundException(message.getUnknownFields().asMap());
         }
         Descriptors.Descriptor descriptorForType = message.getDescriptorForType();
 

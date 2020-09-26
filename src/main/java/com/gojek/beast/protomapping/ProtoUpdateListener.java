@@ -19,7 +19,7 @@ import com.gojek.beast.stats.Stats;
 import com.gojek.de.stencil.StencilClientFactory;
 import com.gojek.de.stencil.client.StencilClient;
 import com.gojek.de.stencil.models.DescriptorAndTypeName;
-import com.gojek.de.stencil.parser.ProtoParser;
+import com.gojek.de.stencil.parser.ProtoParserWithRefresh;
 import com.gojek.de.stencil.utils.StencilUtils;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.BigQueryException;
@@ -123,8 +123,8 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
     }
 
     private void setProtoParser(ColumnMapping columnMapping) {
-        ProtoParser protoParser = new ProtoParser(stencilClient, proto);
-        recordConverter = new ConsumerRecordConverter(new RowMapper(columnMapping), protoParser, new Clock());
+        ProtoParserWithRefresh protoParser = new ProtoParserWithRefresh(stencilClient, proto);
+        recordConverter = new ConsumerRecordConverter(new RowMapper(columnMapping, protoMappingConfig.isFailOnUnknownFields()), protoParser, new Clock());
     }
 
     public void close() throws IOException {
