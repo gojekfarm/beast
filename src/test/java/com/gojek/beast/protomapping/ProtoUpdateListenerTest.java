@@ -53,8 +53,8 @@ public class ProtoUpdateListenerTest {
 
     @Before
     public void setUp() {
-        System.setProperty("PROTO_SCHEMA", "com.gojek.beast");
-        System.setProperty("ENABLE_AUTO_SCHEMA_UPDATE", "true");
+        System.setProperty("PROTO_SCHEMA", "com.gojek.beast.TestKey");
+        System.setProperty("ENABLE_AUTO_SCHEMA_UPDATE", "false");
         stencilConfig = ConfigFactory.create(StencilConfig.class, System.getProperties());
         protoMappingConfig = ConfigFactory.create(ProtoMappingConfig.class, System.getProperties());
         protoUpdateListener = new ProtoUpdateListener(protoMappingConfig, stencilConfig, stencilClient, protoMappingConverter, protoMappingParser, bqInstance, protoFieldFactory);
@@ -68,9 +68,11 @@ public class ProtoUpdateListenerTest {
         returnedProtoField.addField(new ProtoField("order_number", 1));
         returnedProtoField.addField(new ProtoField("order_url", 2));
 
+
         HashMap<String, DescriptorAndTypeName> descriptorsMap = new HashMap<String, DescriptorAndTypeName>() {{
-            put(String.format("%s.%s", TestKey.class.getPackage(), TestKey.class.getName()), new DescriptorAndTypeName(TestKey.getDescriptor(), String.format(".%s.%s", TestKey.getDescriptor().getFile().getPackage(), TestKey.getDescriptor().getName())));
+            put(String.format("%s", TestKey.class.getName()), new DescriptorAndTypeName(TestKey.getDescriptor(), String.format(".%s.%s", TestKey.getDescriptor().getFile().getPackage(), TestKey.getDescriptor().getName())));
         }};
+        when(stencilClient.get(TestKey.class.getName())).thenReturn(descriptorsMap.get(TestKey.class.getName()).getDescriptor());
         when(protoMappingParser.parseFields(returnedProtoField, stencilConfig.getProtoSchema(), StencilUtils.getAllProtobufDescriptors(descriptorsMap), StencilUtils.getTypeNameToPackageNameMap(descriptorsMap))).thenReturn(returnedProtoField);
         ObjectNode objNode = JsonNodeFactory.instance.objectNode();
         objNode.put("1", "order_number");

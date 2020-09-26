@@ -35,6 +35,11 @@ message TestMessage {
     repeated google.protobuf.Struct attributes = 16;
 }
 
+message TestMessageChild {
+    string order_number = 1;
+    bool success = 7;
+}
+
 message TestNestedMessage {
     string nested_id = 1;
     TestMessage single_message = 2;

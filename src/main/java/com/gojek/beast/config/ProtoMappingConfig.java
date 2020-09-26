@@ -10,4 +10,8 @@ public interface ProtoMappingConfig extends Mutable {
     @DefaultValue("false")
     @Key("ENABLE_AUTO_SCHEMA_UPDATE")
     Boolean isAutoSchemaUpdateEnabled();
+
+    @DefaultValue("false")
+    @Key("FAIL_ON_UNKNOWN_FIELDS")
+    Boolean isFailOnUnknownFields();
 }
