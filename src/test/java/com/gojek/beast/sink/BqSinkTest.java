@@ -97,6 +97,23 @@ public class BqSinkTest {
     }
 
     @Test
+    public void shouldFilterNullMessageBeforePushing() {
+        Record user1 = new Record(offsetInfo, createUser("alice"));
+        Record user2 = new Record(offsetInfo, new HashMap<>());
+        Record user3 = new Record(offsetInfo, createUser("mary"));
+        Records records = new Records(Arrays.asList(user1, user2, user3));
+        InsertAllRequest request = builder
+                .addRow(user1.getId(), user1.getColumns())
+                .addRow(user3.getId(), user3.getColumns())
+                .build();
+
+        Status status = sink.push(records);
+
+        verify(bigquery).insertAll(request);
+        assertTrue(status.isSuccess());
+    }
+
+    @Test
     public void shouldErrorWhenBigQueryInsertFails() {
         Record user1 = new Record(offsetInfo, createUser("alice"));
         InsertAllRequest request = builder.addRow(user1.getId(), user1.getColumns()).build();

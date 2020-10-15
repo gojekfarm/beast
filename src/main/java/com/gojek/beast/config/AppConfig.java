@@ -79,4 +79,8 @@ public interface AppConfig extends Config {
     @DefaultValue("2000")
     @Key("OFFSET_BATCH_DURATION")
     long getOffsetBatchDuration();
+
+    @DefaultValue("false")
+    @Key("FAIL_ON_NULL_MESSAGE")
+    boolean getFailOnNullMessage();
 }
