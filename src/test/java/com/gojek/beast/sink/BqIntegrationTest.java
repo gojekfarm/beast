@@ -1,6 +1,7 @@
 package com.gojek.beast.sink;
 
 import com.gojek.beast.*;
+import com.gojek.beast.config.AppConfig;
 import com.gojek.beast.config.ColumnMapping;
 import com.gojek.beast.converter.ConsumerRecordConverter;
 import com.gojek.beast.converter.Converter;
@@ -30,6 +31,7 @@ import com.google.cloud.bigquery.TableId;
 import com.google.cloud.storage.*;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Timestamp;
+import org.aeonbits.owner.ConfigFactory;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.record.TimestampType;
 import org.junit.Before;
@@ -72,6 +74,7 @@ public class BqIntegrationTest extends BaseBQTest {
     private BQErrorHandler gcsSinkHandler;
     private BQRow bqRow;
     private String gcsBucket = "test-integ-godata-dlq-beast";
+    private AppConfig appConfig;
 
     @Before
     public void setUp() throws Exception {
@@ -82,6 +85,7 @@ public class BqIntegrationTest extends BaseBQTest {
         gcsSinkHandler = new OOBErrorHandler(errorWriter);
         final BlobId blobId = BlobId.of("test-integ-godata", "test-integ-godata-dlq/beast/testfile");
         final BlobInfo objectInfo = BlobInfo.newBuilder(blobId).setContentType("text/plain").build();
+        appConfig = ConfigFactory.create(AppConfig.class, System.getProperties());
     }
 
     @Ignore
@@ -140,7 +144,7 @@ public class BqIntegrationTest extends BaseBQTest {
         nested.put("1", "order_number");
         nested.put("2", "order_url");
         columnMapping.put("2", nested);
-        ConsumerRecordConverter customConverter = new ConsumerRecordConverter(new RowMapper(columnMapping), protoParser, clock);
+        ConsumerRecordConverter customConverter = new ConsumerRecordConverter(new RowMapper(columnMapping), protoParser, clock, appConfig);
 
 
         ConsumerRecord<byte[], byte[]> consumerRecord = new ConsumerRecord<>("topic", 1, 1, second, TimestampType.CREATE_TIME,
@@ -266,7 +270,7 @@ public class BqIntegrationTest extends BaseBQTest {
         currStateMapping.put("2", "value");
         mapping.put("9", currStateMapping);
 
-        converter = new ConsumerRecordConverter(new RowMapper(mapping), new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName()), clock);
+        converter = new ConsumerRecordConverter(new RowMapper(mapping), new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName()), clock, appConfig);
         Timestamp createdAt = Timestamp.newBuilder().setSeconds(second).setNanos(nano).build();
         TestKey key = TestKey.newBuilder().setOrderNumber(orderNumber).setOrderUrl(orderUrl).build();
         com.gojek.beast.Status completed = com.gojek.beast.Status.COMPLETED;

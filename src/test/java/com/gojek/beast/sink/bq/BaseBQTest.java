@@ -2,6 +2,7 @@ package com.gojek.beast.sink.bq;
 
 import com.gojek.beast.Clock;
 import com.gojek.beast.TestMessage;
+import com.gojek.beast.config.AppConfig;
 import com.gojek.beast.config.ColumnMapping;
 import com.gojek.beast.converter.ConsumerRecordConverter;
 import com.gojek.beast.converter.RowMapper;
@@ -19,6 +20,7 @@ import com.google.cloud.bigquery.BigQueryOptions;
 import com.google.cloud.storage.*;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Timestamp;
+import org.aeonbits.owner.ConfigFactory;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.record.TimestampType;
 
@@ -81,7 +83,7 @@ public class BaseBQTest {
     protected List<Record> getKafkaConsumerRecords(ColumnMapping columnMapping, Instant now, String topicName,
                                                    int partitionStart, long offsetStart, Clock clock, TestMessage...testMessages) throws InvalidProtocolBufferException {
         ProtoParser protoParser = new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName());
-        ConsumerRecordConverter customConverter = new ConsumerRecordConverter(new RowMapper(columnMapping), protoParser, clock);
+        ConsumerRecordConverter customConverter = new ConsumerRecordConverter(new RowMapper(columnMapping), protoParser, clock, ConfigFactory.create(AppConfig.class, System.getProperties()));
         List<ConsumerRecord<byte[], byte[]>> consumerRecordsList = new ArrayList<ConsumerRecord<byte[], byte[]>>();
         for (int i = 0; i < testMessages.length; i++) {
             consumerRecordsList.add(new ConsumerRecord<>(topicName, partitionStart + i, offsetStart + i, now.getEpochSecond(), TimestampType.CREATE_TIME,

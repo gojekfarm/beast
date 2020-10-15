@@ -61,7 +61,7 @@ public class BqSink implements Sink {
     private InsertAllResponse insertIntoBQ(Records records) {
         Instant start = Instant.now();
         Builder builder = newBuilder(tableId);
-        records.forEach((Record m) -> builder.addRow(recordInserter.of(m)));
+        records.getRecords().stream().filter(record -> !record.getColumns().isEmpty()).forEach((Record m) -> builder.addRow(recordInserter.of(m)));
         InsertAllRequest rows = builder.build();
         InsertAllResponse response = bigquery.insertAll(rows);
         log.info("Pushing {} records to BQ success?: {}", records.size(), !response.hasErrors());

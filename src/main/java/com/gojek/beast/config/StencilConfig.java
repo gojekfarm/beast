@@ -9,4 +9,8 @@ public interface StencilConfig extends Config {
 
     @Key("PROTO_SCHEMA")
     String getProtoSchema();
+
+    @Key("REFRESH_CACHE")
+    @DefaultValue("false")
+    boolean getAutoRefreshCache();
 }

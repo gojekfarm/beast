@@ -62,6 +62,14 @@ public class KafkaConsumerUtil {
         return new ConsumerRecord<>(topic, partition, offset++, timestamp, TimestampType.CREATE_TIME, 0, 0, 0, key.toByteArray(), message.toByteArray());
     }
 
+    public ConsumerRecord<byte[], byte[]> createEmptyValueConsumerRecord(String orderNumber, String orderUrl) {
+        TestKey key = TestKey.newBuilder()
+                .setOrderNumber(orderNumber)
+                .setOrderUrl(orderUrl)
+                .build();
+        return new ConsumerRecord<>(topic, partition, offset++, timestamp, TimestampType.CREATE_TIME, 0, 0, 0, key.toByteArray(), null);
+    }
+
     public Map<String, Object> metadataColumns(OffsetInfo offsetInfo, long epochMillis) {
         Map<String, Object> metadataColumns = new HashMap<>();
         metadataColumns.put("message_partition", offsetInfo.getPartition());

@@ -48,6 +48,7 @@ public class ProtoUpdateListenerTest {
     private ProtoUpdateListener protoUpdateListener;
     private ProtoMappingConfig protoMappingConfig;
     private StencilConfig stencilConfig;
+    private AppConfig appConfig;
     private ObjectMapper objectMapper;
 
 
@@ -57,7 +58,8 @@ public class ProtoUpdateListenerTest {
         System.setProperty("ENABLE_AUTO_SCHEMA_UPDATE", "false");
         stencilConfig = ConfigFactory.create(StencilConfig.class, System.getProperties());
         protoMappingConfig = ConfigFactory.create(ProtoMappingConfig.class, System.getProperties());
-        protoUpdateListener = new ProtoUpdateListener(protoMappingConfig, stencilConfig, stencilClient, protoMappingConverter, protoMappingParser, bqInstance, protoFieldFactory);
+        appConfig = ConfigFactory.create(AppConfig.class, System.getProperties());
+        protoUpdateListener = new ProtoUpdateListener(new ConfigStore(appConfig, stencilConfig, protoMappingConfig, null), stencilClient, protoMappingConverter, protoMappingParser, bqInstance, protoFieldFactory);
         objectMapper = new ObjectMapper();
     }
 

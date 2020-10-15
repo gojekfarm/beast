@@ -10,6 +10,7 @@ import com.gojek.beast.config.StencilConfig;
 import com.gojek.beast.config.ProtoMappingConfig;
 import com.gojek.beast.config.QueueConfig;
 import com.gojek.beast.config.KafkaConfig;
+import com.gojek.beast.config.ConfigStore;
 import com.gojek.beast.protomapping.Converter;
 import com.gojek.beast.protomapping.Parser;
 import com.gojek.beast.protomapping.ProtoUpdateListener;
@@ -90,7 +91,7 @@ public class BeastFactory {
         this.commitQueue = new LinkedBlockingQueue<>(appConfig.getCommitQueueCapacity());
         this.backOffConfig = backOffConfig;
         this.workerState = workerState;
-        this.protoUpdateListener = new ProtoUpdateListener(protoMappingConfig, stencilConfig, bqConfig, new Converter(), new Parser(), getBigQueryInstance());
+        this.protoUpdateListener = new ProtoUpdateListener(new ConfigStore(appConfig, stencilConfig, protoMappingConfig, bqConfig), new Converter(), new Parser(), getBigQueryInstance());
     }
 
     public List<Worker> createBqWorkers() {

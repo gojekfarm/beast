@@ -13,7 +13,6 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +38,7 @@ public class RowMapper {
 
     private Map<String, Object> getMappings(DynamicMessage message, ColumnMapping columnMapping) {
         if (message == null || columnMapping == null || columnMapping.isEmpty()) {
-            return Collections.emptyMap();
+            return new HashMap<>();
         }
         if (failOnUnknownFileds && message.getUnknownFields().asMap().size() > 0) {
             statsClient.increment("kafka.protobuf.unknownfields.errors");

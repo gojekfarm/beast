@@ -1,10 +1,11 @@
 package com.gojek.beast.protomapping;
 
 import com.gojek.beast.Clock;
-import com.gojek.beast.config.BQConfig;
-import com.gojek.beast.config.ColumnMapping;
-import com.gojek.beast.config.ProtoMappingConfig;
+import com.gojek.beast.config.AppConfig;
 import com.gojek.beast.config.StencilConfig;
+import com.gojek.beast.config.ProtoMappingConfig;
+import com.gojek.beast.config.ConfigStore;
+import com.gojek.beast.config.ColumnMapping;
 import com.gojek.beast.converter.ConsumerRecordConverter;
 import com.gojek.beast.converter.RowMapper;
 import com.gojek.beast.exception.BQDatasetLocationChangedException;
@@ -20,6 +21,7 @@ import com.gojek.beast.stats.Stats;
 import com.gojek.de.stencil.StencilClientFactory;
 import com.gojek.de.stencil.client.StencilClient;
 import com.gojek.de.stencil.models.DescriptorAndTypeName;
+import com.gojek.de.stencil.parser.ProtoParser;
 import com.gojek.de.stencil.parser.ProtoParserWithRefresh;
 import com.gojek.de.stencil.utils.StencilUtils;
 import com.google.cloud.bigquery.BigQuery;
@@ -37,6 +39,7 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
     private final String proto;
     private final ProtoMappingConfig protoMappingConfig;
     private final StencilConfig stencilConfig;
+    private final AppConfig appConfig;
     private ConsumerRecordConverter recordConverter;
     private StencilClient stencilClient;
     private Converter protoMappingConverter;
@@ -45,25 +48,27 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
     private ProtoFieldFactory protoFieldFactory;
     private Stats statsClient = Stats.client();
 
-    public ProtoUpdateListener(ProtoMappingConfig protoMappingConfig, StencilConfig stencilConfig, BQConfig bqConfig, Converter protoMappingConverter, Parser protoMappingParser, BigQuery bqInstance) throws IOException {
-        super(stencilConfig.getProtoSchema());
-        this.proto = stencilConfig.getProtoSchema();
-        this.protoMappingConfig = protoMappingConfig;
-        this.stencilConfig = stencilConfig;
+    public ProtoUpdateListener(ConfigStore configStore, Converter protoMappingConverter, Parser protoMappingParser, BigQuery bqInstance) throws IOException {
+        super(configStore.getStencilConfig().getProtoSchema());
+        this.proto = configStore.getStencilConfig().getProtoSchema();
+        this.protoMappingConfig = configStore.getProtoMappingConfig();
+        this.stencilConfig = configStore.getStencilConfig();
+        this.appConfig = configStore.getAppConfig();
         this.protoMappingConverter = protoMappingConverter;
         this.protoMappingParser = protoMappingParser;
         this.protoFieldFactory = new ProtoFieldFactory();
-        this.bqClient = new BQClient(bqInstance, bqConfig);
+        this.bqClient = new BQClient(bqInstance, configStore.getBqConfig());
         this.createStencilClient();
         this.setProtoParser(getProtoMapping());
     }
 
     @VisibleForTesting
-    public ProtoUpdateListener(ProtoMappingConfig protoMappingConfig, StencilConfig stencilConfig, StencilClient stencilClient, Converter protoMappingConverter, Parser protoMappingParser, BQClient bqClient, ProtoFieldFactory protoFieldFactory) {
-        super(stencilConfig.getProtoSchema());
-        this.proto = stencilConfig.getProtoSchema();
-        this.protoMappingConfig = protoMappingConfig;
-        this.stencilConfig = stencilConfig;
+    public ProtoUpdateListener(ConfigStore configStore, StencilClient stencilClient, Converter protoMappingConverter, Parser protoMappingParser, BQClient bqClient, ProtoFieldFactory protoFieldFactory) {
+        super(configStore.getStencilConfig().getProtoSchema());
+        this.proto = configStore.getStencilConfig().getProtoSchema();
+        this.protoMappingConfig = configStore.getProtoMappingConfig();
+        this.stencilConfig = configStore.getStencilConfig();
+        this.appConfig = configStore.getAppConfig();
         this.stencilClient = stencilClient;
         this.protoMappingConverter = protoMappingConverter;
         this.protoMappingParser = protoMappingParser;
@@ -119,14 +124,20 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
         return protoMappingConfig.getProtoColumnMapping();
     }
 
-
     public ConsumerRecordConverter getProtoParser() {
         return recordConverter;
     }
 
     private void setProtoParser(ColumnMapping columnMapping) {
-        ProtoParserWithRefresh protoParser = new ProtoParserWithRefresh(stencilClient, proto);
-        recordConverter = new ConsumerRecordConverter(new RowMapper(columnMapping, protoMappingConfig.isFailOnUnknownFields()), protoParser, new Clock());
+        if (stencilConfig.getAutoRefreshCache()) {
+            // periodic refresh
+            ProtoParser protoParser = new ProtoParser(stencilClient, proto);
+            recordConverter = new ConsumerRecordConverter(new RowMapper(columnMapping, protoMappingConfig.isFailOnUnknownFields()), protoParser, new Clock(), appConfig);
+        } else {
+            // on-demand refresh
+            ProtoParserWithRefresh protoParser = new ProtoParserWithRefresh(stencilClient, proto);
+            recordConverter = new ConsumerRecordConverter(new RowMapper(columnMapping, protoMappingConfig.isFailOnUnknownFields()), protoParser, new Clock(), appConfig);
+        }
     }
 
     public void close() throws IOException {
