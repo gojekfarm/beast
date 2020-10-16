@@ -1,6 +1,7 @@
 package com.gojek.beast.converter;
 
 import com.gojek.beast.Clock;
+import com.gojek.beast.config.AppConfig;
 import com.gojek.beast.config.Constants;
 import com.gojek.beast.models.OffsetInfo;
 import com.gojek.beast.models.Record;
@@ -8,17 +9,21 @@ import com.gojek.de.stencil.parser.Parser;
 import com.google.api.client.util.DateTime;
 import com.google.protobuf.InvalidProtocolBufferException;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @AllArgsConstructor
 public class ConsumerRecordConverter implements Converter {
     private final RowMapper rowMapper;
     private final Parser parser;
     private final Clock clock;
+    private AppConfig appConfig;
 
     public List<Record> convert(final Iterable<ConsumerRecord<byte[], byte[]>> messages) throws InvalidProtocolBufferException {
         ArrayList<Record> records = new ArrayList<>();
@@ -33,10 +38,20 @@ public class ConsumerRecordConverter implements Converter {
     }
 
     private void addMetadata(Map<String, Object> columns, OffsetInfo offsetInfo) {
-        columns.put(Constants.PARTITION_COLUMN_NAME, offsetInfo.getPartition());
-        columns.put(Constants.OFFSET_COLUMN_NAME, offsetInfo.getOffset());
-        columns.put(Constants.TOPIC_COLUMN_NAME, offsetInfo.getTopic());
-        columns.put(Constants.TIMESTAMP_COLUMN_NAME, new DateTime(offsetInfo.getTimestamp()));
-        columns.put(Constants.LOAD_TIME_COLUMN_NAME, new DateTime(clock.currentEpochMillis()));
+        if (appConfig.getBqMetadataNamespace().isEmpty()) {
+            columns.put(Constants.PARTITION_COLUMN_NAME, offsetInfo.getPartition());
+            columns.put(Constants.OFFSET_COLUMN_NAME, offsetInfo.getOffset());
+            columns.put(Constants.TOPIC_COLUMN_NAME, offsetInfo.getTopic());
+            columns.put(Constants.TIMESTAMP_COLUMN_NAME, new DateTime(offsetInfo.getTimestamp()));
+            columns.put(Constants.LOAD_TIME_COLUMN_NAME, new DateTime(clock.currentEpochMillis()));
+        } else {
+            Map<Object, Object> offsetMetadata = new HashMap<>();
+            offsetMetadata.put(Constants.PARTITION_COLUMN_NAME, offsetInfo.getPartition());
+            offsetMetadata.put(Constants.OFFSET_COLUMN_NAME, offsetInfo.getOffset());
+            offsetMetadata.put(Constants.TOPIC_COLUMN_NAME, offsetInfo.getTopic());
+            offsetMetadata.put(Constants.TIMESTAMP_COLUMN_NAME, new DateTime(offsetInfo.getTimestamp()));
+            offsetMetadata.put(Constants.LOAD_TIME_COLUMN_NAME, new DateTime(clock.currentEpochMillis()));
+            columns.put(appConfig.getBqMetadataNamespace(), offsetMetadata);
+        }
     }
 }

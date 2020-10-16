@@ -1,17 +1,10 @@
 package com.gojek.beast.protomapping;
 
 import com.gojek.beast.Clock;
-import com.gojek.beast.config.BQConfig;
-import com.gojek.beast.config.ColumnMapping;
-import com.gojek.beast.config.ProtoMappingConfig;
-import com.gojek.beast.config.StencilConfig;
+import com.gojek.beast.config.*;
 import com.gojek.beast.converter.ConsumerRecordConverter;
 import com.gojek.beast.converter.RowMapper;
-import com.gojek.beast.exception.BQDatasetLocationChangedException;
-import com.gojek.beast.exception.BQPartitionKeyNotSpecified;
-import com.gojek.beast.exception.BQSchemaMappingException;
-import com.gojek.beast.exception.BQTableUpdateFailure;
-import com.gojek.beast.exception.ProtoNotFoundException;
+import com.gojek.beast.exception.*;
 import com.gojek.beast.models.BQField;
 import com.gojek.beast.models.ProtoField;
 import com.gojek.beast.models.ProtoFieldFactory;
@@ -44,8 +37,9 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
     private BQClient bqClient;
     private ProtoFieldFactory protoFieldFactory;
     private Stats statsClient = Stats.client();
+    private AppConfig appConfig;
 
-    public ProtoUpdateListener(ProtoMappingConfig protoMappingConfig, StencilConfig stencilConfig, BQConfig bqConfig, Converter protoMappingConverter, Parser protoMappingParser, BigQuery bqInstance) throws IOException {
+    public ProtoUpdateListener(ProtoMappingConfig protoMappingConfig, StencilConfig stencilConfig, BQConfig bqConfig, Converter protoMappingConverter, Parser protoMappingParser, BigQuery bqInstance, AppConfig appConfig) throws IOException {
         super(stencilConfig.getProtoSchema());
         this.proto = stencilConfig.getProtoSchema();
         this.protoMappingConfig = protoMappingConfig;
@@ -54,6 +48,7 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
         this.protoMappingParser = protoMappingParser;
         this.protoFieldFactory = new ProtoFieldFactory();
         this.bqClient = new BQClient(bqInstance, bqConfig);
+        this.appConfig = appConfig;
         this.createStencilClient();
         this.setProtoParser(getProtoMapping());
     }
@@ -103,8 +98,17 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
     private void updateProtoParser(final ProtoField protoField) throws IOException {
         String protoMappingString = protoMappingConverter.generateColumnMappings(protoField.getFields());
         List<Field> bqSchemaFields = protoMappingConverter.generateBigquerySchema(protoField);
-        List<Field> bqMetadataFieldsSchema = BQField.getMetadataFields();
-        bqSchemaFields.addAll(bqMetadataFieldsSchema);
+
+        if (appConfig.getBqMetadataNamespace().isEmpty()) {
+            List<Field> bqMetadataFieldsSchema = BQField.getMetadataFields();
+            bqSchemaFields.addAll(bqMetadataFieldsSchema);
+        } else {
+            if (bqSchemaFields.stream().anyMatch(field -> field.getName().equals(appConfig.getBqMetadataNamespace()))) {
+                throw new BQSchemaMappingException("metadata field already being used with some other name..");
+            }
+            Field namespacedMetadataField = BQField.getNamespaceMetadataField(appConfig.getBqMetadataNamespace());
+            bqSchemaFields.add(namespacedMetadataField);
+        }
 
         bqClient.upsertTable(bqSchemaFields);
         protoMappingConfig.setProperty("PROTO_COLUMN_MAPPING", protoMappingString);
@@ -126,7 +130,7 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
 
     private void setProtoParser(ColumnMapping columnMapping) {
         ProtoParserWithRefresh protoParser = new ProtoParserWithRefresh(stencilClient, proto);
-        recordConverter = new ConsumerRecordConverter(new RowMapper(columnMapping, protoMappingConfig.isFailOnUnknownFields()), protoParser, new Clock());
+        recordConverter = new ConsumerRecordConverter(new RowMapper(columnMapping, protoMappingConfig.isFailOnUnknownFields()), protoParser, new Clock(), appConfig);
     }
 
     public void close() throws IOException {

@@ -90,7 +90,7 @@ public class BeastFactory {
         this.commitQueue = new LinkedBlockingQueue<>(appConfig.getCommitQueueCapacity());
         this.backOffConfig = backOffConfig;
         this.workerState = workerState;
-        this.protoUpdateListener = new ProtoUpdateListener(protoMappingConfig, stencilConfig, bqConfig, new Converter(), new Parser(), getBigQueryInstance());
+        this.protoUpdateListener = new ProtoUpdateListener(protoMappingConfig, stencilConfig, bqConfig, new Converter(), new Parser(), getBigQueryInstance(), appConfig);
     }
 
     public List<Worker> createBqWorkers() {

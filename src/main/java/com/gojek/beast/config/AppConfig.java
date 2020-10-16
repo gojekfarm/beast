@@ -79,4 +79,8 @@ public interface AppConfig extends Config {
     @DefaultValue("2000")
     @Key("OFFSET_BATCH_DURATION")
     long getOffsetBatchDuration();
+
+    @Key("BQ_METADATA_NAMESPACE")
+    @DefaultValue("")
+    String getBqMetadataNamespace();
 }
