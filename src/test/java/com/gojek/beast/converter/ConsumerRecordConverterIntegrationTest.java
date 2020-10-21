@@ -95,7 +95,7 @@ public class ConsumerRecordConverterIntegrationTest {
         Map<String, Object> record1Columns = records.get(0).getColumns();
         Map<String, Object> record2Columns = records.get(1).getColumns();
         assertEquals(record1ExpectedColumns.size(), record1Columns.size());
-        assertEquals(record1ExpectedColumns.size(), record1Columns.size());
+        assertEquals(record2ExpectedColumns.size(), record2Columns.size());
         assertEquals(record1ExpectedColumns, record1Columns);
         assertEquals(record2ExpectedColumns, record2Columns);
     }
@@ -124,7 +124,7 @@ public class ConsumerRecordConverterIntegrationTest {
         Map<String, Object> record1Columns = records.get(0).getColumns();
         Map<String, Object> record2Columns = records.get(1).getColumns();
         assertEquals(record1ExpectedColumns.size(), record1Columns.size());
-        assertEquals(record1ExpectedColumns.size(), record1Columns.size());
+        assertEquals(record2ExpectedColumns.size(), record2Columns.size());
         assertEquals(record1ExpectedColumns, record1Columns);
         assertEquals(record2ExpectedColumns, record2Columns);
     }
@@ -153,7 +153,7 @@ public class ConsumerRecordConverterIntegrationTest {
         Map<String, Object> record1Columns = records.get(0).getColumns();
         Map<String, Object> record2Columns = records.get(1).getColumns();
         assertEquals(record1ExpectedColumns.size(), record1Columns.size());
-        assertEquals(record1ExpectedColumns.size(), record1Columns.size());
+        assertEquals(record2ExpectedColumns.size(), record2Columns.size());
         assertEquals(record1ExpectedColumns, record1Columns);
         assertEquals(record2ExpectedColumns, record2Columns);
     }
