@@ -89,7 +89,7 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
             }
         } catch (RuntimeException e) {
             emitStencilExceptionMetrics(e);
-            throw new StencilRuntimeException(e);
+            throw e;
         }
     }
 
