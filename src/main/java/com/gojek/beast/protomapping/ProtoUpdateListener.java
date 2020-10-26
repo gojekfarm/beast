@@ -2,10 +2,10 @@ package com.gojek.beast.protomapping;
 
 import com.gojek.beast.Clock;
 import com.gojek.beast.config.AppConfig;
-import com.gojek.beast.config.StencilConfig;
-import com.gojek.beast.config.ProtoMappingConfig;
 import com.gojek.beast.config.ConfigStore;
 import com.gojek.beast.config.ColumnMapping;
+import com.gojek.beast.config.ProtoMappingConfig;
+import com.gojek.beast.config.StencilConfig;
 import com.gojek.beast.converter.ConsumerRecordConverter;
 import com.gojek.beast.converter.RowMapper;
 import com.gojek.beast.exception.BQDatasetLocationChangedException;
@@ -32,8 +32,10 @@ import com.google.common.annotations.VisibleForTesting;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateListener {
@@ -114,12 +116,27 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
     private void updateProtoParser(final ProtoField protoField) throws IOException {
         String protoMappingString = protoMappingConverter.generateColumnMappings(protoField.getFields());
         List<Field> bqSchemaFields = protoMappingConverter.generateBigquerySchema(protoField);
-        List<Field> bqMetadataFieldsSchema = BQField.getMetadataFields();
-        bqSchemaFields.addAll(bqMetadataFieldsSchema);
-
+        addMetadataFields(bqSchemaFields);
         bqClient.upsertTable(bqSchemaFields);
         protoMappingConfig.setProperty("PROTO_COLUMN_MAPPING", protoMappingString);
         setProtoParser(protoMappingConfig.getProtoColumnMapping());
+    }
+
+    private void addMetadataFields(List<Field> bqSchemaFields) {
+        List<Field> bqMetadataFields = new ArrayList<>();
+        String namespaceName = appConfig.getBqMetadataNamespace();
+        if (namespaceName.isEmpty()) {
+            bqMetadataFields.addAll(BQField.getMetadataFields());
+        } else {
+            bqMetadataFields.add(BQField.getNamespacedMetadataField(namespaceName));
+        }
+
+        List<String> duplicateFields = getDuplicateFields(bqSchemaFields, bqMetadataFields).stream().map(Field::getName).collect(Collectors.toList());
+        if (duplicateFields.size() > 0) {
+            throw new BQSchemaMappingException(String.format("Metadata field(s) is already present in the schema. "
+                    + "fields: %s", duplicateFields));
+        }
+        bqSchemaFields.addAll(bqMetadataFields);
     }
 
     private ColumnMapping getProtoMapping() throws IOException {
@@ -159,5 +176,13 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
                 statsClient.increment("stencil.unhandled.errors,exception=" + e.getClass().getName());
             }
         }
+    }
+
+    private List<Field> getDuplicateFields(List<Field> fields1, List<Field> fields2) {
+        return fields1.stream().filter(field -> containsField(fields2, field.getName())).collect(Collectors.toList());
+    }
+
+    private boolean containsField(List<Field> fields, String fieldName) {
+        return fields.stream().anyMatch(field -> field.getName().equals(fieldName));
     }
 }

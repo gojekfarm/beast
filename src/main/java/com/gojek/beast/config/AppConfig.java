@@ -83,4 +83,8 @@ public interface AppConfig extends Config {
     @DefaultValue("false")
     @Key("FAIL_ON_NULL_MESSAGE")
     boolean getFailOnNullMessage();
+
+    @Key("BQ_METADATA_NAMESPACE")
+    @DefaultValue("")
+    String getBqMetadataNamespace();
 }
