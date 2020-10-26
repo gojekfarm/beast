@@ -48,7 +48,6 @@ public class ProtoUpdateListenerTest {
     private StencilClient stencilClient;
     @Mock
     private ProtoFieldFactory protoFieldFactory;
-    private ProtoUpdateListener protoUpdateListener;
     private ProtoMappingConfig protoMappingConfig;
     private StencilConfig stencilConfig;
     private ObjectMapper objectMapper;
@@ -60,17 +59,18 @@ public class ProtoUpdateListenerTest {
         System.setProperty("ENABLE_AUTO_SCHEMA_UPDATE", "false");
         stencilConfig = ConfigFactory.create(StencilConfig.class, System.getProperties());
         protoMappingConfig = ConfigFactory.create(ProtoMappingConfig.class, System.getProperties());
-        protoUpdateListener = new ProtoUpdateListener(new ConfigStore(null, stencilConfig, protoMappingConfig, null), stencilClient, protoMappingConverter, protoMappingParser, bqInstance, protoFieldFactory);
         objectMapper = new ObjectMapper();
     }
 
     @Test
     public void shouldUseNewSchemaIfProtoChanges() throws IOException {
+        AppConfig appConfig = ConfigFactory.create(AppConfig.class, System.getProperties());
+        ProtoUpdateListener protoUpdateListener = new ProtoUpdateListener(new ConfigStore(appConfig, stencilConfig, protoMappingConfig, null), stencilClient, protoMappingConverter, protoMappingParser, bqInstance, protoFieldFactory);
+
         ProtoField returnedProtoField = new ProtoField();
         when(protoFieldFactory.getProtoField()).thenReturn(returnedProtoField);
         returnedProtoField.addField(new ProtoField("order_number", 1));
         returnedProtoField.addField(new ProtoField("order_url", 2));
-
 
         HashMap<String, DescriptorAndTypeName> descriptorsMap = new HashMap<String, DescriptorAndTypeName>() {{
             put(String.format("%s", TestKey.class.getName()), new DescriptorAndTypeName(TestKey.getDescriptor(), String.format(".%s.%s", TestKey.getDescriptor().getFile().getPackage(), TestKey.getDescriptor().getName())));
@@ -105,6 +105,9 @@ public class ProtoUpdateListenerTest {
 
     @Test(expected = BQTableUpdateFailure.class)
     public void shouldThrowExceptionIfParserFails() {
+        AppConfig appConfig = ConfigFactory.create(AppConfig.class, System.getProperties());
+        ProtoUpdateListener protoUpdateListener = new ProtoUpdateListener(new ConfigStore(appConfig, stencilConfig, protoMappingConfig, null), stencilClient, protoMappingConverter, protoMappingParser, bqInstance, protoFieldFactory);
+
         ProtoField returnedProtoField = new ProtoField();
         HashMap<String, DescriptorAndTypeName> descriptorsMap = new HashMap<String, DescriptorAndTypeName>() {{
             put(String.format("%s.%s", TestKey.class.getPackage(), TestKey.class.getName()), new DescriptorAndTypeName(TestKey.getDescriptor(), String.format(".%s.%s", TestKey.getDescriptor().getFile().getPackage(), TestKey.getDescriptor().getName())));
@@ -122,6 +125,8 @@ public class ProtoUpdateListenerTest {
 
     @Test(expected = BQTableUpdateFailure.class)
     public void shouldThrowExceptionIfConverterFails() throws IOException {
+        AppConfig appConfig = ConfigFactory.create(AppConfig.class, System.getProperties());
+        ProtoUpdateListener protoUpdateListener = new ProtoUpdateListener(new ConfigStore(appConfig, stencilConfig, protoMappingConfig, null), stencilClient, protoMappingConverter, protoMappingParser, bqInstance, protoFieldFactory);
         ProtoField returnedProtoField = new ProtoField();
         when(protoFieldFactory.getProtoField()).thenReturn(returnedProtoField);
         returnedProtoField.addField(new ProtoField("order_number", 1));
@@ -155,6 +160,9 @@ public class ProtoUpdateListenerTest {
 
     @Test(expected = BQTableUpdateFailure.class)
     public void shouldThrowExceptionIfDatasetLocationIsChanged() throws IOException {
+        AppConfig appConfig = ConfigFactory.create(AppConfig.class, System.getProperties());
+        ProtoUpdateListener protoUpdateListener = new ProtoUpdateListener(new ConfigStore(appConfig, stencilConfig, protoMappingConfig, null), stencilClient, protoMappingConverter, protoMappingParser, bqInstance, protoFieldFactory);
+
         ProtoField returnedProtoField = new ProtoField();
         when(protoFieldFactory.getProtoField()).thenReturn(returnedProtoField);
         returnedProtoField.addField(new ProtoField("order_number", 1));
@@ -188,6 +196,9 @@ public class ProtoUpdateListenerTest {
 
     @Test
     public void shouldNotNamespaceMetadataFieldsWhenNamespaceIsNotProvided() throws IOException {
+        AppConfig appConfig = ConfigFactory.create(AppConfig.class, System.getProperties());
+        ProtoUpdateListener protoUpdateListener = new ProtoUpdateListener(new ConfigStore(appConfig, stencilConfig, protoMappingConfig, null), stencilClient, protoMappingConverter, protoMappingParser, bqInstance, protoFieldFactory);
+
         ProtoField returnedProtoField = new ProtoField();
         when(protoFieldFactory.getProtoField()).thenReturn(returnedProtoField);
         returnedProtoField.addField(new ProtoField("order_number", 1));
@@ -312,6 +323,9 @@ public class ProtoUpdateListenerTest {
 
     @Test
     public void shouldThrowErrorWhenMetadataFieldsNameCollidesWithAnyOtherField() throws IOException {
+        AppConfig appConfig = ConfigFactory.create(AppConfig.class, System.getProperties());
+        ProtoUpdateListener protoUpdateListener = new ProtoUpdateListener(new ConfigStore(appConfig, stencilConfig, protoMappingConfig, null), stencilClient, protoMappingConverter, protoMappingParser, bqInstance, protoFieldFactory);
+
         ProtoField returnedProtoField = new ProtoField();
         String collidingColName = Constants.OFFSET_COLUMN_NAME;
         when(protoFieldFactory.getProtoField()).thenReturn(returnedProtoField);
