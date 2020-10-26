@@ -6,6 +6,7 @@ import com.gojek.beast.config.ProtoMappingConfig;
 import com.gojek.beast.config.StencilConfig;
 import com.gojek.beast.config.BQConfig;
 import com.gojek.beast.factory.BeastFactory;
+import com.gojek.beast.stats.Stats;
 import com.gojek.beast.worker.Worker;
 import com.gojek.beast.worker.WorkerState;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ public class Main {
         StencilConfig stencilConfig = ConfigFactory.create(StencilConfig.class, System.getenv());
         BQConfig bqConfig = ConfigFactory.create(BQConfig.class, System.getenv());
         WorkerState workerState = new WorkerState();
+        Stats statsClient = Stats.client();
 
         BeastFactory beastFactory = null;
         try {
@@ -47,8 +49,12 @@ public class Main {
                 log.debug("Joined on worker {} thread", worker.getName());
             }
             log.debug("Joined on all worker threads");
-        } catch (InterruptedException e) {
-            log.error("Exception::KafkaConsumer and committer join failed: {}", e.getMessage());
+        } catch (Throwable e) {
+            log.error("Exception: {}", e.getMessage());
+            statsClient.increment("global.errors,exception=" + e.getClass().getName());
+            if (e instanceof InterruptedException) {
+                log.error("Exception::KafkaConsumer and committer join failed: {}", e.getMessage());
+            }
         } finally {
             if (beastFactory != null) {
                 beastFactory.close();

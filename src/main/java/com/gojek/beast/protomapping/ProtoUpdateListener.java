@@ -20,6 +20,7 @@ import com.gojek.beast.sink.bq.BQClient;
 import com.gojek.beast.stats.Stats;
 import com.gojek.de.stencil.StencilClientFactory;
 import com.gojek.de.stencil.client.StencilClient;
+import com.gojek.de.stencil.exception.StencilRuntimeException;
 import com.gojek.de.stencil.models.DescriptorAndTypeName;
 import com.gojek.de.stencil.parser.ProtoParser;
 import com.gojek.de.stencil.parser.ProtoParserWithRefresh;
@@ -77,13 +78,18 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
     }
 
     private void createStencilClient() {
-        if (protoMappingConfig.isAutoSchemaUpdateEnabled()) {
-            stencilClient = StencilClientFactory.getClient(stencilConfig.getStencilUrl(), System.getenv(), Stats.client().getStatsDClient(), this);
+        try {
+            if (protoMappingConfig.isAutoSchemaUpdateEnabled()) {
+                stencilClient = StencilClientFactory.getClient(stencilConfig.getStencilUrl(), System.getenv(), Stats.client().getStatsDClient(), this);
 
-            log.info("updating bq table at startup for proto schema {}", getProto());
-            onProtoUpdate(stencilConfig.getStencilUrl(), stencilClient.getAllDescriptorAndTypeName());
-        } else {
-            stencilClient = StencilClientFactory.getClient(stencilConfig.getStencilUrl(), System.getenv(), Stats.client().getStatsDClient());
+                log.info("updating bq table at startup for proto schema {}", getProto());
+                onProtoUpdate(stencilConfig.getStencilUrl(), stencilClient.getAllDescriptorAndTypeName());
+            } else {
+                stencilClient = StencilClientFactory.getClient(stencilConfig.getStencilUrl(), System.getenv(), Stats.client().getStatsDClient());
+            }
+        } catch (RuntimeException e) {
+            emitStencilExceptionMetrics(e);
+            throw new StencilRuntimeException(e);
         }
     }
 
@@ -142,5 +148,16 @@ public class ProtoUpdateListener extends com.gojek.de.stencil.cache.ProtoUpdateL
 
     public void close() throws IOException {
         stencilClient.close();
+    }
+
+    private void emitStencilExceptionMetrics(RuntimeException e) {
+        if (e.getCause() instanceof StencilRuntimeException) {
+            if (e.getCause().getCause() instanceof org.apache.http.conn.ConnectTimeoutException
+                    || e.getCause().getCause() instanceof org.apache.http.conn.HttpHostConnectException) {
+                statsClient.increment("stencil.connection.timeout.errors,exception=" + e.getClass().getName());
+            } else {
+                statsClient.increment("stencil.unhandled.errors,exception=" + e.getClass().getName());
+            }
+        }
     }
 }
