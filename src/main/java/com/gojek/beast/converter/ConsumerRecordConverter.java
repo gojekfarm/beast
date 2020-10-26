@@ -14,9 +14,10 @@ import lombok.AllArgsConstructor;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Collections;
+import java.util.HashMap;
 
 @AllArgsConstructor
 public class ConsumerRecordConverter implements Converter {
@@ -47,10 +48,17 @@ public class ConsumerRecordConverter implements Converter {
     }
 
     private void addMetadata(Map<String, Object> columns, OffsetInfo offsetInfo) {
-        columns.put(Constants.PARTITION_COLUMN_NAME, offsetInfo.getPartition());
-        columns.put(Constants.OFFSET_COLUMN_NAME, offsetInfo.getOffset());
-        columns.put(Constants.TOPIC_COLUMN_NAME, offsetInfo.getTopic());
-        columns.put(Constants.TIMESTAMP_COLUMN_NAME, new DateTime(offsetInfo.getTimestamp()));
-        columns.put(Constants.LOAD_TIME_COLUMN_NAME, new DateTime(clock.currentEpochMillis()));
+        Map<String, Object> offsetMetadata = new HashMap<>();
+        offsetMetadata.put(Constants.PARTITION_COLUMN_NAME, offsetInfo.getPartition());
+        offsetMetadata.put(Constants.OFFSET_COLUMN_NAME, offsetInfo.getOffset());
+        offsetMetadata.put(Constants.TOPIC_COLUMN_NAME, offsetInfo.getTopic());
+        offsetMetadata.put(Constants.TIMESTAMP_COLUMN_NAME, new DateTime(offsetInfo.getTimestamp()));
+        offsetMetadata.put(Constants.LOAD_TIME_COLUMN_NAME, new DateTime(clock.currentEpochMillis()));
+
+        if (appConfig.getBqMetadataNamespace().isEmpty()) {
+            columns.putAll(offsetMetadata);
+        } else {
+            columns.put(appConfig.getBqMetadataNamespace(), offsetMetadata);
+        }
     }
 }

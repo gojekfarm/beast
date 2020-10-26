@@ -159,6 +159,55 @@ public class ConsumerRecordConverterIntegrationTest {
     }
 
     @Test
+    public void shouldNotNamespaceMetadataFieldWhenNamespaceIsNotProvided() throws InvalidProtocolBufferException {
+        AppConfig appConfig = ConfigFactory.create(AppConfig.class, System.getProperties());
+        ConsumerRecordConverter recordConverterTest = new ConsumerRecordConverter(rowMapper, parser, clock, appConfig);
+
+        OffsetInfo record1Offset = new OffsetInfo("topic1", 1, 101, Instant.now().toEpochMilli());
+        ConsumerRecord<byte[], byte[]> record1 = util.withOffsetInfo(record1Offset).createConsumerRecord("order-1", "order-url-1", "order-details-1");
+
+        Map<Object, Object> record1ExpectedColumns = new HashMap<>();
+        record1ExpectedColumns.put("bq_order_number", "order-1");
+        record1ExpectedColumns.put("bq_order_url", "order-url-1");
+        record1ExpectedColumns.put("bq_order_details", "order-details-1");
+        record1ExpectedColumns.putAll(util.metadataColumns(record1Offset, nowEpochMillis));
+
+        List<ConsumerRecord<byte[], byte[]>> messages = Arrays.asList(record1);
+        List<Record> records = recordConverterTest.convert(messages);
+
+        assertEquals(messages.size(), records.size());
+        Map<String, Object> record1Columns = records.get(0).getColumns();
+        assertEquals(record1ExpectedColumns.size(), record1Columns.size());
+        assertEquals(record1ExpectedColumns, record1Columns);
+        assertEquals(appConfig.getBqMetadataNamespace(), "");
+    }
+
+    @Test
+    public void shouldNamespaceMetadataFieldWhenNamespaceIsProvided() throws InvalidProtocolBufferException {
+        System.setProperty("BQ_METADATA_NAMESPACE", "metadata_ns");
+        AppConfig appConfig = ConfigFactory.create(AppConfig.class, System.getProperties());
+        ConsumerRecordConverter recordConverterTest = new ConsumerRecordConverter(rowMapper, parser, clock, appConfig);
+
+        OffsetInfo record1Offset = new OffsetInfo("topic1", 1, 101, Instant.now().toEpochMilli());
+        ConsumerRecord<byte[], byte[]> record1 = util.withOffsetInfo(record1Offset).createConsumerRecord("order-1", "order-url-1", "order-details-1");
+
+        Map<Object, Object> record1ExpectedColumns = new HashMap<>();
+        record1ExpectedColumns.put("bq_order_number", "order-1");
+        record1ExpectedColumns.put("bq_order_url", "order-url-1");
+        record1ExpectedColumns.put("bq_order_details", "order-details-1");
+        record1ExpectedColumns.put(appConfig.getBqMetadataNamespace(), util.metadataColumns(record1Offset, nowEpochMillis));
+
+        List<ConsumerRecord<byte[], byte[]>> messages = Arrays.asList(record1);
+        List<Record> records = recordConverterTest.convert(messages);
+
+        assertEquals(messages.size(), records.size());
+        Map<String, Object> record1Columns = records.get(0).getColumns();
+        assertEquals(record1ExpectedColumns.size(), record1Columns.size());
+        assertEquals(record1ExpectedColumns, record1Columns);
+        System.setProperty("BQ_METADATA_NAMESPACE", "");
+    }
+
+    @Test
     public void shouldPopulateOffsetInformationForRecord() throws InvalidProtocolBufferException {
         String topic = "order-logs";
         OffsetInfo record1Offset = new OffsetInfo(topic, 1, 100, Instant.now().toEpochMilli());
