@@ -84,7 +84,7 @@ public class BQField {
     public static Field getNamespacedMetadataField(String namespace) {
         return Field
                 .newBuilder(namespace, LegacySQLTypeName.RECORD, FieldList.of(getMetadataFields()))
-                .setMode(Field.Mode.REQUIRED)
+                .setMode(Field.Mode.NULLABLE)
                 .build();
     }
 
