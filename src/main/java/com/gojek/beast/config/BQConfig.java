@@ -12,13 +12,13 @@ public interface BQConfig extends Config {
     String getTable();
 
     @Key("BQ_DATASET_LABELS")
-    @Separator(MapPropertyConverter.ELEMENT_SEPARATOR)
-    @ConverterClass(MapPropertyConverter.class)
+    @Separator(LabelMapConverter.ELEMENT_SEPARATOR)
+    @ConverterClass(LabelMapConverter.class)
     Map<String, String> getDatasetLabels();
 
     @Key("BQ_TABLE_LABELS")
-    @Separator(MapPropertyConverter.ELEMENT_SEPARATOR)
-    @ConverterClass(MapPropertyConverter.class)
+    @Separator(LabelMapConverter.ELEMENT_SEPARATOR)
+    @ConverterClass(LabelMapConverter.class)
     Map<String, String> getTableLabels();
 
     @Key("BQ_DATASET_NAME")

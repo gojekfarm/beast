@@ -66,3 +66,4 @@ env/local.properties
 .project
 .settings/
 .vscode/
+src/test/resources/__files/

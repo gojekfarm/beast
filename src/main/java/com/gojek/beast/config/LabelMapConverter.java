@@ -6,9 +6,10 @@ import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class MapPropertyConverter implements Converter<Map<String, String>> {
+public class LabelMapConverter implements Converter<Map<String, String>> {
     private static final String VALUE_SEPARATOR = "=";
     static final String ELEMENT_SEPARATOR = ",";
+    static final int MAX_LENGTH = 63;
 
     public Map<String, String> convert(Method method, String input) {
         Map<String, String> result = new LinkedHashMap<>();
@@ -19,7 +20,12 @@ public class MapPropertyConverter implements Converter<Map<String, String>> {
                 continue;
             }
             String key = entry[0].trim();
+            if (key.isEmpty()) {
+                continue;
+            }
+
             String value = entry[1].trim();
+            value = value.length() > MAX_LENGTH ? value.substring(0, MAX_LENGTH) : value;
             result.put(key, value);
         }
         return result;
