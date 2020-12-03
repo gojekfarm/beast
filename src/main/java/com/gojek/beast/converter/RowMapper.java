@@ -71,6 +71,7 @@ public class RowMapper {
                         fieldValue = getMappings((DynamicMessage) field, (ColumnMapping) value);
                     } catch (Exception e) {
                         log.error("Exception::Handling nested field failure: {}", e.getMessage());
+                        throw e;
                     }
                 }
                 row.put(columnName, fieldValue);
