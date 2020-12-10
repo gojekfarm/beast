@@ -17,7 +17,7 @@ import java.util.List;
 
 @Slf4j
 public class Main {
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException {
         AppConfig appConfig = ConfigFactory.create(AppConfig.class, System.getenv());
         ProtoMappingConfig protoMappingConfig = ConfigFactory.create(ProtoMappingConfig.class, System.getenv());
         BackOffConfig backOffConfig = ConfigFactory.create(BackOffConfig.class, System.getenv());
@@ -55,6 +55,7 @@ public class Main {
             if (e instanceof InterruptedException) {
                 log.error("Exception::KafkaConsumer and committer join failed: {}", e.getMessage());
             }
+            throw e;
         } finally {
             if (beastFactory != null) {
                 beastFactory.close();

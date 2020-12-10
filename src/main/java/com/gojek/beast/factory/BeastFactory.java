@@ -94,7 +94,7 @@ public class BeastFactory {
         this.protoUpdateListener = new ProtoUpdateListener(new ConfigStore(appConfig, stencilConfig, protoMappingConfig, bqConfig), new Converter(), new Parser(), getBigQueryInstance());
     }
 
-    public List<Worker> createBqWorkers() {
+    public List<Worker> createBqWorkers() throws IOException {
         Integer bqWorkerPoolSize = appConfig.getBqWorkerPoolSize();
         List<Worker> threads = new ArrayList<>(bqWorkerPoolSize);
         Acknowledger acknowledger = createAcknowledger();
@@ -106,7 +106,7 @@ public class BeastFactory {
         return threads;
     }
 
-    private Sink createBigQuerySink() {
+    private Sink createBigQuerySink() throws IOException {
         BigQuery bq = getBigQueryInstance();
         BQResponseParser responseParser = new BQResponseParser();
         BQErrorHandler bqErrorHandler = createOOBErrorHandler();
@@ -118,7 +118,7 @@ public class BeastFactory {
         return new RetrySink(bqSink, new ExponentialBackOffProvider(backOffConfig.getExponentialBackoffInitialTimeInMs(), backOffConfig.getExponentialBackoffMaximumTimeInMs(), backOffConfig.getExponentialBackoffRate(), new BackOff()), appConfig.getMaxPushAttempts());
     }
 
-    private BQErrorHandler createOOBErrorHandler() {
+    private BQErrorHandler createOOBErrorHandler() throws IOException {
         final Storage gcsStore = getGCStorageInstance();
         ErrorWriter errorWriter = new DefaultLogWriter();
         if (appConfig.isGCSErrorSinkEnabled()) {
@@ -129,7 +129,7 @@ public class BeastFactory {
         return new OOBErrorHandler(errorWriter);
     }
 
-    private BigQuery getBigQueryInstance() {
+    private BigQuery getBigQueryInstance() throws IOException {
         final TransportOptions transportOptions = BigQueryOptions.getDefaultHttpTransportOptions().toBuilder()
                 .setConnectTimeout(Integer.parseInt(bqConfig.getBqClientConnectTimeout()))
                 .setReadTimeout(Integer.parseInt(bqConfig.getBqClientReadTimeout()))
@@ -141,20 +141,21 @@ public class BeastFactory {
                 .build().getService();
     }
 
-    private Storage getGCStorageInstance() {
+    private Storage getGCStorageInstance() throws IOException {
         return StorageOptions.newBuilder()
                 .setCredentials(getGoogleCredentials())
                 .setProjectId(appConfig.getGcsWriterProject())
                 .build().getService();
     }
 
-    private GoogleCredentials getGoogleCredentials() {
+    private GoogleCredentials getGoogleCredentials() throws IOException {
         GoogleCredentials credentials = null;
         File credentialsPath = new File(bqConfig.getGoogleCredentials());
         try (FileInputStream serviceAccountStream = new FileInputStream(credentialsPath)) {
             credentials = ServiceAccountCredentials.fromStream(serviceAccountStream);
         } catch (IOException e) {
             e.printStackTrace();
+            throw e;
         }
         return credentials;
     }

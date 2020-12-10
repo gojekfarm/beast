@@ -1,12 +1,14 @@
 package com.gojek.beast.worker;
 
 import com.gojek.beast.models.Status;
+import com.gojek.beast.stats.Stats;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public abstract class Worker extends Thread {
     private static StopEvent stopEvent;
     private final WorkerState state;
+    private final Stats statsClient = Stats.client();
 
     public Worker(String name, WorkerState state) {
         super(name);
@@ -24,6 +26,11 @@ public abstract class Worker extends Thread {
         do {
             status = job();
         } while (!state.isStopped() && status.isSuccess());
+
+        if (!status.isSuccess()) {
+            statsClient.increment("global.errors,exception=" + status.getException().getClass().getName());
+        }
+
         onStopEvent(status.toString());
     }
 
