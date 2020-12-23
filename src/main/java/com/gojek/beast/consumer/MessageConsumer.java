@@ -1,11 +1,9 @@
 package com.gojek.beast.consumer;
 
-import com.gojek.beast.protomapping.ProtoUpdateListener;
 import com.gojek.beast.converter.ConsumerRecordConverter;
-import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.models.Record;
 import com.gojek.beast.models.Records;
-import com.gojek.beast.models.Status;
+import com.gojek.beast.protomapping.ProtoUpdateListener;
 import com.gojek.beast.sink.Sink;
 import com.gojek.beast.stats.Stats;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -15,8 +13,6 @@ import org.apache.kafka.common.errors.WakeupException;
 
 import java.time.Instant;
 import java.util.List;
-
-import static com.gojek.beast.config.Constants.SUCCESS_STATUS;
 
 @Slf4j
 public class MessageConsumer {
@@ -34,37 +30,29 @@ public class MessageConsumer {
         this.timeoutMillis = timeoutMillis;
     }
 
-    public Status consume() throws WakeupException {
+    public void consume() throws WakeupException, InvalidProtocolBufferException {
         if (isClosed()) {
-            return new FailureStatus(new RuntimeException("Message consumer was closed"));
+            throw new RuntimeException("Message consumer was closed");
         }
         Instant startTime = Instant.now();
         ConsumerRecords<byte[], byte[]> messages = kafkaConsumer.poll(timeoutMillis);
         statsClient.count("kafka.consumer.poll.messages", messages.count());
         statsClient.timeIt("kafka.consumer.consumption.time", startTime);
         if (messages.isEmpty()) {
-            return SUCCESS_STATUS;
+            return;
         }
         Instant pollTime = Instant.now();
         log.info("Pulled {} messages", messages.count());
-        Status status = pushToSink(messages, pollTime);
-        return status;
+        pushToSink(messages, pollTime);
     }
 
-    private Status pushToSink(ConsumerRecords<byte[], byte[]> messages, Instant pollTime) {
+    private void pushToSink(ConsumerRecords<byte[], byte[]> messages, Instant pollTime) throws InvalidProtocolBufferException {
         List<Record> records;
-        try {
-            final Instant deSerTime = Instant.now();
-            ConsumerRecordConverter recordConverter = this.protoUpdateListener.getProtoParser();
-            records = recordConverter.convert(messages);
-            statsClient.timeIt("kafkaConsumer.batch.deserialization.time", deSerTime);
-        } catch (InvalidProtocolBufferException | RuntimeException e) {
-            Status failure = new FailureStatus(e);
-            statsClient.increment("kafka.protobuf.deserialize.errors");
-            log.error("Error while converting messages: {}", failure.toString());
-            return failure;
-        }
-        return sink.push(new Records(records, pollTime));
+        final Instant deSerTime = Instant.now();
+        ConsumerRecordConverter recordConverter = this.protoUpdateListener.getProtoParser();
+        records = recordConverter.convert(messages);
+        statsClient.timeIt("kafkaConsumer.batch.deserialization.time", deSerTime);
+        sink.push(new Records(records, pollTime));
     }
 
     public void close() {

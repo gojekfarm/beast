@@ -22,8 +22,6 @@ import java.util.List;
 
 import static com.gojek.beast.config.Constants.SUCCESS_STATUS;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -62,26 +60,23 @@ public class MessageConsumerTest {
         when(sink.push(any())).thenReturn(success);
         InOrder callOrder = inOrder(protoUpdateListener, converter, sink);
 
-        Status status = consumer.consume();
+        consumer.consume();
 
         callOrder.verify(protoUpdateListener).getProtoParser();
         callOrder.verify(converter).convert(messages);
         callOrder.verify(sink).push(recordsCaptor.capture());
         assertEquals(records, recordsCaptor.getValue().getRecords());
-        assertTrue(status.isSuccess());
     }
 
-    @Test
-    public void shouldReturnFailureStatusWhenParsingFails() throws InvalidProtocolBufferException {
+    @Test(expected = InvalidProtocolBufferException.class)
+    public void shouldThrowExceptionWhenParsingFails() throws InvalidProtocolBufferException {
         when(protoUpdateListener.getProtoParser()).thenReturn(converter);
         when(converter.convert(any())).thenThrow(new InvalidProtocolBufferException("test reason", null));
-        Status status = consumer.consume();
-
-        assertFalse(status.isSuccess());
+        consumer.consume();
     }
 
     @Test(expected = WakeupException.class)
-    public void shouldRethrowWakeUpExceptionThrown() {
+    public void shouldRethrowWakeUpExceptionThrown() throws InvalidProtocolBufferException {
         doThrow(new WakeupException()).when(kafkaConsumer).poll(timeout);
 
         consumer.consume();

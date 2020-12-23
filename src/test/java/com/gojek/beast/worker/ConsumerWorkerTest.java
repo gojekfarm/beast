@@ -1,18 +1,20 @@
 package com.gojek.beast.worker;
 
 import com.gojek.beast.consumer.MessageConsumer;
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.kafka.common.errors.WakeupException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+
 import org.mockito.junit.MockitoJUnitRunner;
 
-import static com.gojek.beast.config.Constants.SUCCESS_STATUS;
 import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+
 
 @RunWith(MockitoJUnitRunner.class)
 public class ConsumerWorkerTest {
@@ -21,9 +23,9 @@ public class ConsumerWorkerTest {
     private MessageConsumer consumer;
 
     @Test
-    public void shouldConsumeMessagesWhenNotStopped() throws InterruptedException {
+    public void shouldConsumeMessagesWhenNotStopped() throws InterruptedException, InvalidProtocolBufferException {
         Worker worker = new ConsumerWorker("consumer", consumer, new WorkerState());
-        when(consumer.consume()).thenReturn(SUCCESS_STATUS);
+        doNothing().when(consumer).consume();
         new Thread(worker).start();
 
         Thread.sleep(50L);
@@ -32,8 +34,10 @@ public class ConsumerWorkerTest {
     }
 
     @Test
-    public void shouldConsumeOnlyOnceWhenStopped() throws InterruptedException {
-        Worker worker = new ConsumerWorker("consumer", consumer, new WorkerState());
+    public void shouldConsumeOnlyOnceWhenStopped() throws InterruptedException, InvalidProtocolBufferException {
+        WorkerState ws = new WorkerState();
+        ws.closeWorker();
+        Worker worker = new ConsumerWorker("consumer", consumer, ws);
         worker.stop("some reason");
 
         new Thread(worker).start();
@@ -44,7 +48,7 @@ public class ConsumerWorkerTest {
     }
 
     @Test
-    public void shouldStopConsumptionWhenWakeupExceptionIsThrown() throws InterruptedException {
+    public void shouldStopConsumptionWhenWakeupExceptionIsThrown() throws InterruptedException, InvalidProtocolBufferException {
         Worker worker = new ConsumerWorker("consumer", consumer, new WorkerState());
         doThrow(new WakeupException()).when(consumer).consume();
 

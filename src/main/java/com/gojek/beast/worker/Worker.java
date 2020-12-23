@@ -1,7 +1,9 @@
 package com.gojek.beast.worker;
 
+import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.models.Status;
 import com.gojek.beast.stats.Stats;
+import com.google.protobuf.InvalidProtocolBufferException;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -19,17 +21,25 @@ public abstract class Worker extends Thread {
 
     protected abstract Status job();
 
+    protected void job2() throws InvalidProtocolBufferException {
+        // keep it empty by default. It means unless overridden in other workers,
+        // this method will be empty.
+    }
+
     @Override
     public void run() {
         log.info("Started worker {}", getClass().getSimpleName());
         Status status;
         do {
             status = job();
-        } while (!state.isStopped() && status.isSuccess());
 
-        if (!status.isSuccess()) {
-            statsClient.increment("global.errors,exception=" + status.getException().getClass().getName());
-        }
+            try {
+                job2();
+            } catch (Exception e) {
+                status = new FailureStatus(e);
+                statsClient.increment("global.errors,exception=" + status.getException().getClass().getName());
+            }
+        } while (!state.isStopped() && status.isSuccess());
 
         onStopEvent(status.toString());
     }
