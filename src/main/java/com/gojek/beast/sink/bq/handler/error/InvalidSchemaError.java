@@ -1,0 +1,28 @@
+package com.gojek.beast.sink.bq.handler.error;
+
+import com.gojek.beast.sink.bq.handler.BQRecordsErrorType;
+import lombok.AllArgsConstructor;
+
+@AllArgsConstructor
+/**
+ * This error returns when there is any kind of invalid input
+ * other than an invalid query, such as missing required fields
+ * or an invalid table schema.
+ *
+ * https://cloud.google.com/bigquery/docs/error-messages
+ * */
+public class InvalidSchemaError implements ErrorDescriptor {
+
+    private final String reason;
+    private final String message;
+
+    @Override
+    public BQRecordsErrorType getType() {
+        return BQRecordsErrorType.INVALID;
+    }
+
+    @Override
+    public boolean matches() {
+        return reason.equals("invalid") && message.contains("no such field");
+    }
+}

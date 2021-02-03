@@ -1,11 +1,11 @@
 package com.gojek.beast.consumer;
 
-import com.gojek.beast.protomapping.ProtoUpdateListener;
 import com.gojek.beast.converter.ConsumerRecordConverter;
 import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.models.Record;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
+import com.gojek.beast.protomapping.ProtoUpdateListener;
 import com.gojek.beast.sink.Sink;
 import com.gojek.beast.stats.Stats;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -45,13 +45,12 @@ public class MessageConsumer {
         if (messages.isEmpty()) {
             return SUCCESS_STATUS;
         }
-        Instant pollTime = Instant.now();
         log.info("Pulled {} messages", messages.count());
-        Status status = pushToSink(messages, pollTime);
-        return status;
+        return pushToSink(messages);
     }
 
-    private Status pushToSink(ConsumerRecords<byte[], byte[]> messages, Instant pollTime) {
+    private Status pushToSink(ConsumerRecords<byte[], byte[]> messages) {
+        Instant pollTime = Instant.now();
         List<Record> records;
         try {
             final Instant deSerTime = Instant.now();

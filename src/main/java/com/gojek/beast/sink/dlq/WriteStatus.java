@@ -1,4 +1,4 @@
-package com.gojek.beast.sink.bq.handler;
+package com.gojek.beast.sink.dlq;
 
 import com.gojek.beast.models.Status;
 import lombok.AllArgsConstructor;

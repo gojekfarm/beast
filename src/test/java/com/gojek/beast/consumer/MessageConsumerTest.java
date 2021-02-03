@@ -1,10 +1,10 @@
 package com.gojek.beast.consumer;
 
-import com.gojek.beast.protomapping.ProtoUpdateListener;
 import com.gojek.beast.converter.ConsumerRecordConverter;
 import com.gojek.beast.models.Record;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
+import com.gojek.beast.protomapping.ProtoUpdateListener;
 import com.gojek.beast.sink.Sink;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.kafka.clients.consumer.ConsumerRecords;

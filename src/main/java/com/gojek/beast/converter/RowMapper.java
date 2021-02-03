@@ -6,6 +6,7 @@ import com.gojek.beast.converter.fields.NestedField;
 import com.gojek.beast.converter.fields.ProtoField;
 import com.gojek.beast.exception.UnknownProtoFieldFoundException;
 import com.gojek.beast.models.ConfigurationException;
+import com.gojek.beast.protomapping.UnknownProtoFields;
 import com.gojek.beast.stats.Stats;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.DynamicMessage;
@@ -22,7 +23,7 @@ import java.util.Map;
 public class RowMapper {
 
     private final ColumnMapping mapping;
-    private final boolean failOnUnknownFileds;
+    private final boolean failOnUnknownFields;
     private final Stats statsClient = Stats.client();
 
     public RowMapper(ColumnMapping mappings) {
@@ -40,9 +41,11 @@ public class RowMapper {
         if (message == null || columnMapping == null || columnMapping.isEmpty()) {
             return new HashMap<>();
         }
-        if (failOnUnknownFileds && message.getUnknownFields().asMap().size() > 0) {
+        if (failOnUnknownFields && message.getUnknownFields().asMap().size() > 0) {
             statsClient.increment("kafka.protobuf.unknownfields.errors");
-            throw new UnknownProtoFieldFoundException(message.getUnknownFields().asMap());
+            String serializedUnknownFields = message.getUnknownFields().asMap().keySet().toString();
+            String serializedMessage = UnknownProtoFields.toString(message.toByteArray());
+            throw new UnknownProtoFieldFoundException(serializedUnknownFields, serializedMessage);
         }
         Descriptors.Descriptor descriptorForType = message.getDescriptorForType();
 

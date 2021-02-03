@@ -1,24 +1,26 @@
 package com.gojek.beast.sink;
 
-import com.gojek.beast.*;
+import com.gojek.beast.Clock;
+import com.gojek.beast.TestKey;
+import com.gojek.beast.TestMessage;
+import com.gojek.beast.TestNestedMessage;
+import com.gojek.beast.TestNestedRepeatedMessage;
 import com.gojek.beast.config.AppConfig;
 import com.gojek.beast.config.ColumnMapping;
 import com.gojek.beast.converter.ConsumerRecordConverter;
 import com.gojek.beast.converter.Converter;
 import com.gojek.beast.converter.RowMapper;
-import com.gojek.beast.sink.bq.BQRowWithoutId;
-import com.gojek.beast.sink.bq.BaseBQTest;
-import com.gojek.beast.sink.bq.handler.BQRow;
-import com.gojek.beast.sink.bq.handler.gcs.GCSErrorWriter;
-import com.gojek.beast.sink.bq.handler.BQErrorHandler;
 import com.gojek.beast.models.OffsetInfo;
 import com.gojek.beast.models.Record;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
+import com.gojek.beast.sink.bq.BQRowWithoutId;
+import com.gojek.beast.sink.bq.BaseBQTest;
 import com.gojek.beast.sink.bq.BqSink;
 import com.gojek.beast.sink.bq.handler.BQResponseParser;
-import com.gojek.beast.sink.bq.handler.ErrorWriter;
-import com.gojek.beast.sink.bq.handler.impl.OOBErrorHandler;
+import com.gojek.beast.sink.bq.handler.BQRow;
+import com.gojek.beast.sink.dlq.ErrorWriter;
+import com.gojek.beast.sink.dlq.gcs.GCSErrorWriter;
 import com.gojek.beast.util.ProtoUtil;
 import com.gojek.de.stencil.StencilClientFactory;
 import com.gojek.de.stencil.parser.ProtoParser;
@@ -28,7 +30,10 @@ import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.InsertAllRequest;
 import com.google.cloud.bigquery.InsertAllResponse;
 import com.google.cloud.bigquery.TableId;
-import com.google.cloud.storage.*;
+import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.BlobId;
+import com.google.cloud.storage.BlobInfo;
+import com.google.cloud.storage.Storage;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Timestamp;
 import org.aeonbits.owner.ConfigFactory;
@@ -45,7 +50,13 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -71,18 +82,17 @@ public class BqIntegrationTest extends BaseBQTest {
     @Mock
     private Blob blobMock;
     private long nowMillis;
-    private BQErrorHandler gcsSinkHandler;
     private BQRow bqRow;
     private String gcsBucket = "test-integ-godata-dlq-beast";
     private AppConfig appConfig;
+    private ErrorWriter errorWriter;
 
     @Before
     public void setUp() throws Exception {
         nowMillis = Instant.now().toEpochMilli();
         when(clock.currentEpochMillis()).thenReturn(nowMillis);
         bqRow = new BQRowWithoutId();
-        ErrorWriter errorWriter = new GCSErrorWriter(gcsStoreMock, "test-integ-godata", "test-integ-godata-dlq/beast");
-        gcsSinkHandler = new OOBErrorHandler(errorWriter);
+        errorWriter = new GCSErrorWriter(gcsStoreMock, "test-integ-godata", "test-integ-godata-dlq/beast");
         final BlobId blobId = BlobId.of("test-integ-godata", "test-integ-godata-dlq/beast/testfile");
         final BlobInfo objectInfo = BlobInfo.newBuilder(blobId).setContentType("text/plain").build();
         appConfig = ConfigFactory.create(AppConfig.class, System.getProperties());
@@ -108,7 +118,7 @@ public class BqIntegrationTest extends BaseBQTest {
                 .setNestedId("nested-id")
                 .build();
         TableId tableId = TableId.of("bqsinktest", "test_nested_messages");
-        BqSink bqSink = new BqSink(authenticatedBQ(), tableId, new BQResponseParser(), gcsSinkHandler, bqRow);
+        BqSink bqSink = new BqSink(authenticatedBQ(), tableId, new BQResponseParser(), bqRow, errorWriter);
 
 
         OffsetInfo offsetInfo = new OffsetInfo("topic", 1, 1, Instant.now().toEpochMilli());
@@ -136,7 +146,7 @@ public class BqIntegrationTest extends BaseBQTest {
                 .build();
 
         TableId tableId = TableId.of("bqsinktest", "nested_messages");
-        BqSink bqSink = new BqSink(authenticatedBQ(), tableId, new BQResponseParser(), gcsSinkHandler, bqRow);
+        BqSink bqSink = new BqSink(authenticatedBQ(), tableId, new BQResponseParser(), bqRow, errorWriter);
 
         ColumnMapping columnMapping = new ColumnMapping();
         ColumnMapping nested = new ColumnMapping();
@@ -144,7 +154,7 @@ public class BqIntegrationTest extends BaseBQTest {
         nested.put("1", "order_number");
         nested.put("2", "order_url");
         columnMapping.put("2", nested);
-        ConsumerRecordConverter customConverter = new ConsumerRecordConverter(new RowMapper(columnMapping), protoParser, clock, appConfig);
+        ConsumerRecordConverter customConverter = new ConsumerRecordConverter(new RowMapper(columnMapping), protoParser, clock, appConfig, errorWriter);
 
 
         ConsumerRecord<byte[], byte[]> consumerRecord = new ConsumerRecord<>("topic", 1, 1, second, TimestampType.CREATE_TIME,
@@ -159,7 +169,7 @@ public class BqIntegrationTest extends BaseBQTest {
     @Test
     public void shouldPushMessagesToBqActual() {
         TableId tableId = TableId.of("bqsinktest", "users");
-        BqSink bqSink = new BqSink(authenticatedBQ(), tableId, new BQResponseParser(), gcsSinkHandler, bqRow);
+        BqSink bqSink = new BqSink(authenticatedBQ(), tableId, new BQResponseParser(), bqRow, errorWriter);
 
         HashMap<String, Object> columns = new HashMap<>();
         columns.put("name", "someone_else");
@@ -176,7 +186,10 @@ public class BqIntegrationTest extends BaseBQTest {
 
         columns.put("routes", Arrays.asList(route1, route2));
 
-        Status push = bqSink.push(new Records(Arrays.asList(new Record(new OffsetInfo("default-topic", 0, 0, Instant.now().toEpochMilli()), columns))));
+        Status push = bqSink.push(new Records(Arrays.asList(
+                new Record(new OffsetInfo("default-topic", 0, 0, Instant.now().toEpochMilli()),
+                        columns))
+        ));
 
         assertTrue(push.isSuccess());
     }
@@ -212,8 +225,8 @@ public class BqIntegrationTest extends BaseBQTest {
 
         //Insert into BQ
         TableId tableId = TableId.of("playground", "test_nested_messages");
-        BQErrorHandler errorHandler = new OOBErrorHandler(new GCSErrorWriter(gcsStore, gcsBucket, "test-integ-beast"));
-        BqSink bqSink = new BqSink(authenticatedBQ(), tableId, new BQResponseParser(), errorHandler, bqRow);
+        ErrorWriter localErrorWriter = new GCSErrorWriter(gcsStore, gcsBucket, "test-integ-beast");
+        BqSink bqSink = new BqSink(authenticatedBQ(), tableId, new BQResponseParser(), bqRow, localErrorWriter);
         Status push = bqSink.push(new Records(allRecords));
         assertTrue("Invalid Message should have been inserted into GCS Sink and success status should be true", push.isSuccess());
     }
@@ -237,8 +250,8 @@ public class BqIntegrationTest extends BaseBQTest {
 
         //Insert into BQ
         TableId tableId = TableId.of("playground", "test_nested_messages");
-        BQErrorHandler errorHandler = new OOBErrorHandler(new GCSErrorWriter(gcsStore, gcsBucket, "test-integ-beast"));
-        BqSink bqSink = new BqSink(authenticatedBQ(), tableId, new BQResponseParser(), errorHandler, bqRow);
+        ErrorWriter localErrorWriter = new GCSErrorWriter(gcsStore, gcsBucket, "test-integ-beast");
+        BqSink bqSink = new BqSink(authenticatedBQ(), tableId, new BQResponseParser(), bqRow, localErrorWriter);
         Status push = bqSink.push(new Records(validRecords));
         assertTrue("Invalid Message should have been inserted into GCS Sink and success status should be true", push.isSuccess());
     }
@@ -246,7 +259,7 @@ public class BqIntegrationTest extends BaseBQTest {
     @Test
     public void shouldParseAndPushMessagesToBq() throws Exception {
         TableId tableId = TableId.of("bqsinktest", "test_messages");
-        BqSink bqSink = new BqSink(bigQueryMock, tableId, new BQResponseParser(), gcsSinkHandler, bqRow);
+        BqSink bqSink = new BqSink(bigQueryMock, tableId, new BQResponseParser(), bqRow, errorWriter);
         String orderNumber = "order-1";
         String orderUrl = "order_url";
         String orderDetails = "order_details";
@@ -270,7 +283,8 @@ public class BqIntegrationTest extends BaseBQTest {
         currStateMapping.put("2", "value");
         mapping.put("9", currStateMapping);
 
-        converter = new ConsumerRecordConverter(new RowMapper(mapping), new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName()), clock, appConfig);
+        converter = new ConsumerRecordConverter(new RowMapper(mapping), new ProtoParser(StencilClientFactory.getClient(),
+                TestMessage.class.getName()), clock, appConfig, errorWriter);
         Timestamp createdAt = Timestamp.newBuilder().setSeconds(second).setNanos(nano).build();
         TestKey key = TestKey.newBuilder().setOrderNumber(orderNumber).setOrderUrl(orderUrl).build();
         com.gojek.beast.Status completed = com.gojek.beast.Status.COMPLETED;

@@ -2,7 +2,7 @@ package com.gojek.beast.worker;
 
 import com.gojek.beast.commiter.Acknowledger;
 import com.gojek.beast.config.QueueConfig;
-import com.gojek.beast.sink.bq.handler.impl.BQErrorHandlerException;
+import com.gojek.beast.exception.ErrorWriterFailedException;
 import com.gojek.beast.models.FailureStatus;
 import com.gojek.beast.models.Records;
 import com.gojek.beast.models.Status;
@@ -63,7 +63,7 @@ public class BqQueueWorker extends Worker {
             statsClient.increment("worker.queue.bq.errors");
             log.error("Exception::Failed to write to BQ: {}", e.getMessage());
             return new FailureStatus(e);
-        } catch (BQErrorHandlerException bqhe) {
+        } catch (ErrorWriterFailedException bqhe) {
             statsClient.increment("worker.queue.handler.errors");
             log.error("Exception::Could not process the errors with handler sink: {}", bqhe.getMessage());
             return new FailureStatus(bqhe);

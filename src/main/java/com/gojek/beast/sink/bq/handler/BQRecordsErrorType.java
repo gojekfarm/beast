@@ -1,9 +1,9 @@
 package com.gojek.beast.sink.bq.handler;
 
 /**
- * Models the Big Query records insertion status.
+ * Models the Big Query records status.
  */
-public enum BQInsertionRecordsErrorType {
+public enum BQRecordsErrorType {
 
     /**
      * BQ failures with valid data.
@@ -24,5 +24,4 @@ public enum BQInsertionRecordsErrorType {
      * Unknown error type.
      */
     UNKNOWN,
-
 }

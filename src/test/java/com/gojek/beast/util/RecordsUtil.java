@@ -20,7 +20,7 @@ public class RecordsUtil {
         for (int i = 0; i < total; i++) {
             long now = new Clock().currentEpochMillis();
             OffsetInfo offsetInfo = new OffsetInfo("topic_" + namePrefix, 0, offsetCount++, now);
-            users.add(new Record(offsetInfo, createUser(namePrefix + total)));
+            users.add(new Record(offsetInfo, createUser(namePrefix + total), "key".getBytes(), "val".getBytes()));
         }
         return new Records(users);
     }

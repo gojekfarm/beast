@@ -2,8 +2,8 @@ package com.gojek.beast.converter;
 
 import com.gojek.beast.Status;
 import com.gojek.beast.TestMessage;
-import com.gojek.beast.TestNestedMessage;
 import com.gojek.beast.TestMessageChild;
+import com.gojek.beast.TestNestedMessage;
 import com.gojek.beast.TestNestedRepeatedMessage;
 import com.gojek.beast.config.ColumnMapping;
 import com.gojek.beast.exception.UnknownProtoFieldFoundException;
@@ -16,7 +16,13 @@ import com.gojek.de.stencil.models.DescriptorAndTypeName;
 import com.gojek.de.stencil.parser.ProtoParser;
 import com.gojek.de.stencil.parser.ProtoParserWithRefresh;
 import com.google.api.client.util.DateTime;
-import com.google.protobuf.*;
+import com.google.protobuf.Descriptors;
+import com.google.protobuf.DynamicMessage;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.ListValue;
+import com.google.protobuf.Struct;
+import com.google.protobuf.Timestamp;
+import com.google.protobuf.Value;
 import org.apache.commons.codec.DecoderException;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,7 +37,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 

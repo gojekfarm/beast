@@ -1,10 +1,10 @@
 package com.gojek.beast.sink;
 
 import com.gojek.beast.config.QueueConfig;
-import com.gojek.beast.models.Records;
-import com.gojek.beast.models.Status;
 import com.gojek.beast.models.OffsetInfo;
 import com.gojek.beast.models.Record;
+import com.gojek.beast.models.Records;
+import com.gojek.beast.models.Status;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.Before;

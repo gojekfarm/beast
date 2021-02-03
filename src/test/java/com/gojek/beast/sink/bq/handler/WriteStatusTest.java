@@ -1,5 +1,6 @@
 package com.gojek.beast.sink.bq.handler;
 
+import com.gojek.beast.sink.dlq.WriteStatus;
 import org.junit.Assert;
 import org.junit.Test;
 
