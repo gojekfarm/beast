@@ -2,11 +2,11 @@ package com.gojek.beast.util;
 
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+
+import static org.junit.Assert.assertEquals;
 
 public class ApplicationUtilTest {
 

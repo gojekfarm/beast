@@ -13,5 +13,5 @@ public interface ProtoMappingConfig extends Mutable {
 
     @DefaultValue("true")
     @Key("FAIL_ON_UNKNOWN_FIELDS")
-    Boolean isFailOnUnknownFields();
+    Boolean getFailOnUnknownFields();
 }

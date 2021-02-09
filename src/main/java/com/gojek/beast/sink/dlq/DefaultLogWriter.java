@@ -1,11 +1,11 @@
-package com.gojek.beast.sink.bq.handler;
+package com.gojek.beast.sink.dlq;
 
 import com.gojek.beast.models.Record;
 import com.gojek.beast.models.Status;
-import com.gojek.beast.stats.Stats;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -16,13 +16,13 @@ import java.util.Optional;
 @Slf4j
 public class DefaultLogWriter implements ErrorWriter {
 
-    private final Stats statsClient = Stats.client(); // metrics client
-
     @Override
-    public Status writeErrorRecords(List<Record> records) {
-        if (records != null && !records.isEmpty()) {
-            records.forEach(record -> {
-                log.debug("Error record: {} columns: {}", record.getId(), record.getColumns());
+    public Status writeRecords(Map<RecordsErrorType, List<Record>> errorRecords) {
+        if (errorRecords != null && !errorRecords.isEmpty()) {
+            errorRecords.forEach((bqRecordsErrorType, records) -> {
+                records.forEach(record -> {
+                    log.debug("Error record: {} columns: {} type: {}",  record.getId(), record.getColumns(), bqRecordsErrorType.toString());
+                });
             });
         }
         return new WriteStatus(false, Optional.ofNullable(null));

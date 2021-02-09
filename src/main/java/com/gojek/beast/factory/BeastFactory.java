@@ -3,39 +3,37 @@ package com.gojek.beast.factory;
 import com.gojek.beast.Clock;
 import com.gojek.beast.backoff.BackOff;
 import com.gojek.beast.backoff.ExponentialBackOffProvider;
-import com.gojek.beast.config.AppConfig;
-import com.gojek.beast.config.BQConfig;
-import com.gojek.beast.config.BackOffConfig;
-import com.gojek.beast.config.StencilConfig;
-import com.gojek.beast.config.ProtoMappingConfig;
-import com.gojek.beast.config.QueueConfig;
-import com.gojek.beast.config.KafkaConfig;
-import com.gojek.beast.config.ConfigStore;
-import com.gojek.beast.protomapping.Converter;
-import com.gojek.beast.protomapping.Parser;
-import com.gojek.beast.protomapping.ProtoUpdateListener;
 import com.gojek.beast.commiter.Acknowledger;
 import com.gojek.beast.commiter.OffsetAcknowledger;
 import com.gojek.beast.commiter.OffsetState;
+import com.gojek.beast.config.AppConfig;
+import com.gojek.beast.config.BQConfig;
+import com.gojek.beast.config.BackOffConfig;
+import com.gojek.beast.config.ConfigStore;
+import com.gojek.beast.config.KafkaConfig;
+import com.gojek.beast.config.ProtoMappingConfig;
+import com.gojek.beast.config.QueueConfig;
+import com.gojek.beast.config.StencilConfig;
 import com.gojek.beast.consumer.KafkaConsumer;
 import com.gojek.beast.consumer.MessageConsumer;
 import com.gojek.beast.consumer.RebalanceListener;
 import com.gojek.beast.models.Records;
+import com.gojek.beast.protomapping.Converter;
+import com.gojek.beast.protomapping.Parser;
+import com.gojek.beast.protomapping.ProtoUpdateListener;
 import com.gojek.beast.sink.MultiSink;
-import com.gojek.beast.sink.RecordsQueueSink;
 import com.gojek.beast.sink.OffsetMapQueueSink;
+import com.gojek.beast.sink.RecordsQueueSink;
 import com.gojek.beast.sink.RetrySink;
 import com.gojek.beast.sink.Sink;
 import com.gojek.beast.sink.bq.BQRowWithInsertId;
 import com.gojek.beast.sink.bq.BQRowWithoutId;
 import com.gojek.beast.sink.bq.BqSink;
-import com.gojek.beast.sink.bq.handler.BQErrorHandler;
 import com.gojek.beast.sink.bq.handler.BQResponseParser;
 import com.gojek.beast.sink.bq.handler.BQRow;
-import com.gojek.beast.sink.bq.handler.ErrorWriter;
-import com.gojek.beast.sink.bq.handler.DefaultLogWriter;
-import com.gojek.beast.sink.bq.handler.gcs.GCSErrorWriter;
-import com.gojek.beast.sink.bq.handler.impl.OOBErrorHandler;
+import com.gojek.beast.sink.dlq.DefaultLogWriter;
+import com.gojek.beast.sink.dlq.ErrorWriter;
+import com.gojek.beast.sink.dlq.gcs.GCSErrorWriter;
 import com.gojek.beast.stats.Stats;
 import com.gojek.beast.worker.BqQueueWorker;
 import com.gojek.beast.worker.ConsumerWorker;
@@ -91,7 +89,8 @@ public class BeastFactory {
         this.commitQueue = new LinkedBlockingQueue<>(appConfig.getCommitQueueCapacity());
         this.backOffConfig = backOffConfig;
         this.workerState = workerState;
-        this.protoUpdateListener = new ProtoUpdateListener(new ConfigStore(appConfig, stencilConfig, protoMappingConfig, bqConfig), new Converter(), new Parser(), getBigQueryInstance());
+        this.protoUpdateListener = new ProtoUpdateListener(new ConfigStore(appConfig, stencilConfig, protoMappingConfig, bqConfig),
+                new Converter(), new Parser(), getBigQueryInstance(), createOOBErrorWriter());
     }
 
     public List<Worker> createBqWorkers() throws IOException {
@@ -109,16 +108,18 @@ public class BeastFactory {
     private Sink createBigQuerySink() throws IOException {
         BigQuery bq = getBigQueryInstance();
         BQResponseParser responseParser = new BQResponseParser();
-        BQErrorHandler bqErrorHandler = createOOBErrorHandler();
         BQRow recordInserter = new BQRowWithInsertId();
         if (!bqConfig.isBQRowInsertIdEnabled()) {
             recordInserter = new BQRowWithoutId();
         }
-        Sink bqSink = new BqSink(bq, TableId.of(bqConfig.getDataset(), bqConfig.getTable()), responseParser, bqErrorHandler, recordInserter);
-        return new RetrySink(bqSink, new ExponentialBackOffProvider(backOffConfig.getExponentialBackoffInitialTimeInMs(), backOffConfig.getExponentialBackoffMaximumTimeInMs(), backOffConfig.getExponentialBackoffRate(), new BackOff()), appConfig.getMaxPushAttempts());
+        Sink bqSink = new BqSink(bq, TableId.of(bqConfig.getDataset(), bqConfig.getTable()), responseParser,
+                recordInserter, createOOBErrorWriter());
+        return new RetrySink(bqSink, new ExponentialBackOffProvider(backOffConfig.getExponentialBackoffInitialTimeInMs(),
+                backOffConfig.getExponentialBackoffMaximumTimeInMs(), backOffConfig.getExponentialBackoffRate(), new BackOff()),
+                appConfig.getMaxPushAttempts());
     }
 
-    private BQErrorHandler createOOBErrorHandler() throws IOException {
+    private ErrorWriter createOOBErrorWriter() throws IOException {
         final Storage gcsStore = getGCStorageInstance();
         ErrorWriter errorWriter = new DefaultLogWriter();
         if (appConfig.isGCSErrorSinkEnabled()) {
@@ -126,7 +127,7 @@ public class BeastFactory {
             final String basePathPrefix = appConfig.getGcsPathPrefix();
             errorWriter = new GCSErrorWriter(gcsStore, bucketName, basePathPrefix);
         }
-        return new OOBErrorHandler(errorWriter);
+        return errorWriter;
     }
 
     private BigQuery getBigQueryInstance() throws IOException {

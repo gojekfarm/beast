@@ -4,7 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.gojek.beast.TestKey;
-import com.gojek.beast.config.*;
+import com.gojek.beast.config.AppConfig;
+import com.gojek.beast.config.ColumnMapping;
+import com.gojek.beast.config.ConfigStore;
+import com.gojek.beast.config.Constants;
+import com.gojek.beast.config.ProtoMappingConfig;
+import com.gojek.beast.config.StencilConfig;
 import com.gojek.beast.exception.BQDatasetLocationChangedException;
 import com.gojek.beast.exception.BQTableUpdateFailure;
 import com.gojek.beast.exception.ProtoNotFoundException;
@@ -31,10 +36,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ProtoUpdateListenerTest {

@@ -7,6 +7,7 @@ import com.gojek.beast.config.ColumnMapping;
 import com.gojek.beast.converter.ConsumerRecordConverter;
 import com.gojek.beast.converter.RowMapper;
 import com.gojek.beast.models.Record;
+import com.gojek.beast.sink.dlq.DefaultLogWriter;
 import com.gojek.de.stencil.StencilClientFactory;
 import com.gojek.de.stencil.parser.ProtoParser;
 import com.google.api.client.http.LowLevelHttpResponse;
@@ -17,7 +18,8 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.BigQueryOptions;
-import com.google.cloud.storage.*;
+import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.StorageOptions;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Timestamp;
 import org.aeonbits.owner.ConfigFactory;
@@ -83,11 +85,12 @@ public class BaseBQTest {
     protected List<Record> getKafkaConsumerRecords(ColumnMapping columnMapping, Instant now, String topicName,
                                                    int partitionStart, long offsetStart, Clock clock, TestMessage...testMessages) throws InvalidProtocolBufferException {
         ProtoParser protoParser = new ProtoParser(StencilClientFactory.getClient(), TestMessage.class.getName());
-        ConsumerRecordConverter customConverter = new ConsumerRecordConverter(new RowMapper(columnMapping), protoParser, clock, ConfigFactory.create(AppConfig.class, System.getProperties()));
+        ConsumerRecordConverter customConverter = new ConsumerRecordConverter(new RowMapper(columnMapping), protoParser,
+                clock, ConfigFactory.create(AppConfig.class, System.getProperties()), new DefaultLogWriter());
         List<ConsumerRecord<byte[], byte[]>> consumerRecordsList = new ArrayList<ConsumerRecord<byte[], byte[]>>();
         for (int i = 0; i < testMessages.length; i++) {
             consumerRecordsList.add(new ConsumerRecord<>(topicName, partitionStart + i, offsetStart + i, now.getEpochSecond(), TimestampType.CREATE_TIME,
-                    0, 0, 1, null, testMessages[i].toByteArray()));
+                    0, 0, 1, "test-key".getBytes(), testMessages[i].toByteArray()));
         }
         return customConverter.convert(consumerRecordsList);
     }

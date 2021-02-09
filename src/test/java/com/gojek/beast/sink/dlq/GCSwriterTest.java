@@ -1,16 +1,18 @@
-package com.gojek.beast.sink.bq.handler.gcs;
+package com.gojek.beast.sink.dlq;
 
 import com.gojek.beast.Clock;
 import com.gojek.beast.TestMessage;
 import com.gojek.beast.config.ColumnMapping;
+import com.gojek.beast.exception.ErrorWriterFailedException;
 import com.gojek.beast.models.Record;
 import com.gojek.beast.models.Status;
 import com.gojek.beast.sink.bq.BaseBQTest;
-import com.gojek.beast.sink.bq.handler.impl.BQErrorHandlerException;
+import com.gojek.beast.sink.dlq.gcs.GCSErrorWriter;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageException;
+import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,14 +22,13 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import java.time.Instant;
+import java.util.List;
+
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 
 @RunWith(MockitoJUnitRunner.class)
 public class GCSwriterTest extends BaseBQTest {
@@ -59,11 +60,11 @@ public class GCSwriterTest extends BaseBQTest {
         columnMapping.put("4", "created_at");
         List<Record> records = getKafkaConsumerRecords(columnMapping, Instant.now(), "test-mock", 1, 2,
                  clock, tMsg);
-        Status status = errorWriter.writeErrorRecords(records);
+        Status status = errorWriter.writeRecords(ImmutableMap.of(RecordsErrorType.OOB, records));
         assertTrue(status.isSuccess());
     }
 
-    @Test (expected = BQErrorHandlerException.class)
+    @Test (expected = ErrorWriterFailedException.class)
     public void testStoreThrowsBQHandlerExceptionAsExpected() throws InvalidProtocolBufferException {
         TestMessage tMsg = getTestMessage("mock-gcs-writer1", Instant.now());
         ColumnMapping columnMapping = new ColumnMapping();
@@ -75,8 +76,8 @@ public class GCSwriterTest extends BaseBQTest {
         List<Record> records = getKafkaConsumerRecords(columnMapping, Instant.now(), "test-mock", 1, 2,
                 clock, tMsg);
         try {
-            Status status = errorWriter.writeErrorRecords(records);
-        } catch (BQErrorHandlerException bqee) {
+            Status status = errorWriter.writeRecords(ImmutableMap.of(RecordsErrorType.OOB, records));
+        } catch (ErrorWriterFailedException bqee) {
             throw bqee;
         }
         fail("expected BQErrorhandlerexception");
@@ -84,6 +85,6 @@ public class GCSwriterTest extends BaseBQTest {
 
     @Test
     public void testGCSWriterCanHandleEmptyRecords() {
-        assertTrue(errorWriter.writeErrorRecords(new ArrayList<>()).isSuccess());
+        assertTrue(errorWriter.writeRecords(ImmutableMap.of()).isSuccess());
     }
 }

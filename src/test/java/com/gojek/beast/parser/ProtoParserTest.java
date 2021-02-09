@@ -2,8 +2,8 @@ package com.gojek.beast.parser;
 
 import com.gojek.beast.TestMessage;
 import com.gojek.beast.TestNestedMessage;
-import com.gojek.de.stencil.client.StencilClient;
 import com.gojek.de.stencil.StencilClientFactory;
+import com.gojek.de.stencil.client.StencilClient;
 import com.gojek.de.stencil.exception.StencilRuntimeException;
 import com.gojek.de.stencil.parser.ProtoParser;
 import com.google.protobuf.Descriptors;
