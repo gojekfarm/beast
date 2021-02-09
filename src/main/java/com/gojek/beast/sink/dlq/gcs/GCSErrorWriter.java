@@ -59,7 +59,7 @@ public class GCSErrorWriter implements ErrorWriter {
         //serialize the messages in GCS for each topic - a file with all messages per topic is stored in GCS
         topicMessagesMap.keySet().forEach(topicName -> {
             final String fileName = UUID.randomUUID().toString();
-            final String pathPrefix = gcsBasePathPrefix + "/" + topicName + "/" + getFormattedDatePrefix(Instant.now()) + "/";
+            final String pathPrefix = String.format("%s/%s/%s/", gcsBasePathPrefix, topicName, getFormattedDatePrefix(Instant.now()));
             final BlobId blobId = BlobId.of(gcsBucket, pathPrefix + fileName);
             final Map<String, String> metaDataMap = new HashMap<>();
             metaDataMap.put("topic", topicName);

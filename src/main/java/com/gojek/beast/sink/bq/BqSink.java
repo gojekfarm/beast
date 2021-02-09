@@ -85,7 +85,7 @@ public class BqSink implements Sink {
         InsertAllRequest rows = builder.build();
         InsertAllResponse response = bigquery.insertAll(rows);
 
-        log.info("Pushing {} records to BQ. Contains failed?: {}", records.size(), !response.hasErrors());
+        log.info("Pushed a batch of {} records to BQ. Insert success?: {}", records.size(), !response.hasErrors());
         statsClient.count("bq.sink.push.records", records.size());
         statsClient.timeIt("bq.sink.push.time", start);
         return response;

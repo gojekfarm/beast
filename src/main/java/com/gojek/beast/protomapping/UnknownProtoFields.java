@@ -14,7 +14,7 @@ public class UnknownProtoFields {
         try {
             convertedFields = UnknownFieldSet.parseFrom(message).toString();
         } catch (InvalidProtocolBufferException e) {
-            log.warn("invalid byte representation of a protobuf message");
+            log.warn("invalid byte representation of a protobuf message: {}", new String(message));
         }
         return convertedFields;
     }
