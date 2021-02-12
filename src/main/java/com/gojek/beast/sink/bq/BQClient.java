@@ -84,15 +84,9 @@ public class BQClient {
     }
 
     private boolean shouldUpdateTable(TableInfo tableInfo, Table table, Schema existingSchema, Schema updatedSchema) {
-        boolean needToChangePartitionExpiry = false;
-        if (table.getDefinition().getType().equals(TableDefinition.Type.TABLE) && bqConfig.getBQTablePartitionExpiryMillis() > 0) {
-            if (shouldChangeParitionExpiryForStandardTable(table)) {
-                needToChangePartitionExpiry = true;
-            }
-        }
         return !table.getLabels().equals(tableInfo.getLabels())
                 || !existingSchema.equals(updatedSchema)
-                || needToChangePartitionExpiry;
+                || shouldChangePartitionExpiryForStandardTable(table);
     }
 
     private boolean shouldUpdateDataset(Dataset dataSet) {
@@ -104,15 +98,19 @@ public class BQClient {
         return !dataSet.getLabels().equals(bqConfig.getDatasetLabels());
     }
 
-    private boolean shouldChangeParitionExpiryForStandardTable(Table table) {
-        TimePartitioning timePartitioning = ((StandardTableDefinition) (table.getDefinition())).getTimePartitioning();
-        if (timePartitioning != null) {
-            Long expirationMs = timePartitioning.getExpirationMs();
-            return expirationMs == null
-                    || (expirationMs.longValue() != bqConfig.getBQTablePartitionExpiryMillis());
+    private boolean shouldChangePartitionExpiryForStandardTable(Table table) {
+        if (!table.getDefinition().getType().equals(TableDefinition.Type.TABLE)) {
+            return false;
         }
-        // If the table is not partitioned already, no need to update the table
-        return false;
+        TimePartitioning timePartitioning = ((StandardTableDefinition) (table.getDefinition())).getTimePartitioning();
+        if (timePartitioning == null) {
+            // If the table is not partitioned already, no need to update the table
+            return false;
+        }
+        Long neverExpireMs = 0L;
+        Long currentExpirationMs = timePartitioning.getExpirationMs() == null ? neverExpireMs : timePartitioning.getExpirationMs();
+        Long newExpirationMs = bqConfig.getBQTablePartitionExpiryMillis() > 0 ? bqConfig.getBQTablePartitionExpiryMillis() : neverExpireMs;
+        return !currentExpirationMs.equals(newExpirationMs);
     }
 
     private TableDefinition getTableDefinition(Schema schema) throws BQPartitionKeyNotSpecified {

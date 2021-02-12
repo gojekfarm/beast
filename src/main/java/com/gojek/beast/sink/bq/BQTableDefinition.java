@@ -34,7 +34,7 @@ public class BQTableDefinition {
 
         Field partitionField = partitionFieldOptional.get();
         if (isTimePartitionedField(partitionField)) {
-            return createTimePartitionBuilder(partitionField, tableDefinition)
+            return createTimePartitionBuilder(tableDefinition)
                     .setSchema(schema)
                     .build();
         } else {
@@ -42,7 +42,7 @@ public class BQTableDefinition {
         }
     }
 
-    private StandardTableDefinition.Builder createTimePartitionBuilder(Field partitionField, StandardTableDefinition.Builder tableBuilder) {
+    private StandardTableDefinition.Builder createTimePartitionBuilder(StandardTableDefinition.Builder tableBuilder) {
         TimePartitioning.Builder timePartitioningBuilder = TimePartitioning.newBuilder(TimePartitioning.Type.DAY);
         if (bqConfig.getBQTablePartitionKey() == null) {
             throw new BQPartitionKeyNotSpecified(String.format("Partition key not specified for the table: %s", bqConfig.getTable()));
@@ -50,9 +50,9 @@ public class BQTableDefinition {
         timePartitioningBuilder.setField(bqConfig.getBQTablePartitionKey())
                 .setRequirePartitionFilter(true);
 
-        if (bqConfig.getBQTablePartitionExpiryMillis() > 0) {
-            timePartitioningBuilder.setExpirationMs(bqConfig.getBQTablePartitionExpiryMillis());
-        }
+        Long neverExpireMillis = null;
+        Long partitionExpiry = bqConfig.getBQTablePartitionExpiryMillis() > 0 ? bqConfig.getBQTablePartitionExpiryMillis() : neverExpireMillis;
+        timePartitioningBuilder.setExpirationMs(partitionExpiry);
 
         return tableBuilder
                 .setTimePartitioning(timePartitioningBuilder.build());
