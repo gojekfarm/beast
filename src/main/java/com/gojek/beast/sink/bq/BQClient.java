@@ -91,7 +91,7 @@ public class BQClient {
             }
         }
         return !table.getLabels().equals(tableInfo.getLabels())
-                || !BQUtils.compareBQSchemaFields(existingSchema, updatedSchema)
+                || !existingSchema.equals(updatedSchema)
                 || needToChangePartitionExpiry;
     }
 
@@ -111,8 +111,8 @@ public class BQClient {
             return expirationMs == null
                     || (expirationMs.longValue() != bqConfig.getBQTablePartitionExpiryMillis());
         }
-        // If the table is not partitioned already, update the table
-        return true;
+        // If the table is not partitioned already, no need to update the table
+        return false;
     }
 
     private TableDefinition getTableDefinition(Schema schema) throws BQPartitionKeyNotSpecified {

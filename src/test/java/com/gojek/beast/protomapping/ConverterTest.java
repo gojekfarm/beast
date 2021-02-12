@@ -27,7 +27,7 @@ public class ConverterTest {
     private ObjectMapper objectMapper = new ObjectMapper();
 
     private Map<DescriptorProtos.FieldDescriptorProto.Type, LegacySQLTypeName> expectedType = new HashMap<DescriptorProtos.FieldDescriptorProto.Type, LegacySQLTypeName>() {{
-        put(DescriptorProtos.FieldDescriptorProto.Type.TYPE_BYTES, LegacySQLTypeName.STRING);
+        put(DescriptorProtos.FieldDescriptorProto.Type.TYPE_BYTES, LegacySQLTypeName.BYTES);
         put(DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING, LegacySQLTypeName.STRING);
         put(DescriptorProtos.FieldDescriptorProto.Type.TYPE_ENUM, LegacySQLTypeName.STRING);
         put(DescriptorProtos.FieldDescriptorProto.Type.TYPE_BOOL, LegacySQLTypeName.BOOLEAN);
@@ -299,7 +299,7 @@ public class ConverterTest {
 
         assertEquals(protoField.getFields().size(), fields.size());
         assertBqField(protoField.getFields().get(0).getName(), LegacySQLTypeName.STRING, Field.Mode.NULLABLE, fields.get(0));
-        assertBqField(protoField.getFields().get(1).getName(), LegacySQLTypeName.STRING, Field.Mode.NULLABLE, fields.get(1));
+        assertBqField(protoField.getFields().get(1).getName(), LegacySQLTypeName.BYTES, Field.Mode.NULLABLE, fields.get(1));
         assertBqField(protoField.getFields().get(2).getName(), LegacySQLTypeName.RECORD, Field.Mode.NULLABLE, fields.get(2));
         assertBqField(protoField.getFields().get(3).getName(), LegacySQLTypeName.RECORD, Field.Mode.NULLABLE, fields.get(3));
         assertEquals(2, fields.get(2).getSubFields().size());
