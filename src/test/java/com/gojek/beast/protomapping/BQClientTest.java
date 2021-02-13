@@ -152,7 +152,6 @@ public class BQClientTest {
     @Test
     public void shouldNotUpdateTableIfTableAlreadyExistsWithSameSchema() {
         when(bqConfig.isBQTablePartitioningEnabled()).thenReturn(false);
-        when(bqConfig.getBQTablePartitionExpiryMillis()).thenReturn(-1L);
         when(bqConfig.getTable()).thenReturn("bq-table");
         when(bqConfig.getDataset()).thenReturn("bq-proto");
         when(bqConfig.getBQDatasetLocation()).thenReturn("US");
@@ -190,7 +189,6 @@ public class BQClientTest {
     @Test
     public void shouldUpdateTableIfTableAlreadyExistsAndSchemaChanges() {
         when(bqConfig.isBQTablePartitioningEnabled()).thenReturn(false);
-        when(bqConfig.getBQTablePartitionExpiryMillis()).thenReturn(-1L);
         when(bqConfig.getTable()).thenReturn("bq-table");
         when(bqConfig.getDataset()).thenReturn("bq-proto");
         when(bqConfig.getBQDatasetLocation()).thenReturn("US");
@@ -220,7 +218,6 @@ public class BQClientTest {
         when(table.exists()).thenReturn(true);
         when(bigquery.getTable(tableId)).thenReturn(table);
         when(table.getDefinition()).thenReturn(mockTableDefinition);
-        when(mockTableDefinition.getType()).thenReturn(TableDefinition.Type.TABLE);
         when(mockTableDefinition.getSchema()).thenReturn(tableDefinition.getSchema());
         when(bigquery.update(tableInfo)).thenReturn(table);
 
@@ -275,7 +272,6 @@ public class BQClientTest {
     @Test(expected = BigQueryException.class)
     public void shouldThrowExceptionIfUpdateTableFails() {
         when(bqConfig.isBQTablePartitioningEnabled()).thenReturn(false);
-        when(bqConfig.getBQTablePartitionExpiryMillis()).thenReturn(-1L);
         when(bqConfig.getTable()).thenReturn("bq-table");
         when(bqConfig.getDataset()).thenReturn("bq-proto");
         when(bqConfig.getBQDatasetLocation()).thenReturn("US");
@@ -304,7 +300,6 @@ public class BQClientTest {
         when(table.exists()).thenReturn(true);
         when(bigquery.getTable(tableId)).thenReturn(table);
         when(table.getDefinition()).thenReturn(mockTableDefinition);
-        when(mockTableDefinition.getType()).thenReturn(TableDefinition.Type.TABLE);
         when(mockTableDefinition.getSchema()).thenReturn(tableDefinition.getSchema());
         when(bigquery.update(tableInfo)).thenThrow(new BigQueryException(404, "Failed to update"));
 

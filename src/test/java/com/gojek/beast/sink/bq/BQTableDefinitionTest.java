@@ -81,7 +81,7 @@ public class BQTableDefinitionTest {
     }
 
     @Test
-    public void shouldCreateTableWithPartitionExiry() {
+    public void shouldCreateTableWithPartitionExpiry() {
         long partitionExpiry = 5184000000L;
         when(bqConfig.getBQTablePartitionExpiryMillis()).thenReturn(partitionExpiry);
         when(bqConfig.isBQTablePartitioningEnabled()).thenReturn(true);
@@ -95,5 +95,39 @@ public class BQTableDefinitionTest {
 
         assertEquals("timestamp_field", tableDefinition.getTimePartitioning().getField());
         assertEquals(partitionExpiry, tableDefinition.getTimePartitioning().getExpirationMs().longValue());
+    }
+
+    @Test
+    public void shouldReturnTableWithNullPartitionExpiryIfLessThanZero() {
+        long partitionExpiry = -1L;
+        when(bqConfig.getBQTablePartitionExpiryMillis()).thenReturn(partitionExpiry);
+        when(bqConfig.isBQTablePartitioningEnabled()).thenReturn(true);
+        when(bqConfig.getBQTablePartitionKey()).thenReturn("timestamp_field");
+        Schema bqSchema = Schema.of(
+                Field.newBuilder("timestamp_field", LegacySQLTypeName.TIMESTAMP).build()
+        );
+
+        BQTableDefinition bqTableDefinition = new BQTableDefinition(bqConfig);
+        StandardTableDefinition tableDefinition = bqTableDefinition.getTableDefinition(bqSchema);
+
+        assertEquals("timestamp_field", tableDefinition.getTimePartitioning().getField());
+        assertEquals(null, tableDefinition.getTimePartitioning().getExpirationMs());
+    }
+
+    @Test
+    public void shouldReturnTableWithNullPartitionExpiryIfEqualsZero() {
+        long partitionExpiry = 0L;
+        when(bqConfig.getBQTablePartitionExpiryMillis()).thenReturn(partitionExpiry);
+        when(bqConfig.isBQTablePartitioningEnabled()).thenReturn(true);
+        when(bqConfig.getBQTablePartitionKey()).thenReturn("timestamp_field");
+        Schema bqSchema = Schema.of(
+                Field.newBuilder("timestamp_field", LegacySQLTypeName.TIMESTAMP).build()
+        );
+
+        BQTableDefinition bqTableDefinition = new BQTableDefinition(bqConfig);
+        StandardTableDefinition tableDefinition = bqTableDefinition.getTableDefinition(bqSchema);
+
+        assertEquals("timestamp_field", tableDefinition.getTimePartitioning().getField());
+        assertEquals(null, tableDefinition.getTimePartitioning().getExpirationMs());
     }
 }
