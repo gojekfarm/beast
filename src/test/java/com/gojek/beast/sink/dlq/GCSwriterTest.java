@@ -8,7 +8,6 @@ import com.gojek.beast.models.Record;
 import com.gojek.beast.models.Status;
 import com.gojek.beast.sink.bq.BaseBQTest;
 import com.gojek.beast.sink.dlq.gcs.GCSErrorWriter;
-import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageException;
@@ -17,8 +16,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
@@ -33,20 +30,14 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class GCSwriterTest extends BaseBQTest {
 
-    @Captor
-    private ArgumentCaptor<BlobInfo> createObjCaptor;
     @Mock
     private Clock clock;
     private GCSErrorWriter errorWriter;
     @Mock
     private Storage gcsStoreMock;
-    @Mock
-    private Blob blobMock;
-    private long nowMillis;
 
     @Before
     public void setUp() {
-        nowMillis = Instant.now().toEpochMilli();
         errorWriter = new GCSErrorWriter(gcsStoreMock, "test-bucket", "test-integ-beast");
     }
 

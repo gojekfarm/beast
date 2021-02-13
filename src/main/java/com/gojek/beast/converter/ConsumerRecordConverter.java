@@ -15,7 +15,6 @@ import com.gojek.beast.stats.Stats;
 import com.gojek.de.stencil.parser.Parser;
 import com.google.api.client.util.DateTime;
 import com.google.common.collect.ImmutableMap;
-import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,23 +49,22 @@ public class ConsumerRecordConverter implements Converter {
                 continue;
             }
             OffsetInfo offsetInfo = new OffsetInfo(message.topic(), message.partition(), message.offset(), message.timestamp());
-            Map<String, Object> columns = convertMessage(message, offsetInfo);
-            if (!columns.isEmpty()) {
-                validRecords.add(new Record(offsetInfo, columns, message.key(), message.value()));
-            } else {
+            Map<String, Object> columns = mapToColumns(message);
+            if (columns.isEmpty()) {
                 invalidRecords.add(new Record(offsetInfo, columns, message.key(), message.value()));
+                continue;
             }
+            addMetadata(columns, offsetInfo);
+            validRecords.add(new Record(offsetInfo, columns, message.key(), message.value()));
         }
         sinkToErrorWriter(invalidRecords);
         return validRecords;
     }
 
-    private Map<String, Object> convertMessage(ConsumerRecord<byte[], byte[]> message, OffsetInfo offsetInfo) throws InvalidProtocolBufferException {
+    private Map<String, Object> mapToColumns(ConsumerRecord<byte[], byte[]> message) throws InvalidProtocolBufferException {
         Map<String, Object> columns = Collections.emptyMap();
         try {
-            DynamicMessage parsedMessage = parser.parse(message.value());
-            columns = rowMapper.map(parsedMessage);
-            addMetadata(columns, offsetInfo);
+            columns = rowMapper.map(parser.parse(message.value()));
         } catch (InvalidProtocolBufferException e) {
             log.info("failed to deserialize message: {} at offset: {}, partition: {}", UnknownProtoFields.toString(message.value()),
                     message.offset(), message.partition());

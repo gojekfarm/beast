@@ -21,7 +21,7 @@ import static org.junit.Assert.assertTrue;
 public class GCSInvalidMessagesWrapperTest {
 
     @Test
-    public void testMessagesCouldBeAdded() throws IOException {
+    public void testMessagesCouldBeAdded() {
         // encode message
         GCSInvalidMessagesWrapper msgWrapper = new GCSInvalidMessagesWrapper(new ObjectMapper(), new ArrayList<>());
         Map<String, Object> columns = new HashMap<>();
