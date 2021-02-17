@@ -40,16 +40,16 @@ Kafka to BigQuery Sink
 
 ## Run locally:
 ```
-git clone https://github.com/gojekfarm/beast
+git clone https://github.com/odpf/beast
 export $(cat ./env/sample.properties | xargs -L1) && gradle clean runConsumer
 ```
 
 ## Run with Docker
-The image is available in [gojektech](https://hub.docker.com/r/gojektech/beast) dockerhub.
+The image is available in [odpf](https://hub.docker.com/r/odpf/beast) dockerhub.
 
 ```
-export TAG=80076c77dc8504e7c758865602aca1b05259e5d3
-docker run --env-file beast.env -v ./local_dir/project-secret.json:/var/bq-secret.json -it gojektech/beast:$TAG
+export TAG=release-0.1.1
+docker run --env-file beast.env -v ./local_dir/project-secret.json:/var/bq-secret.json -it odpf/beast:$TAG
 ```
 * `-v` mounts local secret file `project-sercret.json` to the docker mentioned location, and `GOOGLE_CREDENTIALS` should match the same `/var/bq-secret.json` which is used for BQ authentication.
 * `TAG`You could update the tag if you want the latest image, the mentioned tag is tested well.
@@ -97,7 +97,7 @@ You can generate messages with TestMessage.proto with [sample-kafka-producer](ht
 
 To run and test locally:
 ```
-git clone https://github.com/gojekfarm/beast
+git clone https://github.com/odpf/beast
 export $(cat ./env/sample.properties | xargs -L1) && gradlew test
 ```
 
