@@ -200,4 +200,35 @@ public class BqSinkTest extends BaseBQTest {
 
         assertTrue(status.isSuccess());
     }
+
+    @Test
+    public void testFailsOnRetrialOfValidRecordsFails() {
+        Record user1 = new Record(offsetInfo, createUser("alice"), null, null);
+        Record user2 = new Record(offsetInfo, createUser("mary"), null, null);
+        Record user3 = new Record(offsetInfo, createUser("jazz"), null, null);
+
+        Records records = new Records(Arrays.asList(user1, user2, user3));
+        InsertAllRequest request = builder
+                .addRow(user1.getId(), user1.getColumns())
+                .addRow(user2.getId(), user2.getColumns())
+                .addRow(user3.getId(), user3.getColumns())
+                .build();
+
+        InsertAllRequest.Builder retryRequestBuilder = InsertAllRequest.newBuilder(tableId);
+        InsertAllRequest retryRequest = retryRequestBuilder
+                .addRow(user2.getId(), user2.getColumns())
+                .build();
+
+        BQFilteredResponse filteredResponse = new BQFilteredResponse(Arrays.asList(user2), Arrays.asList(),
+                Arrays.asList(user1));
+        when(responseParser.parseResponse(any(), any())).thenReturn(filteredResponse);
+        when(bigquery.insertAll(request)).thenReturn(failureResponse);
+        when(bigquery.insertAll(retryRequest)).thenReturn(failureResponse);
+
+        Sink localSink = new BqSink(bigquery, tableId, responseParser, bqRow, errorWriter);
+        Status status = localSink.push(records);
+        verify(bigquery).insertAll(request);
+
+        assertFalse(status.isSuccess());
+    }
 }
