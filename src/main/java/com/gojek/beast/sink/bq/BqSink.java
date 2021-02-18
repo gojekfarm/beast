@@ -58,7 +58,8 @@ public class BqSink implements Sink {
                 // try inserting valid records into bq
                 InsertAllResponse retriedResponse = insertIntoBQ(retryableRecords);
                 if (retriedResponse.hasErrors()) {
-                    return new InsertStatus(true, retriedResponse.getInsertErrors());
+                    statsClient.gauge("record.processing.failure,type=retry," + statsClient.getBqTags(), retryableRecords.size());
+                    return new InsertStatus(false, retriedResponse.getInsertErrors());
                 }
             }
 
