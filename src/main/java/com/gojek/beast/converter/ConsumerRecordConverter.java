@@ -42,10 +42,11 @@ public class ConsumerRecordConverter implements Converter {
         for (ConsumerRecord<byte[], byte[]> message : messages) {
             if (message.value() == null) {
                 // don't handle empty message
-                statsClient.increment("kafka.batch.records.null," + statsClient.getBqTags());
                 if (appConfig.getFailOnNullMessage()) {
+                    statsClient.gauge("record.processing.failure,type=null," + statsClient.getBqTags(), 1);
                     throw new NullInputMessageException(message.offset());
                 }
+                statsClient.increment("kafka.error.records.count,type=null," + statsClient.getBqTags());
                 continue;
             }
             OffsetInfo offsetInfo = new OffsetInfo(message.topic(), message.partition(), message.offset(), message.timestamp());
@@ -68,8 +69,8 @@ public class ConsumerRecordConverter implements Converter {
         } catch (InvalidProtocolBufferException e) {
             log.info("failed to deserialize message: {} at offset: {}, partition: {}", UnknownProtoFields.toString(message.value()),
                     message.offset(), message.partition());
-            statsClient.increment("kafka.batch.records.deserialize_error," + statsClient.getBqTags());
             if (appConfig.getFailOnDeserializeError()) {
+                statsClient.gauge("record.processing.failure,type=deserialize," + statsClient.getBqTags(), 1);
                 throw new InvalidProtocolBufferException(e);
             }
         }
@@ -99,6 +100,7 @@ public class ConsumerRecordConverter implements Converter {
                 log.error("Exception::Batch with records size: {} contains DLQ sinkable records but failed to sink", errorRecordList.size());
                 throw new ErrorWriterFailedException(dlqStatus.getException().orElse(null));
             }
+            statsClient.count("kafka.error.records.count,type=deserialize," + statsClient.getBqTags(), errorRecordList.size());
         }
     }
 }

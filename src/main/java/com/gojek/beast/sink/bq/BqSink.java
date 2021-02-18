@@ -47,8 +47,8 @@ public class BqSink implements Sink {
             // if batch contains records that we can't really handle, fail whole batch
             List<Record> unhandledRecords = filteredResponse.getUnhandledRecords();
             if (!unhandledRecords.isEmpty()) {
-                log.info("Batch with records size: {} contains invalid records, marking this batch to fail", unhandledRecords.size());
-                statsClient.gauge("data.error.records,type=invalid", unhandledRecords.size());
+                log.error("Batch with records size: {} contains invalid records, marking this batch to fail", unhandledRecords.size());
+                statsClient.gauge("record.processing.failure,type=invalid," + statsClient.getBqTags(), unhandledRecords.size());
                 return new InsertStatus(false, response.getInsertErrors());
             }
 
@@ -66,11 +66,11 @@ public class BqSink implements Sink {
             // DLQ sinkable records
             List<Record> oobRecords = filteredResponse.getOobRecords();
             if (!oobRecords.isEmpty()) {
-                log.info("Error handler parsed OOB records size {}, handoff to the writer {}", oobRecords.size(), errorWriter.getClass().getSimpleName());
-                statsClient.gauge("data.error.records,type=oob", oobRecords.size());
+                log.warn("Error handler parsed OOB records size {}, handoff to the writer {}", oobRecords.size(), errorWriter.getClass().getSimpleName());
+                statsClient.count("kafka.error.records.count,type=oob," + statsClient.getBqTags(), oobRecords.size());
                 final Status dlqStatus = errorWriter.writeRecords(ImmutableMap.of(RecordsErrorType.OOB, oobRecords));
                 if (!dlqStatus.isSuccess()) {
-                    log.info("Batch with records size: {} contains DLQ sinkable records but failed to sink", oobRecords.size());
+                    log.error("Batch with records size: {} contains DLQ sinkable records but failed to sink", oobRecords.size());
                     return dlqStatus;
                 }
             }
