@@ -41,11 +41,14 @@ public class RowMapper {
         if (message == null || columnMapping == null || columnMapping.isEmpty()) {
             return new HashMap<>();
         }
-        if (failOnUnknownFields && message.getUnknownFields().asMap().size() > 0) {
-            statsClient.increment("kafka.protobuf.unknownfields.errors");
+        if (message.getUnknownFields().asMap().size() > 0) {
+            statsClient.count("kafka.error.records.count,type=unknownfields," + statsClient.getBqTags(), 1);
             String serializedUnknownFields = message.getUnknownFields().asMap().keySet().toString();
             String serializedMessage = UnknownProtoFields.toString(message.toByteArray());
-            throw new UnknownProtoFieldFoundException(serializedUnknownFields, serializedMessage);
+            log.warn(String.format("[%s] unknown fields found in proto [%s], either update mapped protobuf or disable FAIL_ON_UNKNOWN_FIELDS",
+                    serializedUnknownFields, serializedMessage));
+            if (failOnUnknownFields)
+                throw new UnknownProtoFieldFoundException(serializedUnknownFields, serializedMessage);
         }
         Descriptors.Descriptor descriptorForType = message.getDescriptorForType();
 
