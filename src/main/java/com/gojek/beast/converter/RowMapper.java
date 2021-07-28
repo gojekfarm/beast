@@ -7,6 +7,7 @@ import com.gojek.beast.converter.fields.ProtoField;
 import com.gojek.beast.exception.UnknownProtoFieldFoundException;
 import com.gojek.beast.models.ConfigurationException;
 import com.gojek.beast.stats.Stats;
+import com.gojek.beast.util.ProtoUtil;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.DynamicMessage;
 import lombok.AllArgsConstructor;
@@ -14,10 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Slf4j
 @AllArgsConstructor
@@ -36,8 +35,7 @@ public class RowMapper {
             throw new ConfigurationException("BQ_PROTO_COLUMN_MAPPING is not configured");
         }
 
-        List<DynamicMessage> messageWithUnknownFields = getMessageWithUnknownFields(getDynamicMessageFields(message));
-        if (messageWithUnknownFields.size() > 0) {
+        if (ProtoUtil.isUnknownFieldExist(message)) {
             statsClient.count("kafka.error.records.count,type=unknownfields," + statsClient.getBqTags(), 1);
             if (failOnUnknownFields) {
                 throw new UnknownProtoFieldFoundException(message.toString());
@@ -46,24 +44,6 @@ public class RowMapper {
 
         return getMappings(message, mapping);
     }
-
-    private List<DynamicMessage> getDynamicMessageFields(DynamicMessage message) {
-        List<DynamicMessage> fields = new LinkedList<>();
-        fields.add(message);
-
-        List<DynamicMessage> children = message.getAllFields().values().stream().filter(v -> v instanceof DynamicMessage).map(o -> (DynamicMessage) o).collect(Collectors.toList());
-        children.forEach(m -> {
-            List<DynamicMessage> messageFields = getDynamicMessageFields(m);
-            fields.addAll(messageFields);
-        });
-
-        return fields;
-    }
-
-    private List<DynamicMessage> getMessageWithUnknownFields(List<DynamicMessage> messages) {
-        return messages.stream().filter(message -> message.getUnknownFields().asMap().size() > 0).collect(Collectors.toList());
-    }
-
 
     private Map<String, Object> getMappings(DynamicMessage message, ColumnMapping columnMapping) {
         if (message == null || columnMapping == null || columnMapping.isEmpty()) {
