@@ -6,7 +6,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ProtoUtil {
+public class DynamicMessageUtil {
     public static boolean isUnknownFieldExist(DynamicMessage dynamicMessage) {
         if (dynamicMessage == null) {
             return false;

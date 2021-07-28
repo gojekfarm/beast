@@ -7,7 +7,7 @@ import com.gojek.beast.converter.fields.ProtoField;
 import com.gojek.beast.exception.UnknownProtoFieldFoundException;
 import com.gojek.beast.models.ConfigurationException;
 import com.gojek.beast.stats.Stats;
-import com.gojek.beast.util.ProtoUtil;
+import com.gojek.beast.util.DynamicMessageUtil;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.DynamicMessage;
 import lombok.AllArgsConstructor;
@@ -35,7 +35,7 @@ public class RowMapper {
             throw new ConfigurationException("BQ_PROTO_COLUMN_MAPPING is not configured");
         }
 
-        if (ProtoUtil.isUnknownFieldExist(message)) {
+        if (DynamicMessageUtil.isUnknownFieldExist(message)) {
             statsClient.count("kafka.error.records.count,type=unknownfields," + statsClient.getBqTags(), 1);
             if (failOnUnknownFields) {
                 throw new UnknownProtoFieldFoundException(message.toString());
