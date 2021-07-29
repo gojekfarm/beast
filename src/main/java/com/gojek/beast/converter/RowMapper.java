@@ -37,8 +37,10 @@ public class RowMapper {
 
         if (DynamicMessageUtil.isUnknownFieldExist(message)) {
             statsClient.count("kafka.error.records.count,type=unknownfields," + statsClient.getBqTags(), 1);
+            String serialisedProtoMessage = message.toString();
+            log.warn(String.format("unknown fields found in proto : %s", serialisedProtoMessage));
             if (failOnUnknownFields) {
-                throw new UnknownProtoFieldFoundException(message.toString());
+                throw new UnknownProtoFieldFoundException(serialisedProtoMessage);
             }
         }
 
