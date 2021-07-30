@@ -9,10 +9,7 @@ import java.util.Queue;
 import java.util.stream.Collectors;
 
 public class DynamicMessageUtil {
-    public static boolean isUnknownFieldExist(DynamicMessage root) {
-        if (root == null) {
-            return false;
-        }
+    public static boolean hasUnknownField(DynamicMessage root) {
         List<DynamicMessage> dynamicMessageFields = collectNestedFields(root);
         List<DynamicMessage> messageWithUnknownFields = getMessageWithUnknownFields(dynamicMessageFields);
         return messageWithUnknownFields.size() > 0;

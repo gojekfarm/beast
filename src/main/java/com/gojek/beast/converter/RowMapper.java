@@ -35,7 +35,7 @@ public class RowMapper {
             throw new ConfigurationException("BQ_PROTO_COLUMN_MAPPING is not configured");
         }
 
-        if (DynamicMessageUtil.isUnknownFieldExist(message)) {
+        if (DynamicMessageUtil.hasUnknownField(message)) {
             statsClient.count("kafka.error.records.count,type=unknownfields," + statsClient.getBqTags(), 1);
             String serialisedProtoMessage = message.toString();
             log.warn(String.format("unknown fields found in proto : %s", serialisedProtoMessage));
