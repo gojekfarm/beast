@@ -1,5 +1,7 @@
 
-# Beast is now deprecated. BQ sink is being supported in [Firehose](https://github.com/odpf/firehose) now. 
+# Beast is deprecated. Big Query sink is supported in [Firehose](https://github.com/odpf/firehose) now. 
+
+Beast is not supported. We recommend using Firehose for sinking Kafka data to BigQuery. 
 
 ## Architecture
 
